@@ -138,3 +138,6 @@
   color: var(--muted);
   font-size: 0.85rem;
 }
+
+/* Chừa chỗ cho nút chuyển ngôn ngữ ở cuối thanh đầu */
+.top .nav { margin-left: auto; margin-right: 16px; }

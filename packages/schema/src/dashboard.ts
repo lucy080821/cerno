@@ -8,6 +8,11 @@ export const ChartType = z.enum([
   "hbar", "stackedbar", "treemap", "funnel", "radar", "histogram",
 ]);
 
+/** Cấp gom của chiều ngày. Theo dòng thời gian (day…year, hour) hoặc theo chu kỳ (month_of_year, weekday, hour_of_day). */
+export const DateGrain = z.enum([
+  "day", "week", "month", "quarter", "year", "month_of_year", "weekday", "hour", "hour_of_day",
+]);
+
 export const Aggregation = z.enum(["sum", "avg", "count", "min", "max", "count_distinct"]);
 
 /** Một field kéo vào chart: dimension (nhóm theo) hoặc metric (tính toán). */
@@ -20,6 +25,12 @@ export const FieldBinding = z.object({
   /** Như `bins` nhưng chỉ định độ rộng mỗi khoảng (ưu tiên hơn `bins`), và cận dưới khoảng đầu tiên. */
   binWidth: z.number().positive().optional(),
   binStart: z.number().optional(),
+  /**
+   * Chỉ dimension kiểu ngày. Theo dòng thời gian: day/week/month/quarter/year (nhãn "2025-03", "2025-Q1", "2025-W36"...).
+   * Theo chu kỳ (gộp mọi năm/tuần/ngày lại): month_of_year ("Tháng 3"), weekday ("Thứ 2"...), hour_of_day ("14h") để xem tính mùa vụ.
+   * hour ("2025-09-05 14:00") và hour_of_day cần ô có cả giờ; ô chỉ có ngày thì bị bỏ.
+   */
+  grain: DateGrain.optional(),
 });
 
 /** Kiểu chữ dùng cho tiêu đề, trục, nhãn dữ liệu. Trường nào bỏ trống thì dùng mặc định của theme. */
@@ -119,12 +130,28 @@ export const ImageConfig = z.object({
 /** Kiểu chữ của số KPI: cỡ chữ cho phép lớn hơn (tới 300px) vì KPI thường là con số to. */
 const KpiValueStyle = TextStyle.extend({ fontSize: z.number().min(6).max(300).optional() });
 
+/** So sánh số đo KPI với kỳ khác (kỳ trước / cùng kỳ năm ngoái). Không có = KPI thường, chỉ một con số. */
+export const KpiCompare = z.object({
+  to: z.enum(["prev_period", "prev_year"]),
+  /** Cột ngày dùng để chia kỳ. */
+  dateColumn: z.string(),
+  /** Độ dài một kỳ khi KHÔNG có bộ lọc khoảng ngày: kỳ hiện tại là kỳ chứa ngày mới nhất trong dữ liệu. */
+  grain: z.enum(["day", "week", "month", "quarter", "year"]).default("month"),
+  /** percent = % tăng trưởng; diff = chênh lệch; pp = chênh lệch điểm phần trăm (cho chỉ số vốn đã là %). */
+  show: z.enum(["percent", "diff", "pp"]).default("percent"),
+  /** Tăng là tốt (xanh) hay xấu (đỏ), ví dụ chi phí tăng là xấu. */
+  goodWhen: z.enum(["up", "down"]).default("up"),
+  /** Kỳ hiện tại chưa trọn thì so cùng số ngày với kỳ kia (tháng này tính đến ngày 9 so với tháng trước đến ngày 9). */
+  toDate: z.boolean().default(true),
+});
+
 export const KpiConfig = z.object({
   kind: z.literal("kpi"),
   sourceId: z.string(),
   metric: FieldBinding,
   title: z.string().optional(),
   compareToPrevious: z.boolean().default(false),
+  compare: KpiCompare.optional(),
   /** Kiểu chữ của dòng tiêu đề và của con số. Bỏ trống = tự theo chủ đề và kích thước widget. */
   titleStyle: TextStyle.optional(),
   valueStyle: KpiValueStyle.optional(),
@@ -210,8 +237,13 @@ export const Filter = z.object({
   id: z.string(),
   sourceId: z.string(),
   column: z.string(),
-  /** dropdown: chọn 1 giá trị; multiselect: chọn nhiều; slider: khoảng số (từ–đến). date_range chưa có UI. */
-  control: z.enum(["dropdown", "multiselect", "date_range", "slider"]),
+  /** grain: chọn cấp thời gian (Ngày/Tuần/Tháng…). dropdown: chọn 1 giá trị; multiselect: chọn nhiều; slider: khoảng số (từ–đến). date_range chưa có UI. */
+  control: z.enum(["dropdown", "multiselect", "date_range", "slider", "grain"]),
+  /**
+   * Chỉ control "grain": các cấp thời gian người xem được chọn (bỏ trống = ngày/tuần/tháng/quý/năm). Bộ chọn này KHÔNG lọc dòng,
+   * mà đổi cấp gom (`grain`) của mọi chiều thuộc `column` trong các widget được áp.
+   */
+  grains: z.array(DateGrain).optional(),
   label: z.string().optional(),
   /** Chỉ áp cho các widget này. Bỏ trống = áp cho mọi widget có cột đó. */
   targets: z.array(z.string()).optional(),
@@ -289,6 +321,8 @@ export type DataSource = z.infer<typeof DataSource>;
 export type Filter = z.infer<typeof Filter>;
 export type CalculatedField = z.infer<typeof CalculatedField>;
 export type FieldBinding = z.infer<typeof FieldBinding>;
+export type DateGrain = z.infer<typeof DateGrain>;
+export type KpiCompare = z.infer<typeof KpiCompare>;
 export type ChartConfig = z.infer<typeof ChartConfig>;
 export type TextStyle = z.infer<typeof TextStyle>;
 export type ChartFormat = z.infer<typeof ChartFormat>;

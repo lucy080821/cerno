@@ -1,5 +1,5 @@
 /**
- * Tuỳ chọn bố cục của editor (thu gọn bảng trái, độ rộng bảng phải). Chỉ là thói quen của từng người xem nên lưu ở
+ * Tuỳ chọn bố cục của editor (thu gọn bảng trái và bảng phải, độ rộng bảng phải). Chỉ là thói quen của từng người xem nên lưu ở
  * localStorage của trình duyệt, không lưu vào dashboard. Mọi thao tác đọc/ghi đều bọc try/catch (chế độ riêng tư,
  * bị chặn lưu trữ...) và luôn có giá trị mặc định hợp lệ.
  */
@@ -11,6 +11,7 @@ const KEY = "cerno.editor.layout.v1";
 
 export interface LayoutPrefs {
   leftOpen: boolean;
+  rightOpen: boolean;
   rightWidth: number;
 }
 
@@ -23,13 +24,14 @@ export function clampRightWidth(w: number, windowWidth?: number): number {
 }
 
 export function loadLayoutPrefs(): LayoutPrefs {
-  const def: LayoutPrefs = { leftOpen: true, rightWidth: RIGHT_DEFAULT };
+  const def: LayoutPrefs = { leftOpen: true, rightOpen: true, rightWidth: RIGHT_DEFAULT };
   try {
     const raw = window.localStorage.getItem(KEY);
     if (!raw) return def;
     const j = JSON.parse(raw) as Partial<LayoutPrefs>;
     return {
       leftOpen: typeof j.leftOpen === "boolean" ? j.leftOpen : def.leftOpen,
+      rightOpen: typeof j.rightOpen === "boolean" ? j.rightOpen : def.rightOpen,
       rightWidth: typeof j.rightWidth === "number" ? clampRightWidth(j.rightWidth) : def.rightWidth,
     };
   } catch {

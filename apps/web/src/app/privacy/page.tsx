@@ -59,6 +59,7 @@ export default function PrivacyPage() {
         <h3>2.3. Nội dung bạn tạo</h3>
         <ul>
           <li>Các dashboard của bạn (vị trí, loại biểu đồ, cột dữ liệu được dùng, bộ lọc, màu sắc, tên trang...).</li>
+          <li>Email của những người bạn mời xem hoặc sửa dashboard, dùng để cấp quyền và gửi email mời. Email mời nêu tên và email của bạn, tên dashboard và vai trò được cấp.</li>
           <li>
             Ảnh bạn tải lên (vd logo). Ảnh được lưu ở kho ảnh <strong>công khai theo đường dẫn</strong>: ai có đúng đường dẫn
             đều xem được ảnh đó. Vì vậy đừng tải lên ảnh nhạy cảm.
@@ -103,7 +104,7 @@ export default function PrivacyPage() {
             <a href={POLICY_URL} target="_blank" rel="noreferrer">Google API Services User Data Policy</a>, including the
             Limited Use requirements.
           </p>
-          <p>
+          <p data-vi-only>
             Việc {name} sử dụng và chuyển giao thông tin nhận được từ các API của Google sang bất kỳ ứng dụng nào khác sẽ tuân
             thủ Chính sách dữ liệu người dùng của Google API Services, bao gồm cả các yêu cầu về Sử dụng hạn chế (Limited Use).
           </p>
@@ -142,6 +143,7 @@ export default function PrivacyPage() {
               <tr><td>Google</td><td>Đăng nhập (OAuth), hộp chọn file (Picker), đọc Google Sheets (Sheets API)</td><td>Thông tin tài khoản; file và nội dung ô bạn chọn</td></tr>
               <tr><td>Supabase</td><td>Xác thực, cơ sở dữ liệu, kho lưu trữ ảnh</td><td>Tài khoản, dashboard, bản sao dữ liệu Sheets, token mã hóa, ảnh</td></tr>
               <tr><td>Groq</td><td>Trợ lý AI (khi bạn dùng)</td><td>Bản tóm tắt dashboard ở mục 5. Groq xử lý theo thỏa thuận dịch vụ và chính sách riêng của họ: <a href="https://groq.com/privacy-policy" target="_blank" rel="noreferrer">groq.com/privacy-policy</a></td></tr>
+              <tr><td>Google (Gmail)</td><td>Gửi email mời chia sẻ dashboard</td><td>Email người được mời; tên và email của người mời, tên dashboard, vai trò, link mở dashboard</td></tr>
               <tr><td>Nhà cung cấp hosting</td><td>Chạy ứng dụng web</td><td>Dữ liệu đi qua máy chủ khi bạn dùng dịch vụ; nhật ký truy cập</td></tr>
             </tbody>
           </table>
@@ -182,8 +184,9 @@ export default function PrivacyPage() {
 
       <Section id="cookie" title="9. Cookie và lưu trữ trên trình duyệt">
         <p>
-          Chúng tôi chỉ dùng cookie <strong>cần thiết</strong>: cookie phiên đăng nhập của Supabase, để bạn không phải đăng nhập lại.
-          Không có cookie quảng cáo hay theo dõi. Trình duyệt có thể còn lưu bản nháp dashboard cũ (localStorage) từ thời bản
+          Chúng tôi chỉ dùng cookie <strong>cần thiết</strong>: cookie phiên đăng nhập của Supabase, để bạn không phải đăng nhập lại, và
+          cookie ngôn ngữ giao diện (cerno.lang) để nhớ bạn chọn tiếng Việt hay tiếng Anh. Khi đã đăng nhập, lựa chọn ngôn ngữ
+          cũng được lưu trong hồ sơ tài khoản để dùng lại ở thiết bị khác. Không có cookie quảng cáo hay theo dõi. Trình duyệt có thể còn lưu bản nháp dashboard cũ (localStorage) từ thời bản
           thử nghiệm; bạn có thể chuyển nó lên tài khoản hoặc xóa dữ liệu trang trong trình duyệt.
         </p>
       </Section>
@@ -222,6 +225,9 @@ export default function PrivacyPage() {
       <Section id="lien-he" title="14. Liên hệ">
         <p>
           Mọi câu hỏi hoặc yêu cầu về quyền riêng tư: <a href={`mailto:${mail}`}>{mail}</a>. Đơn vị vận hành: {site.legal.operator}.
+          {site.legal.phone && (
+            <> Điện thoại: <a href={`tel:${site.legal.phone.replace(/[^+\d]/g, "")}`}>{site.legal.phone}</a>.</>
+          )}
         </p>
       </Section>
     </LegalShell>

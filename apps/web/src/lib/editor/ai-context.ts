@@ -4,7 +4,7 @@ import { getRows } from "./sample-data";
 import { isRemoteSource, useData } from "./data-store";
 import { calcDefsFor, fetchQuery, specForWidget } from "./remote-query";
 import { columnsWithCalc } from "./calc";
-import { toRowFilters } from "./filters";
+import { toRowFilters, withGrainOverride } from "./filters";
 import type { CrossFilter, FilterValue } from "./store";
 
 /**
@@ -116,7 +116,8 @@ async function describeRemoteWidget(
   };
 }
 
-function describeWidget(doc: Dashboard, w: Widget, selected: boolean, fv: Record<string, FilterValue>, cross: CrossFilter[], b: ContextBudget): Promise<unknown> | unknown {
+function describeWidget(doc: Dashboard, w0: Widget, selected: boolean, fv: Record<string, FilterValue>, cross: CrossFilter[], b: ContextBudget): Promise<unknown> | unknown {
+  const w = withGrainOverride(w0, doc.filters, fv);
   const base = {
     id: w.id,
     ...(selected ? { dangChon: true } : {}),
@@ -209,6 +210,7 @@ export async function buildAiContext(
       if (!v) return [];
       const label = f.label || f.column;
       if (f.control === "date_range") return [`${label}: ${v.from ?? "…"} đến ${v.to ?? "…"}`];
+      if (f.control === "grain") return v.values?.length ? [`${label}: xem theo ${v.values[0]}`] : [];
       return f.control === "slider" ? [`${label}: ${v.min ?? "…"} – ${v.max ?? "…"}`] : v.values?.length ? [`${label} = ${v.values.join(", ")}`] : [];
     }),
     ...crossFilters.map((f) => `${f.column} = ${f.values.join(", ")} (lọc chéo)`),

@@ -40,6 +40,11 @@ function rateLimited(ip: string): boolean {
   return cur.n > MAX_PER_WINDOW;
 }
 
+/** Giao diện đang ở tiếng Anh: ghi đè quy tắc "trả lời bằng tiếng Việt" ở trên (dữ liệu và tên cột vẫn giữ nguyên chữ gốc). */
+const EN_PROMPT = `
+
+LANGUAGE OVERRIDE: the user's interface is in English. Reply in English (ignore the Vietnamese-language rule above), keep column names, series names and sheet values exactly as they appear in the data, and write any chart titles or text you create in English.`;
+
 const BASE_PROMPT = `Bạn là trợ lý phân tích dữ liệu trong một công cụ thiết kế dashboard. Người dùng hỏi về dashboard, biểu đồ và dữ liệu của họ.
 
 Quy tắc:
@@ -73,9 +78,9 @@ Bạn có công cụ để SỬA dashboard (thêm/sửa/xoá widget, bộ lọc,
 
 const ID_RE = /^[\w.-]{1,64}$/;
 
-function parseBody(raw: unknown): { messages: ChatMessage[]; context: string; tools: boolean; charts: boolean } | string {
+function parseBody(raw: unknown): { messages: ChatMessage[]; context: string; tools: boolean; charts: boolean; lang: "vi" | "en" } | string {
   if (!raw || typeof raw !== "object") return "Yêu cầu không hợp lệ.";
-  const { messages, context, tools, charts } = raw as { messages?: unknown; context?: unknown; tools?: unknown; charts?: unknown };
+  const { messages, context, tools, charts, lang } = raw as { messages?: unknown; context?: unknown; tools?: unknown; charts?: unknown; lang?: unknown };
   if (!Array.isArray(messages) || messages.length === 0) return "Thiếu nội dung câu hỏi.";
   if (messages.length > MAX_MESSAGES) return "Hội thoại quá dài, hãy bắt đầu cuộc trò chuyện mới.";
 
@@ -112,7 +117,7 @@ function parseBody(raw: unknown): { messages: ChatMessage[]; context: string; to
   if (last !== "user" && last !== "tool") return "Yêu cầu không hợp lệ.";
   const ctx = typeof context === "string" ? context : "";
   if (ctx.length > MAX_CONTEXT_CHARS) return "Dữ liệu gửi kèm quá lớn.";
-  return { messages: out, context: ctx, tools: tools === true, charts: charts === true || tools === true };
+  return { messages: out, context: ctx, tools: tools === true, charts: charts === true || tools === true, lang: lang === "en" ? "en" : "vi" };
 }
 
 const fail = (message: string, status: number) => NextResponse.json({ error: message }, { status });
@@ -140,7 +145,7 @@ export async function POST(req: Request) {
   const parsed = parseBody(body);
   if (typeof parsed === "string") return fail(parsed, 400);
 
-  const system = `${BASE_PROMPT}${parsed.charts ? CHART_PROMPT : ""}${parsed.tools ? TOOLS_PROMPT : ""}\n\n<dashboard_context>\n${parsed.context}\n</dashboard_context>`;
+  const system = `${BASE_PROMPT}${parsed.lang === "en" ? EN_PROMPT : ""}${parsed.charts ? CHART_PROMPT : ""}${parsed.tools ? TOOLS_PROMPT : ""}\n\n<dashboard_context>\n${parsed.context}\n</dashboard_context>`;
   // Công cụ chỉ gửi khi câu hỏi cần (client quyết định, vì mỗi lần tốn ~1.800 token): show_chart chỉ đọc dữ liệu nên luôn
   // được phép khi vẽ; các công cụ sửa dashboard chỉ khi người dùng cho phép.
   const tools = parsed.charts ? ([SHOW_CHART_DEF, ...(parsed.tools ? TOOL_DEFS : [])] as ToolDef[]) : null;

@@ -8,6 +8,7 @@ import {
 import { ChatPanel } from "./ChatPanel";
 import { CommentsPanel } from "./CommentsPanel";
 import { FiltersPanel } from "./FiltersPanel";
+import { Icon } from "./fields";
 import { PropertyPanel } from "./PropertyPanel";
 import s from "./editor.module.css";
 
@@ -27,6 +28,8 @@ export function RightPanel({ dashboardId, canModerate = false }: { dashboardId: 
 
   // Độ rộng kéo được (hữu ích nhất cho khung chat). Nhớ theo trình duyệt.
   const [width, setWidth] = useState(RIGHT_DEFAULT);
+  // Thu gọn / mở cả bảng (nhớ theo trình duyệt), giống bảng bên trái.
+  const [open, setOpen] = useState(true);
   const [dragging, setDragging] = useState(false);
   const drag = useRef<{ x: number; w: number } | null>(null);
   const last = useRef(RIGHT_DEFAULT);
@@ -35,6 +38,7 @@ export function RightPanel({ dashboardId, canModerate = false }: { dashboardId: 
     const w = clampRightWidth(loadLayoutPrefs().rightWidth, window.innerWidth);
     last.current = w;
     setWidth(w);
+    setOpen(loadLayoutPrefs().rightOpen);
   }, []);
 
   // Cửa sổ thu nhỏ lại thì bảng không được chiếm quá 60% bề ngang.
@@ -55,6 +59,13 @@ export function RightPanel({ dashboardId, canModerate = false }: { dashboardId: 
       document.body.style.cursor = prevCursor;
     };
   }, [dragging]);
+
+  const toggle = () => {
+    const next = !open;
+    setOpen(next);
+    saveLayoutPrefs({ rightOpen: next });
+    window.setTimeout(() => useEditor.getState().fit(), 240); // canvas tự căn lại sau khi trượt xong
+  };
 
   const apply = (w: number, persist: boolean) => {
     const v = clampRightWidth(w, window.innerWidth);
@@ -89,43 +100,62 @@ export function RightPanel({ dashboardId, canModerate = false }: { dashboardId: 
   };
 
   return (
-    <aside className={s.rightShell} style={{ width }}>
-      <div
-        className={`${s.rightResizer} ${dragging ? s.rightResizerOn : ""}`}
-        role="separator"
-        aria-orientation="vertical"
-        aria-label="Kéo để đổi độ rộng bảng bên phải"
-        aria-valuenow={width}
-        aria-valuemin={RIGHT_MIN}
-        aria-valuemax={RIGHT_MAX}
-        tabIndex={0}
-        title="Kéo để đổi độ rộng (bấm đúp để đặt lại)"
-        onPointerDown={onDown}
-        onPointerMove={onMove}
-        onPointerUp={onUp}
-        onPointerCancel={onUp}
-        onDoubleClick={() => apply(RIGHT_DEFAULT, true)}
-        onKeyDown={onKey}
-      />
-      <div className={s.mainTabs} role="tablist" aria-label="Bảng thuộc tính">
-        {TABS.map((t) => (
-          <button
-            key={t.id}
-            role="tab"
-            aria-selected={tab === t.id}
-            className={`${s.mainTab} ${tab === t.id ? s.mainTabOn : ""}`}
-            onClick={() => setTab(t.id)}
-          >
-            {t.label}
-            {t.id === "filters" && filterCount > 0 && <span className={s.badge}>{filterCount}</span>}
-          </button>
-        ))}
-      </div>
-      <div className={`${s.rightBody} ${tab === "ai" ? s.rightBodyChat : ""}`}>
-        {tab === "setup" && <PropertyPanel />}
-        {tab === "filters" && <FiltersPanel />}
-        {tab === "ai" && <ChatPanel />}
-        {tab === "comments" && <CommentsPanel dashboardId={dashboardId} canModerate={canModerate} />}
+    <aside
+      className={`${s.rightShell} ${open ? "" : s.rightShellClosed} ${dragging ? s.rightShellDragging : ""}`}
+      style={{ width: open ? width : 0 }}
+    >
+      {open && (
+        <div
+          className={`${s.rightResizer} ${dragging ? s.rightResizerOn : ""}`}
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Kéo để đổi độ rộng bảng bên phải"
+          aria-valuenow={width}
+          aria-valuemin={RIGHT_MIN}
+          aria-valuemax={RIGHT_MAX}
+          tabIndex={0}
+          title="Kéo để đổi độ rộng (bấm đúp để đặt lại)"
+          onPointerDown={onDown}
+          onPointerMove={onMove}
+          onPointerUp={onUp}
+          onPointerCancel={onUp}
+          onDoubleClick={() => apply(RIGHT_DEFAULT, true)}
+          onKeyDown={onKey}
+        />
+      )}
+      <button
+        type="button"
+        className={`${s.panelToggle} ${s.panelToggleRight}`}
+        onClick={toggle}
+        aria-expanded={open}
+        aria-label={open ? "Thu gọn bảng bên phải" : "Mở bảng bên phải"}
+        title={open ? "Thu gọn bảng bên phải" : "Mở bảng bên phải"}
+      >
+        <Icon name="chevron" size={14} />
+      </button>
+      <div className={s.rightClip} inert={!open}>
+        <div className={s.rightInner} style={{ width }}>
+          <div className={s.mainTabs} role="tablist" aria-label="Bảng thuộc tính">
+            {TABS.map((t) => (
+              <button
+                key={t.id}
+                role="tab"
+                aria-selected={tab === t.id}
+                className={`${s.mainTab} ${tab === t.id ? s.mainTabOn : ""}`}
+                onClick={() => setTab(t.id)}
+              >
+                {t.label}
+                {t.id === "filters" && filterCount > 0 && <span className={s.badge}>{filterCount}</span>}
+              </button>
+            ))}
+          </div>
+          <div className={`${s.rightBody} ${tab === "ai" ? s.rightBodyChat : ""}`}>
+            {tab === "setup" && <PropertyPanel />}
+            {tab === "filters" && <FiltersPanel />}
+            {tab === "ai" && <ChatPanel />}
+            {tab === "comments" && <CommentsPanel dashboardId={dashboardId} canModerate={canModerate} />}
+          </div>
+        </div>
       </div>
     </aside>
   );

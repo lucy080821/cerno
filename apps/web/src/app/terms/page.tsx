@@ -150,6 +150,9 @@ export default function TermsPage() {
       <Section id="lien-he" title="15. Liên hệ">
         <p>
           Câu hỏi về điều khoản: <a href={`mailto:${mail}`}>{mail}</a>. Đơn vị vận hành: {site.legal.operator}.
+          {site.legal.phone && (
+            <> Điện thoại: <a href={`tel:${site.legal.phone.replace(/[^+\d]/g, "")}`}>{site.legal.phone}</a>.</>
+          )}
         </p>
       </Section>
     </LegalShell>

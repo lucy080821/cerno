@@ -8,3 +8,4 @@ export * from "./stats";
 export * from "./query";
 export * from "./chartSize";
 export * from "./trend";
+export * from "./period";

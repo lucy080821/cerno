@@ -1,7 +1,8 @@
-import type { FieldBinding } from "@dashboard/schema";
+import type { FieldBinding, KpiCompare } from "@dashboard/schema";
 import { aggregate, type AggregatedTable, type Cell, type Row } from "./aggregate";
 import { applyFilters, type RowFilter } from "./filter";
 import { compileCalcFields, materializeRows, type CalcFieldDef } from "./formula";
+import { computeCompare, type CompareResult } from "./period";
 import { dateBounds, distinctValues, numberRange } from "./stats";
 
 /**
@@ -25,12 +26,12 @@ interface Common {
 }
 
 export type QuerySpec =
-  | ({ mode: "aggregate"; dims: FieldBinding[]; metrics: FieldBinding[] } & Common)
+  | ({ mode: "aggregate"; dims: FieldBinding[]; metrics: FieldBinding[]; /** KPI so sánh kỳ: tính kèm số kỳ trước. */ compare?: KpiCompare } & Common)
   | ({ mode: "raw"; limit: number } & Common)
   | ({ mode: "stats"; column: string } & Omit<Common, "filters" | "selfId">);
 
 export type QueryResult =
-  | { mode: "aggregate"; table: AggregatedTable; /** số nhóm đầy đủ trước khi cắt */ groups: number; truncated: boolean; matched: number }
+  | { mode: "aggregate"; table: AggregatedTable; /** số nhóm đầy đủ trước khi cắt */ groups: number; truncated: boolean; matched: number; compare?: CompareResult | null }
   | { mode: "raw"; columns: string[]; rows: Cell[][]; matched: number }
   | {
       mode: "stats";
@@ -53,6 +54,7 @@ export function runQuery(rows: Row[], spec: QuerySpec): QueryResult {
       if (agg) for (const r of agg.refs) used.add(r);
     }
   }
+  if (spec.mode === "aggregate" && spec.compare) used.add(spec.compare.dateColumn);
   if (spec.mode === "stats") used.add(spec.column);
   if (spec.mode !== "stats") for (const f of spec.filters) used.add(f.column);
   const needsCalc = spec.mode === "raw" ? set.rowFields.length > 0 : set.rowFields.some((f) => used.has(f.name));
@@ -89,5 +91,8 @@ export function runQuery(rows: Row[], spec: QuerySpec): QueryResult {
     groups,
     truncated,
     matched: filtered.length,
+    ...(spec.compare && spec.metrics[0]
+      ? { compare: computeCompare(data, spec.filters, spec.selfId, spec.metrics[0], spec.compare, set) }
+      : {}),
   };
 }

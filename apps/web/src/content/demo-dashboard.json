@@ -1,0 +1,1759 @@
+{
+ "name": "Youtube Analysis",
+ "exportedAt": "2026-11-09T07:53:24.548Z",
+ "doc": {
+  "id": "demo",
+  "nav": {
+   "bold": false,
+   "show": true,
+   "width": 200,
+   "radius": 8,
+   "fontSize": 14,
+   "showTitle": true,
+   "textColor": "#cbd5e1",
+   "background": "#0f172a",
+   "transition": "fade",
+   "activeColor": "#ffffff",
+   "activeBackground": "#2d5794"
+  },
+  "name": "Youtube Analysis",
+  "pages": [
+   {
+    "id": "page-1",
+    "icon": "home",
+    "name": "Overview",
+    "background": "#f1f4f9"
+   },
+   {
+    "id": "pg_q6ts6l",
+    "icon": "settings",
+    "name": "Correlation"
+   }
+  ],
+  "theme": {
+   "mode": "light",
+   "palette": []
+  },
+  "canvas": {
+   "width": 1920,
+   "height": 1080,
+   "background": "#f1f4f9"
+  },
+  "filters": [],
+  "sources": [
+   {
+    "id": "26d41e76-1055-4f59-b0ae-8d65bb6a0070",
+    "type": "google_sheets",
+    "columns": [
+     {
+      "name": "Content",
+      "type": "string"
+     },
+     {
+      "name": "Video title",
+      "type": "string"
+     },
+     {
+      "name": "Video publish time",
+      "type": "string"
+     },
+     {
+      "name": "Publish time",
+      "type": "date"
+     },
+     {
+      "name": "Content type",
+      "type": "string"
+     },
+     {
+      "name": "Duration",
+      "type": "number"
+     },
+     {
+      "name": "Engaged views",
+      "type": "number"
+     },
+     {
+      "name": "Average view duration",
+      "type": "number",
+      "unit": "giây"
+     },
+     {
+      "name": "Average percentage viewed (%)",
+      "type": "number"
+     },
+     {
+      "name": "Stayed to watch (%)",
+      "type": "number"
+     },
+     {
+      "name": "Unique viewers",
+      "type": "string"
+     },
+     {
+      "name": "Unique reach",
+      "type": "number"
+     },
+     {
+      "name": "Views (co-viewed)",
+      "type": "number"
+     },
+     {
+      "name": "Subscribers gained",
+      "type": "number"
+     },
+     {
+      "name": "Subscribers lost",
+      "type": "number"
+     },
+     {
+      "name": "Likes",
+      "type": "number"
+     },
+     {
+      "name": "Dislikes",
+      "type": "number"
+     },
+     {
+      "name": "Likes (vs. dislikes) (%)",
+      "type": "number"
+     },
+     {
+      "name": "Shares",
+      "type": "number"
+     },
+     {
+      "name": "Comments added",
+      "type": "number"
+     },
+     {
+      "name": "Views",
+      "type": "number"
+     },
+     {
+      "name": "Watch time (hours)",
+      "type": "number"
+     },
+     {
+      "name": "Subscribers",
+      "type": "number"
+     },
+     {
+      "name": "Thumbnail impressions",
+      "type": "number"
+     },
+     {
+      "name": "Thumbnail click-through rate (%)",
+      "type": "number"
+     }
+    ],
+    "sheetName": "Youtube Analysis › Dữ liệu trong bảng",
+    "spreadsheetId": ""
+   },
+   {
+    "id": "sample",
+    "name": "Dữ liệu mẫu bán hàng",
+    "type": "sample",
+    "columns": [
+     {
+      "name": "Ngày",
+      "type": "date"
+     },
+     {
+      "name": "Tháng",
+      "type": "string"
+     },
+     {
+      "name": "Khu vực",
+      "type": "string"
+     },
+     {
+      "name": "Kênh",
+      "type": "string"
+     },
+     {
+      "name": "Doanh thu",
+      "type": "number",
+      "unit": "đồng"
+     },
+     {
+      "name": "Đơn hàng",
+      "type": "number",
+      "unit": "đơn"
+     },
+     {
+      "name": "Lượt truy cập",
+      "type": "number",
+      "unit": "lượt"
+     }
+    ]
+   }
+  ],
+  "widgets": [
+   {
+    "h": 160,
+    "w": 160,
+    "x": 37,
+    "y": 22,
+    "z": 0,
+    "id": "w_tu2ufze",
+    "style": {
+     "border": false,
+     "radius": 12
+    },
+    "config": {
+     "fit": "cover",
+     "url": "/img/demo/img-1.webp",
+     "kind": "image"
+    },
+    "hidden": false,
+    "locked": false,
+    "rotation": 0
+   },
+   {
+    "h": 91,
+    "w": 1546,
+    "x": 287,
+    "y": 40,
+    "z": 1,
+    "id": "w_flmge3x",
+    "style": {
+     "border": true,
+     "radius": 12,
+     "background": "#ffffff",
+     "borderColor": "#2d5794",
+     "borderWidth": 2
+    },
+    "config": {
+     "bold": true,
+     "kind": "text",
+     "text": "Youtube Analysis",
+     "align": "center",
+     "color": "#2c5693",
+     "fontSize": 60,
+     "fontFamily": "Tahoma, sans-serif"
+    },
+    "hidden": false,
+    "locked": false,
+    "rotation": 0
+   },
+   {
+    "h": 159,
+    "w": 429,
+    "x": 30,
+    "y": 226,
+    "z": 2,
+    "id": "w_3eqemrt",
+    "style": {
+     "border": true,
+     "radius": 12,
+     "background": "#ffffff",
+     "borderColor": "#2c5694",
+     "borderWidth": 2
+    },
+    "config": {
+     "kind": "kpi",
+     "align": "center",
+     "title": "Total Views",
+     "metric": {
+      "column": "Views",
+      "aggregation": "sum"
+     },
+     "sourceId": "26d41e76-1055-4f59-b0ae-8d65bb6a0070",
+     "titleStyle": {
+      "bold": true,
+      "color": "#4c73a9",
+      "fontSize": 40,
+      "fontFamily": "Tahoma, sans-serif"
+     },
+     "valueStyle": {
+      "color": "#2c5995",
+      "fontSize": 60,
+      "fontFamily": "Tahoma, sans-serif"
+     },
+     "compareToPrevious": false
+    },
+    "hidden": false,
+    "locked": false,
+    "rotation": 0
+   },
+   {
+    "h": 159,
+    "w": 429,
+    "x": 994,
+    "y": 226,
+    "z": 3,
+    "id": "w_i7unx5e",
+    "style": {
+     "border": true,
+     "radius": 12,
+     "background": "#ffffff",
+     "borderColor": "#2c5694",
+     "borderWidth": 2
+    },
+    "config": {
+     "kind": "kpi",
+     "align": "center",
+     "title": "Total Subcribers",
+     "metric": {
+      "column": "Subscribers",
+      "aggregation": "sum"
+     },
+     "sourceId": "26d41e76-1055-4f59-b0ae-8d65bb6a0070",
+     "titleStyle": {
+      "bold": true,
+      "color": "#4c73a9",
+      "fontSize": 40,
+      "fontFamily": "Tahoma, sans-serif"
+     },
+     "valueStyle": {
+      "color": "#2c5995",
+      "fontSize": 60,
+      "fontFamily": "Tahoma, sans-serif"
+     },
+     "compareToPrevious": false
+    },
+    "hidden": false,
+    "locked": false,
+    "rotation": 0
+   },
+   {
+    "h": 159,
+    "w": 501,
+    "x": 476,
+    "y": 226,
+    "z": 4,
+    "id": "w_k60dpt3",
+    "style": {
+     "border": true,
+     "radius": 12,
+     "background": "#ffffff",
+     "borderColor": "#2c5694",
+     "borderWidth": 2
+    },
+    "config": {
+     "kind": "kpi",
+     "align": "center",
+     "title": "Total Engaged Views",
+     "metric": {
+      "column": "Engaged views",
+      "aggregation": "sum"
+     },
+     "sourceId": "26d41e76-1055-4f59-b0ae-8d65bb6a0070",
+     "titleStyle": {
+      "bold": true,
+      "color": "#4c73a9",
+      "fontSize": 40,
+      "fontFamily": "Tahoma, sans-serif"
+     },
+     "valueStyle": {
+      "color": "#2c5995",
+      "fontSize": 60,
+      "fontFamily": "Tahoma, sans-serif"
+     },
+     "compareToPrevious": false
+    },
+    "hidden": false,
+    "locked": false,
+    "rotation": 0
+   },
+   {
+    "h": 299,
+    "w": 1873,
+    "x": 30,
+    "y": 440,
+    "z": 5,
+    "id": "w_kgchbua",
+    "style": {
+     "border": true,
+     "radius": 12,
+     "background": "#ffffff",
+     "borderColor": "#2c5995",
+     "borderWidth": 2
+    },
+    "config": {
+     "kind": "chart",
+     "title": "Subcribers Gained Over Time",
+     "format": {
+      "axis": {
+       "fontSize": 11,
+       "fontFamily": "Tahoma, sans-serif"
+      },
+      "title": {
+       "color": "#2c5995",
+       "fontSize": 30,
+       "fontFamily": "Tahoma, sans-serif"
+      },
+      "colors": {
+       "Tổng Subscribers gained": "#2c5995"
+      },
+      "showLegend": false,
+      "showDataLabels": false
+     },
+     "metrics": [
+      {
+       "column": "Subscribers gained",
+       "aggregation": "sum"
+      }
+     ],
+     "sourceId": "26d41e76-1055-4f59-b0ae-8d65bb6a0070",
+     "chartType": "line",
+     "dimensions": [
+      {
+       "column": "Video publish time"
+      }
+     ]
+    },
+    "hidden": false,
+    "locked": false,
+    "rotation": 0
+   },
+   {
+    "h": 280,
+    "w": 639,
+    "x": 30,
+    "y": 775,
+    "z": 6,
+    "id": "w_34qx80p",
+    "style": {
+     "border": true,
+     "radius": 12,
+     "background": "#ffffff",
+     "borderColor": "#2d5794",
+     "borderWidth": 2
+    },
+    "config": {
+     "kind": "chart",
+     "title": "Average Percentage Views by Content Type (%)",
+     "format": {
+      "axis": {
+       "bold": true,
+       "color": "#2c5995",
+       "fontSize": 14,
+       "fontFamily": "Tahoma, sans-serif"
+      },
+      "title": {
+       "color": "#2c5995",
+       "fontSize": 25,
+       "fontFamily": "Tahoma, sans-serif"
+      },
+      "colors": {
+       "Trung bình Average percentage viewed (%)": "#2c5995"
+      },
+      "barWidth": 125,
+      "showGrid": false,
+      "dataLabel": {
+       "bold": true,
+       "color": "#2c5995",
+       "fontSize": 20,
+       "fontFamily": "Tahoma, sans-serif"
+      },
+      "showLegend": false,
+      "showDataLabels": true
+     },
+     "metrics": [
+      {
+       "column": "Average percentage viewed (%)",
+       "aggregation": "avg"
+      }
+     ],
+     "sourceId": "26d41e76-1055-4f59-b0ae-8d65bb6a0070",
+     "chartType": "bar",
+     "dimensions": [
+      {
+       "column": "Content type"
+      }
+     ]
+    },
+    "hidden": false,
+    "locked": false,
+    "pageId": "page-1",
+    "rotation": 0
+   },
+   {
+    "h": 280,
+    "w": 1175,
+    "x": 726,
+    "y": 775,
+    "z": 7,
+    "id": "w_7qk1826",
+    "style": {
+     "border": true,
+     "radius": 12,
+     "background": "#ffffff",
+     "borderColor": "#2e5895",
+     "borderWidth": 2
+    },
+    "config": {
+     "kind": "chart",
+     "title": "Top Engaged View Rate (%)",
+     "format": {
+      "title": {
+       "color": "#2c5995",
+       "fontSize": 25,
+       "fontFamily": "Tahoma, sans-serif"
+      },
+      "tableCell": {
+       "bold": true,
+       "color": "#305895",
+       "fontSize": 13,
+       "fontFamily": "Tahoma, sans-serif"
+      },
+      "tableHeader": {
+       "color": "#2e5696",
+       "fontSize": 15,
+       "fontFamily": "Tahoma, sans-serif"
+      }
+     },
+     "metrics": [
+      {
+       "column": "Views",
+       "aggregation": "sum"
+      },
+      {
+       "column": "Engaged views",
+       "aggregation": "sum"
+      },
+      {
+       "column": "Engaged View Rate (EVR)",
+       "aggregation": "avg"
+      }
+     ],
+     "sourceId": "26d41e76-1055-4f59-b0ae-8d65bb6a0070",
+     "chartType": "table",
+     "dimensions": [
+      {
+       "column": "Video title"
+      }
+     ]
+    },
+    "hidden": false,
+    "locked": false,
+    "pageId": "page-1",
+    "rotation": 0
+   },
+   {
+    "h": 160,
+    "w": 160,
+    "x": 37,
+    "y": 22,
+    "z": 8,
+    "id": "w_mvyouak",
+    "style": {
+     "border": false,
+     "radius": 12
+    },
+    "config": {
+     "fit": "cover",
+     "url": "/img/demo/img-2.webp",
+     "kind": "image"
+    },
+    "hidden": false,
+    "locked": false,
+    "pageId": "pg_q6ts6l",
+    "rotation": 0
+   },
+   {
+    "h": 91,
+    "w": 1546,
+    "x": 287,
+    "y": 40,
+    "z": 9,
+    "id": "w_jjjxzqf",
+    "style": {
+     "border": true,
+     "radius": 12,
+     "background": "#ffffff",
+     "borderColor": "#2d5794",
+     "borderWidth": 2
+    },
+    "config": {
+     "bold": true,
+     "kind": "text",
+     "text": "Youtube Analysis",
+     "align": "center",
+     "color": "#2c5693",
+     "fontSize": 60,
+     "fontFamily": "Tahoma, sans-serif"
+    },
+    "hidden": false,
+    "locked": false,
+    "pageId": "pg_q6ts6l",
+    "rotation": 0
+   },
+   {
+    "h": 317,
+    "w": 498,
+    "x": 83,
+    "y": 223,
+    "z": 10,
+    "id": "w_st75678",
+    "style": {
+     "border": true,
+     "radius": 12,
+     "background": "#ffffff",
+     "borderColor": "#2c5995",
+     "borderWidth": 2
+    },
+    "config": {
+     "kind": "chart",
+     "title": "Views vs Engaged View Rate (EVR)",
+     "format": {
+      "axis": {
+       "bold": true,
+       "color": "#2c5995",
+       "fontSize": 14,
+       "fontFamily": "Tahoma, sans-serif"
+      },
+      "title": {
+       "color": "#2c5995",
+       "fontSize": 25,
+       "fontFamily": "Tahoma, sans-serif"
+      },
+      "colors": {
+       "Trung bình Engaged VIew Rate (EVR)": "#2c5995",
+       "Trung bình Engaged View Rate (EVR)": "#2e5694"
+      },
+      "showGrid": false,
+      "trendline": "linear",
+      "xAxisTitle": "Views",
+      "yAxisTitle": "Engaged VIew Rate (EVR)",
+      "showTrendInfo": false
+     },
+     "metrics": [
+      {
+       "column": "Views",
+       "aggregation": "sum"
+      },
+      {
+       "column": "Engaged View Rate (EVR)",
+       "aggregation": "avg"
+      },
+      {
+       "column": "Duration",
+       "aggregation": "sum"
+      }
+     ],
+     "sourceId": "26d41e76-1055-4f59-b0ae-8d65bb6a0070",
+     "chartType": "scatter",
+     "dimensions": [
+      {
+       "column": "Video title"
+      }
+     ]
+    },
+    "hidden": false,
+    "locked": false,
+    "pageId": "pg_q6ts6l",
+    "rotation": 0
+   },
+   {
+    "h": 317,
+    "w": 498,
+    "x": 711,
+    "y": 223,
+    "z": 11,
+    "id": "w_5dfu9ey",
+    "style": {
+     "border": true,
+     "radius": 12,
+     "background": "#ffffff",
+     "borderColor": "#2c5995",
+     "borderWidth": 2
+    },
+    "config": {
+     "kind": "chart",
+     "title": "Duration vs Engaged View Rate (EVR)",
+     "format": {
+      "axis": {
+       "bold": true,
+       "color": "#2c5995",
+       "fontSize": 14,
+       "fontFamily": "Tahoma, sans-serif"
+      },
+      "title": {
+       "color": "#2c5995",
+       "fontSize": 25,
+       "fontFamily": "Tahoma, sans-serif"
+      },
+      "colors": {
+       "Tổng Duration": "#2d5794",
+       "Tổng Engaged VIew Rate (EVR)": "#2f5794",
+       "Tổng Engaged View Rate (EVR)": "#2e5895",
+       "Trung bình Engaged VIew Rate (EVR)": "#2c5995"
+      },
+      "showGrid": false,
+      "trendline": "linear",
+      "xAxisTitle": "Duration",
+      "yAxisTitle": "Engaged VIew Rate (EVR)",
+      "showTrendInfo": false
+     },
+     "metrics": [
+      {
+       "column": "Duration",
+       "aggregation": "avg"
+      },
+      {
+       "column": "Engaged View Rate (EVR)",
+       "aggregation": "sum"
+      },
+      {
+       "column": "Subscribers gained",
+       "aggregation": "sum"
+      }
+     ],
+     "sourceId": "26d41e76-1055-4f59-b0ae-8d65bb6a0070",
+     "chartType": "scatter",
+     "dimensions": [
+      {
+       "column": "Video title"
+      }
+     ]
+    },
+    "hidden": false,
+    "locked": false,
+    "pageId": "pg_q6ts6l",
+    "rotation": 0
+   },
+   {
+    "h": 361,
+    "w": 549,
+    "x": 83,
+    "y": 639,
+    "z": 12,
+    "id": "w_kwa77gu",
+    "style": {
+     "border": true,
+     "radius": 12,
+     "background": "#ffffff",
+     "borderColor": "#2c5693",
+     "borderWidth": 2
+    },
+    "config": {
+     "kind": "chart",
+     "title": "Distribution of Engaged View Rate",
+     "format": {
+      "axis": {
+       "bold": true,
+       "color": "#2d5794",
+       "fontSize": 12,
+       "fontFamily": "Tahoma, sans-serif"
+      },
+      "title": {
+       "color": "#2c5693",
+       "fontSize": 25,
+       "fontFamily": "Tahoma, sans-serif"
+      },
+      "colors": {
+       "Số dòng": "#2e5696"
+      },
+      "histBins": 30,
+      "showGrid": false,
+      "showLegend": false,
+      "xAxisTitle": "Engaged View Rate (%)"
+     },
+     "metrics": [],
+     "sourceId": "26d41e76-1055-4f59-b0ae-8d65bb6a0070",
+     "chartType": "histogram",
+     "dimensions": [
+      {
+       "column": "Engaged View Rate (EVR)"
+      }
+     ]
+    },
+    "hidden": false,
+    "locked": false,
+    "pageId": "pg_q6ts6l",
+    "rotation": 0
+   },
+   {
+    "h": 159,
+    "w": 429,
+    "x": 1441,
+    "y": 226,
+    "z": 13,
+    "id": "w_acdorcm",
+    "style": {
+     "border": true,
+     "radius": 12,
+     "background": "#ffffff",
+     "borderColor": "#2c5694",
+     "borderWidth": 2
+    },
+    "config": {
+     "kind": "kpi",
+     "align": "center",
+     "title": "EVR (%)",
+     "metric": {
+      "column": "Engaged View Rate (EVR)",
+      "aggregation": "avg"
+     },
+     "sourceId": "26d41e76-1055-4f59-b0ae-8d65bb6a0070",
+     "titleStyle": {
+      "bold": true,
+      "color": "#4c73a9",
+      "fontSize": 40,
+      "fontFamily": "Tahoma, sans-serif"
+     },
+     "valueStyle": {
+      "color": "#2c5995",
+      "fontSize": 60,
+      "fontFamily": "Tahoma, sans-serif"
+     },
+     "compareToPrevious": false
+    },
+    "hidden": false,
+    "locked": false,
+    "pageId": "page-1",
+    "rotation": 0
+   },
+   {
+    "h": 317,
+    "w": 498,
+    "x": 1335,
+    "y": 223,
+    "z": 14,
+    "id": "w_pjvloy8",
+    "style": {
+     "border": true,
+     "radius": 12,
+     "background": "#ffffff",
+     "borderColor": "#2c5995",
+     "borderWidth": 2
+    },
+    "config": {
+     "kind": "chart",
+     "title": "Thumbnail Click vs Engaged View Rate (EVR)",
+     "format": {
+      "axis": {
+       "bold": true,
+       "color": "#2c5995",
+       "fontSize": 14,
+       "fontFamily": "Tahoma, sans-serif"
+      },
+      "title": {
+       "color": "#2c5995",
+       "fontSize": 25,
+       "fontFamily": "Tahoma, sans-serif"
+      },
+      "colors": {
+       "Tổng Duration": "#2d5794",
+       "Tổng Engaged VIew Rate (EVR)": "#2f5794",
+       "Tổng Engaged View Rate (EVR)": "#2e5895",
+       "Trung bình Engaged VIew Rate (EVR)": "#2c5995"
+      },
+      "showGrid": false,
+      "trendline": "linear",
+      "xAxisTitle": "Thumbnail Click",
+      "yAxisTitle": "Engaged VIew Rate (EVR)",
+      "showTrendInfo": false
+     },
+     "metrics": [
+      {
+       "column": "Thumbnail click-through rate (%)",
+       "aggregation": "avg"
+      },
+      {
+       "column": "Engaged View Rate (EVR)",
+       "aggregation": "sum"
+      },
+      {
+       "column": "Subscribers gained",
+       "aggregation": "sum"
+      }
+     ],
+     "sourceId": "26d41e76-1055-4f59-b0ae-8d65bb6a0070",
+     "chartType": "scatter",
+     "dimensions": [
+      {
+       "column": "Video title"
+      }
+     ]
+    },
+    "hidden": false,
+    "locked": false,
+    "pageId": "pg_q6ts6l",
+    "rotation": 0
+   },
+   {
+    "h": 361,
+    "w": 549,
+    "x": 1284,
+    "y": 639,
+    "z": 15,
+    "id": "w_hultbqt",
+    "style": {
+     "border": true,
+     "radius": 12,
+     "background": "#ffffff",
+     "borderColor": "#2c5693",
+     "borderWidth": 2
+    },
+    "config": {
+     "kind": "chart",
+     "title": "Distribution of Stayed to Watch",
+     "format": {
+      "axis": {
+       "bold": true,
+       "color": "#2d5794",
+       "fontSize": 12,
+       "fontFamily": "Tahoma, sans-serif"
+      },
+      "title": {
+       "color": "#2c5693",
+       "fontSize": 25,
+       "fontFamily": "Tahoma, sans-serif"
+      },
+      "colors": {
+       "Số dòng": "#2e5696"
+      },
+      "histBins": 30,
+      "showGrid": false,
+      "showLegend": false,
+      "xAxisTitle": "Stayed to Watch (%)"
+     },
+     "metrics": [],
+     "sourceId": "26d41e76-1055-4f59-b0ae-8d65bb6a0070",
+     "chartType": "histogram",
+     "dimensions": [
+      {
+       "column": "Stayed to watch (%)"
+      }
+     ]
+    },
+    "hidden": false,
+    "locked": false,
+    "pageId": "pg_q6ts6l",
+    "rotation": 0
+   },
+   {
+    "h": 361,
+    "w": 498,
+    "x": 711,
+    "y": 639,
+    "z": 16,
+    "id": "w_ydxqhqo",
+    "style": {
+     "border": true,
+     "radius": 12,
+     "background": "#ffffff",
+     "borderColor": "#2d5794",
+     "borderWidth": 2
+    },
+    "config": {
+     "kind": "chart",
+     "title": "Stayed to Watch by Content Type",
+     "format": {
+      "title": {
+       "color": "#2e5696",
+       "fontSize": 25,
+       "fontFamily": "Tahoma, sans-serif"
+      },
+      "colors": {
+       "Long": "#7689a7",
+       "Shorts": "#2c5693"
+      },
+      "legend": {
+       "bold": true,
+       "color": "#2d5794",
+       "fontSize": 19,
+       "fontFamily": "Tahoma, sans-serif"
+      },
+      "dataLabel": {
+       "bold": true,
+       "color": "#2d5794",
+       "fontSize": 25,
+       "fontFamily": "Tahoma, sans-serif"
+      }
+     },
+     "metrics": [
+      {
+       "column": "Engaged views",
+       "aggregation": "avg"
+      }
+     ],
+     "sourceId": "26d41e76-1055-4f59-b0ae-8d65bb6a0070",
+     "chartType": "pie",
+     "dimensions": [
+      {
+       "column": "Content type"
+      }
+     ]
+    },
+    "hidden": false,
+    "locked": false,
+    "pageId": "pg_q6ts6l",
+    "rotation": 0
+   }
+  ],
+  "schemaVersion": 1,
+  "calculatedFields": [
+   {
+    "id": "calc_v4zv0ie",
+    "name": "Engaged View Rate (EVR)",
+    "sourceId": "26d41e76-1055-4f59-b0ae-8d65bb6a0070",
+    "expression": "[Engaged views] / [Views] * 100"
+   }
+  ]
+ },
+ "rows": {
+  "26d41e76-1055-4f59-b0ae-8d65bb6a0070": [
+   {
+    "Likes": 27,
+    "Views": 1711,
+    "Shares": 1,
+    "Content": "AXlqbnKBKUg",
+    "Dislikes": 0,
+    "Duration": 94,
+    "Subscribers": 1,
+    "Video title": "Dừng ngay việc \"cắm đầu\" dịch từng chữ ở dạng bài \"đục lỗ\" trong đề thi lớp 10 #shortvideo #shorts",
+    "Content type": "Shorts",
+    "Publish time": "23/02/2026",
+    "Unique reach": 95,
+    "Engaged views": 620,
+    "Comments added": 3,
+    "Unique viewers": null,
+    "Subscribers lost": 0,
+    "Views (co-viewed)": 52,
+    "Subscribers gained": 1,
+    "Video publish time": "Feb 23, 2026",
+    "Watch time (hours)": 5.1479,
+    "Stayed to watch (%)": 28.56,
+    "Average view duration": 27,
+    "Thumbnail impressions": 2060,
+    "Likes (vs. dislikes) (%)": 100,
+    "Average percentage viewed (%)": 29.3,
+    "Thumbnail click-through rate (%)": 0.87
+   },
+   {
+    "Likes": 25,
+    "Views": 1666,
+    "Shares": 0,
+    "Content": "mzNVrlwnC6Q",
+    "Dislikes": 1,
+    "Duration": 84,
+    "Subscribers": 3,
+    "Video title": "\"Hack\" điểm dạng bài đọc hiểu trong kì thi lớp 10 trong chưa đầy 90s  | Tiếng Anh Không Khó #shorts",
+    "Content type": "Shorts",
+    "Publish time": "25/02/2026",
+    "Unique reach": 11,
+    "Engaged views": 609,
+    "Comments added": 0,
+    "Unique viewers": null,
+    "Subscribers lost": 0,
+    "Views (co-viewed)": 9,
+    "Subscribers gained": 3,
+    "Video publish time": "Feb 25, 2026",
+    "Watch time (hours)": 4.5777,
+    "Stayed to watch (%)": 29.68,
+    "Average view duration": 24,
+    "Thumbnail impressions": 400,
+    "Likes (vs. dislikes) (%)": 96.15,
+    "Average percentage viewed (%)": 28.77,
+    "Thumbnail click-through rate (%)": 0.75
+   },
+   {
+    "Likes": 37,
+    "Views": 1462,
+    "Shares": 3,
+    "Content": "-oir1KAqbh0",
+    "Dislikes": 0,
+    "Duration": 58,
+    "Subscribers": 8,
+    "Video title": "Cách phát âm đuôi ed: 3 quy tắc, đừng đọc looked là “lúc-kịt” | Tiếng Anh Không Khó #shorts",
+    "Content type": "Shorts",
+    "Publish time": "22/10/2026",
+    "Unique reach": 1310,
+    "Engaged views": 548,
+    "Comments added": 0,
+    "Unique viewers": null,
+    "Subscribers lost": 0,
+    "Views (co-viewed)": 1556,
+    "Subscribers gained": 8,
+    "Video publish time": "Oct 22, 2026",
+    "Watch time (hours)": 4.8304,
+    "Stayed to watch (%)": 27.82,
+    "Average view duration": 29,
+    "Thumbnail impressions": 669,
+    "Likes (vs. dislikes) (%)": 100,
+    "Average percentage viewed (%)": 51.32,
+    "Thumbnail click-through rate (%)": 3.74
+   },
+   {
+    "Likes": 15,
+    "Views": 830,
+    "Shares": 0,
+    "Content": "FCpGuqZU2QU",
+    "Dislikes": 0,
+    "Duration": 96,
+    "Subscribers": 5,
+    "Video title": "3 GIÂY ĂM TRỌN 1 ĐIỂM NGỮ ÂM THI LỚP 10! 😱 #shorts #shortvideo  | Tiếng Anh Không Khó",
+    "Content type": "Shorts",
+    "Publish time": "03/03/2026",
+    "Unique reach": 26,
+    "Engaged views": 522,
+    "Comments added": 0,
+    "Unique viewers": null,
+    "Subscribers lost": 0,
+    "Views (co-viewed)": 2,
+    "Subscribers gained": 5,
+    "Video publish time": "Mar 3, 2026",
+    "Watch time (hours)": 3.3292,
+    "Stayed to watch (%)": 50.58,
+    "Average view duration": 22,
+    "Thumbnail impressions": 463,
+    "Likes (vs. dislikes) (%)": 100,
+    "Average percentage viewed (%)": 22.96,
+    "Thumbnail click-through rate (%)": 1.3
+   },
+   {
+    "Likes": 14,
+    "Views": 1517,
+    "Shares": 3,
+    "Content": "9x9IcFIhKIQ",
+    "Dislikes": 0,
+    "Duration": 124,
+    "Subscribers": 5,
+    "Video title": "99% Học Sinh Mất Điểm Oan Bài Viết Lại Câu Tiếng Anh ❌ Xem Ngay Kẻo Lỡ NV1! #shorts #shortvideo",
+    "Content type": "Shorts",
+    "Publish time": "27/02/2026",
+    "Unique reach": 13,
+    "Engaged views": 509,
+    "Comments added": 0,
+    "Unique viewers": null,
+    "Subscribers lost": 0,
+    "Views (co-viewed)": 6,
+    "Subscribers gained": 5,
+    "Video publish time": "Feb 27, 2026",
+    "Watch time (hours)": 2829,
+    "Stayed to watch (%)": 22.67,
+    "Average view duration": 17,
+    "Thumbnail impressions": 402,
+    "Likes (vs. dislikes) (%)": 100,
+    "Average percentage viewed (%)": 13.97,
+    "Thumbnail click-through rate (%)": 1.24
+   },
+   {
+    "Likes": 4,
+    "Views": 402,
+    "Shares": 0,
+    "Content": "Mp23utXbLFk",
+    "Dislikes": 0,
+    "Duration": 90,
+    "Subscribers": 0,
+    "Video title": "1000 từ vựng vẫn không nói được tiếng Anh? Đây là lý do! | Tiếng Anh Không Khó #shortsvideo  #short",
+    "Content type": "Shorts",
+    "Publish time": "05/08/2026",
+    "Unique reach": 406,
+    "Engaged views": 161,
+    "Comments added": 0,
+    "Unique viewers": null,
+    "Subscribers lost": 0,
+    "Views (co-viewed)": 445,
+    "Subscribers gained": 0,
+    "Video publish time": "Aug 5, 2026",
+    "Watch time (hours)": 1.8908,
+    "Stayed to watch (%)": 22.12,
+    "Average view duration": 40,
+    "Thumbnail impressions": 74,
+    "Likes (vs. dislikes) (%)": 100,
+    "Average percentage viewed (%)": 44.56,
+    "Thumbnail click-through rate (%)": 1.35
+   },
+   {
+    "Likes": 16,
+    "Views": 986,
+    "Shares": 0,
+    "Content": "W0RpbYVnhX8",
+    "Dislikes": 1,
+    "Duration": 59,
+    "Subscribers": 0,
+    "Video title": "Xác định bản đồ câu phần word form của đề thi tuyển sinh 10 và THPTQG #shorts #shortvideo #wordform",
+    "Content type": "Shorts",
+    "Publish time": "16/02/2026",
+    "Unique reach": 37,
+    "Engaged views": 156,
+    "Comments added": 0,
+    "Unique viewers": null,
+    "Subscribers lost": 0,
+    "Views (co-viewed)": 12,
+    "Subscribers gained": 0,
+    "Video publish time": "Feb 16, 2026",
+    "Watch time (hours)": 1.1501,
+    "Stayed to watch (%)": 13.85,
+    "Average view duration": 19,
+    "Thumbnail impressions": 588,
+    "Likes (vs. dislikes) (%)": 94.12,
+    "Average percentage viewed (%)": 33.58,
+    "Thumbnail click-through rate (%)": 1.7
+   },
+   {
+    "Likes": 8,
+    "Views": 503,
+    "Shares": 3,
+    "Content": "vZib2nJV0sk",
+    "Dislikes": 0,
+    "Duration": 669,
+    "Subscribers": 5,
+    "Video title": "Giả thuyết input của Krashen: Học ngữ pháp mà không nghe được? | Tiếng Anh Không Khó",
+    "Content type": "Long",
+    "Publish time": "21/10/2026",
+    "Unique reach": 416,
+    "Engaged views": 134,
+    "Comments added": 0,
+    "Unique viewers": null,
+    "Subscribers lost": 0,
+    "Views (co-viewed)": 504,
+    "Subscribers gained": 5,
+    "Video publish time": "Oct 21, 2026",
+    "Watch time (hours)": 8.0791,
+    "Stayed to watch (%)": null,
+    "Average view duration": 213,
+    "Thumbnail impressions": 3347,
+    "Likes (vs. dislikes) (%)": 100,
+    "Average percentage viewed (%)": 31.87,
+    "Thumbnail click-through rate (%)": 2.99
+   },
+   {
+    "Likes": 12,
+    "Views": 349,
+    "Shares": 0,
+    "Content": "B6Yknu57Ytc",
+    "Dislikes": 0,
+    "Duration": 58,
+    "Subscribers": 0,
+    "Video title": "Cách dùng for và since: đừng nói “since two years” nữa! #shorts",
+    "Content type": "Shorts",
+    "Publish time": "05/11/2026",
+    "Unique reach": 327,
+    "Engaged views": 111,
+    "Comments added": 1,
+    "Unique viewers": null,
+    "Subscribers lost": 0,
+    "Views (co-viewed)": 370,
+    "Subscribers gained": 0,
+    "Video publish time": "Nov 5, 2026",
+    "Watch time (hours)": 0.6855,
+    "Stayed to watch (%)": 25.11,
+    "Average view duration": 19,
+    "Thumbnail impressions": 21,
+    "Likes (vs. dislikes) (%)": 100,
+    "Average percentage viewed (%)": 33.44,
+    "Thumbnail click-through rate (%)": 0
+   },
+   {
+    "Likes": 2,
+    "Views": 179,
+    "Shares": 3,
+    "Content": "TeKZvOWOvW8",
+    "Dislikes": 0,
+    "Duration": 776,
+    "Subscribers": 0,
+    "Video title": "Vì sao có động từ bất quy tắc trong tiếng Anh? Câu chuyện 1000 năm | Tiếng Anh Không Khó",
+    "Content type": "Long",
+    "Publish time": "24/10/2026",
+    "Unique reach": 158,
+    "Engaged views": 110,
+    "Comments added": 0,
+    "Unique viewers": null,
+    "Subscribers lost": 0,
+    "Views (co-viewed)": 185,
+    "Subscribers gained": 0,
+    "Video publish time": "Oct 24, 2026",
+    "Watch time (hours)": 6436,
+    "Stayed to watch (%)": null,
+    "Average view duration": 206,
+    "Thumbnail impressions": 4120,
+    "Likes (vs. dislikes) (%)": 100,
+    "Average percentage viewed (%)": 26.58,
+    "Thumbnail click-through rate (%)": 1.46
+   },
+   {
+    "Likes": 4,
+    "Views": 415,
+    "Shares": 0,
+    "Content": "UHr-XHX8leo",
+    "Dislikes": 0,
+    "Duration": 60,
+    "Subscribers": 0,
+    "Video title": "Người Việt Hay Sai #2: Cách phát âm i ngắn /ɪ/ và i dài /iː/ (ship – sheep) | Tiếng Anh Không Khó",
+    "Content type": "Shorts",
+    "Publish time": "29/10/2026",
+    "Unique reach": 402,
+    "Engaged views": 98,
+    "Comments added": 0,
+    "Unique viewers": null,
+    "Subscribers lost": 0,
+    "Views (co-viewed)": 436,
+    "Subscribers gained": 0,
+    "Video publish time": "Oct 29, 2026",
+    "Watch time (hours)": 0.6389,
+    "Stayed to watch (%)": 17.79,
+    "Average view duration": 20,
+    "Thumbnail impressions": 124,
+    "Likes (vs. dislikes) (%)": 100,
+    "Average percentage viewed (%)": 33.44,
+    "Thumbnail click-through rate (%)": 1.61
+   },
+   {
+    "Likes": 7,
+    "Views": 265,
+    "Shares": 1,
+    "Content": "59Se8AKqzCU",
+    "Dislikes": 0,
+    "Duration": 55,
+    "Subscribers": 0,
+    "Video title": "Trọng âm câu tiếng Anh đừng đọc đều từng chữ nữa! | Tiếng Anh Không Khó #shorts #tienganhkhongkho",
+    "Content type": "Shorts",
+    "Publish time": "02/11/2026",
+    "Unique reach": 241,
+    "Engaged views": 95,
+    "Comments added": 0,
+    "Unique viewers": null,
+    "Subscribers lost": 0,
+    "Views (co-viewed)": 285,
+    "Subscribers gained": 0,
+    "Video publish time": "Nov 2, 2026",
+    "Watch time (hours)": 0.8219,
+    "Stayed to watch (%)": 31.35,
+    "Average view duration": 28,
+    "Thumbnail impressions": 92,
+    "Likes (vs. dislikes) (%)": 100,
+    "Average percentage viewed (%)": 52.48,
+    "Thumbnail click-through rate (%)": 2.17
+   },
+   {
+    "Likes": 10,
+    "Views": 230,
+    "Shares": 0,
+    "Content": "9StKWXrGQb4",
+    "Dislikes": 0,
+    "Duration": 61,
+    "Subscribers": 0,
+    "Video title": "Phân biệt make và do: make = tạo ra, do = thực hiện việc | Tiếng Anh Không Khó #shorts",
+    "Content type": "Shorts",
+    "Publish time": "20/10/2026",
+    "Unique reach": 220,
+    "Engaged views": 92,
+    "Comments added": 0,
+    "Unique viewers": null,
+    "Subscribers lost": 0,
+    "Views (co-viewed)": 267,
+    "Subscribers gained": 0,
+    "Video publish time": "Oct 20, 2026",
+    "Watch time (hours)": 0.8188,
+    "Stayed to watch (%)": 23.76,
+    "Average view duration": 30,
+    "Thumbnail impressions": 75,
+    "Likes (vs. dislikes) (%)": 100,
+    "Average percentage viewed (%)": 49.37,
+    "Thumbnail click-through rate (%)": 1.33
+   },
+   {
+    "Likes": 7,
+    "Views": 191,
+    "Shares": 0,
+    "Content": "iVJt2R_JcRg",
+    "Dislikes": 0,
+    "Duration": 50,
+    "Subscribers": 1,
+    "Video title": "Cách dùng unless: đừng nói “unless you don't” nữa! | Tiếng Anh Không Khó #shorts",
+    "Content type": "Shorts",
+    "Publish time": "04/11/2026",
+    "Unique reach": 182,
+    "Engaged views": 74,
+    "Comments added": 0,
+    "Unique viewers": null,
+    "Subscribers lost": 0,
+    "Views (co-viewed)": 197,
+    "Subscribers gained": 1,
+    "Video publish time": "Nov 4, 2026",
+    "Watch time (hours)": 0.534,
+    "Stayed to watch (%)": 33.04,
+    "Average view duration": 24,
+    "Thumbnail impressions": 57,
+    "Likes (vs. dislikes) (%)": 100,
+    "Average percentage viewed (%)": 48.19,
+    "Thumbnail click-through rate (%)": 7.02
+   },
+   {
+    "Likes": 6,
+    "Views": 221,
+    "Shares": 1,
+    "Content": "yBtFbiD3aEY",
+    "Dislikes": 0,
+    "Duration": 63,
+    "Subscribers": 1,
+    "Video title": "Người Việt Hay Sai #1: Cách phát âm đuôi s/es: /s/, /z/, /ɪz/ theo âm cuối #shorts #phatamtienganh",
+    "Content type": "Shorts",
+    "Publish time": "28/10/2026",
+    "Unique reach": 194,
+    "Engaged views": 70,
+    "Comments added": 0,
+    "Unique viewers": null,
+    "Subscribers lost": 0,
+    "Views (co-viewed)": 228,
+    "Subscribers gained": 1,
+    "Video publish time": "Oct 28, 2026",
+    "Watch time (hours)": 0.673,
+    "Stayed to watch (%)": 25.28,
+    "Average view duration": 32,
+    "Thumbnail impressions": 359,
+    "Likes (vs. dislikes) (%)": 100,
+    "Average percentage viewed (%)": 51.3,
+    "Thumbnail click-through rate (%)": 1.67
+   },
+   {
+    "Likes": 2,
+    "Views": 200,
+    "Shares": 1,
+    "Content": "YlXNhdUc4Es",
+    "Dislikes": 0,
+    "Duration": 682,
+    "Subscribers": 1,
+    "Video title": "Tiếng Anh Anh và Anh Mỹ: vì sao hai giọng tách nhau? | Tiếng Anh Không Khó",
+    "Content type": "Long",
+    "Publish time": "17/10/2026",
+    "Unique reach": 171,
+    "Engaged views": 66,
+    "Comments added": 1,
+    "Unique viewers": null,
+    "Subscribers lost": 0,
+    "Views (co-viewed)": 203,
+    "Subscribers gained": 1,
+    "Video publish time": "Oct 17, 2026",
+    "Watch time (hours)": 3.3473,
+    "Stayed to watch (%)": null,
+    "Average view duration": 178,
+    "Thumbnail impressions": 1682,
+    "Likes (vs. dislikes) (%)": 100,
+    "Average percentage viewed (%)": 26.18,
+    "Thumbnail click-through rate (%)": 2.26
+   },
+   {
+    "Likes": 4,
+    "Views": 126,
+    "Shares": 5,
+    "Content": "ilIXu4rFwt0",
+    "Dislikes": 0,
+    "Duration": 117,
+    "Subscribers": 0,
+    "Video title": "90% Người Học Tiếng Anh Bỏ Qua Cái Này 👀 | Tiếng Anh Không Khó #shorts #shortvideo",
+    "Content type": "Shorts",
+    "Publish time": "28/07/2026",
+    "Unique reach": 135,
+    "Engaged views": 55,
+    "Comments added": 1,
+    "Unique viewers": null,
+    "Subscribers lost": 0,
+    "Views (co-viewed)": 7,
+    "Subscribers gained": 0,
+    "Video publish time": "Jul 28, 2026",
+    "Watch time (hours)": 0.3017,
+    "Stayed to watch (%)": 17.97,
+    "Average view duration": 17,
+    "Thumbnail impressions": 97,
+    "Likes (vs. dislikes) (%)": 100,
+    "Average percentage viewed (%)": 15.38,
+    "Thumbnail click-through rate (%)": 1.03
+   },
+   {
+    "Likes": 3,
+    "Views": 103,
+    "Shares": 0,
+    "Content": "N7Sk11GhbEw",
+    "Dislikes": 0,
+    "Duration": 631,
+    "Subscribers": 0,
+    "Video title": "Tại sao nghe tiếng Anh không hiểu? Bí mật nhịp & ngữ điệu | Tiếng Anh Không Khó #tienganhkhongkho",
+    "Content type": "Long",
+    "Publish time": "31/10/2026",
+    "Unique reach": 81,
+    "Engaged views": 50,
+    "Comments added": 0,
+    "Unique viewers": null,
+    "Subscribers lost": 0,
+    "Views (co-viewed)": 104,
+    "Subscribers gained": 0,
+    "Video publish time": "Oct 31, 2026",
+    "Watch time (hours)": 4.0639,
+    "Stayed to watch (%)": null,
+    "Average view duration": 290,
+    "Thumbnail impressions": 1808,
+    "Likes (vs. dislikes) (%)": 100,
+    "Average percentage viewed (%)": 46.08,
+    "Thumbnail click-through rate (%)": 1.77
+   },
+   {
+    "Likes": 5,
+    "Views": 119,
+    "Shares": 0,
+    "Content": "4D7S1caNUM0",
+    "Dislikes": 0,
+    "Duration": 49,
+    "Subscribers": 0,
+    "Video title": "Cách dùng in on at chỉ thời gian: đừng nói “in Monday” | Tiếng Anh Không Khó #shorts",
+    "Content type": "Shorts",
+    "Publish time": "26/10/2026",
+    "Unique reach": 115,
+    "Engaged views": 43,
+    "Comments added": 0,
+    "Unique viewers": null,
+    "Subscribers lost": 0,
+    "Views (co-viewed)": 127,
+    "Subscribers gained": 0,
+    "Video publish time": "Oct 26, 2026",
+    "Watch time (hours)": 0.326,
+    "Stayed to watch (%)": 26.06,
+    "Average view duration": 24,
+    "Thumbnail impressions": 129,
+    "Likes (vs. dislikes) (%)": 100,
+    "Average percentage viewed (%)": 51.01,
+    "Thumbnail click-through rate (%)": 2.33
+   },
+   {
+    "Likes": 6,
+    "Views": 74,
+    "Shares": 1,
+    "Content": "GAFZdKdZARk",
+    "Dislikes": 0,
+    "Duration": 343,
+    "Subscribers": -1,
+    "Video title": "Vì sao chính tả tiếng Anh “nói dối” bạn? (Great Vowel Shift) | Tiếng Anh Không Khó",
+    "Content type": "Long",
+    "Publish time": "14/10/2026",
+    "Unique reach": 59,
+    "Engaged views": 39,
+    "Comments added": 0,
+    "Unique viewers": null,
+    "Subscribers lost": 1,
+    "Views (co-viewed)": 75,
+    "Subscribers gained": 0,
+    "Video publish time": "Oct 14, 2026",
+    "Watch time (hours)": 1.5346,
+    "Stayed to watch (%)": null,
+    "Average view duration": 139,
+    "Thumbnail impressions": 3402,
+    "Likes (vs. dislikes) (%)": 100,
+    "Average percentage viewed (%)": 40.77,
+    "Thumbnail click-through rate (%)": 0.79
+   },
+   {
+    "Likes": 7,
+    "Views": 38,
+    "Shares": 2,
+    "Content": "8PuEY8_cWaE",
+    "Dislikes": 0,
+    "Duration": 445,
+    "Subscribers": 1,
+    "Video title": "🎯 Chinh Phục Word Form – Bí Quyết Giành Trọn 1 5 Điểm Thi Tuyển Sinh 10 & THPTQG",
+    "Content type": "Long",
+    "Publish time": "15/02/2026",
+    "Unique reach": 5,
+    "Engaged views": 38,
+    "Comments added": 0,
+    "Unique viewers": null,
+    "Subscribers lost": 0,
+    "Views (co-viewed)": 3,
+    "Subscribers gained": 1,
+    "Video publish time": "Feb 15, 2026",
+    "Watch time (hours)": 0.5904,
+    "Stayed to watch (%)": null,
+    "Average view duration": 57,
+    "Thumbnail impressions": 237,
+    "Likes (vs. dislikes) (%)": 100,
+    "Average percentage viewed (%)": 12.84,
+    "Thumbnail click-through rate (%)": 7.59
+   },
+   {
+    "Likes": 7,
+    "Views": 35,
+    "Shares": 1,
+    "Content": "ePSLMp3l0Qg",
+    "Dislikes": 0,
+    "Duration": 385,
+    "Subscribers": 1,
+    "Video title": "Chuyên đề Ngữ âm & Quy tắc phát âm Tiếng Anh dễ nhớ nhất | Tiếng Anh Không Khó",
+    "Content type": "Long",
+    "Publish time": "19/02/2026",
+    "Unique reach": 8,
+    "Engaged views": 28,
+    "Comments added": 0,
+    "Unique viewers": null,
+    "Subscribers lost": 0,
+    "Views (co-viewed)": 10,
+    "Subscribers gained": 1,
+    "Video publish time": "Feb 19, 2026",
+    "Watch time (hours)": 0.8223,
+    "Stayed to watch (%)": null,
+    "Average view duration": 105,
+    "Thumbnail impressions": 499,
+    "Likes (vs. dislikes) (%)": 100,
+    "Average percentage viewed (%)": 27.43,
+    "Thumbnail click-through rate (%)": 4.81
+   },
+   {
+    "Likes": 6,
+    "Views": 291,
+    "Shares": 0,
+    "Content": "Ft51kXdvBrM",
+    "Dislikes": 0,
+    "Duration": 40,
+    "Subscribers": 0,
+    "Video title": "Bẫy Word Form \"One of the...\" khiến 90% học sinh mất điểm! ⚠️ #shorts  | Tiếng Anh Không Khó",
+    "Content type": "Shorts",
+    "Publish time": "19/02/2026",
+    "Unique reach": 5,
+    "Engaged views": 26,
+    "Comments added": 0,
+    "Unique viewers": null,
+    "Subscribers lost": 0,
+    "Views (co-viewed)": 1,
+    "Subscribers gained": 0,
+    "Video publish time": "Feb 19, 2026",
+    "Watch time (hours)": 0.1764,
+    "Stayed to watch (%)": 7.85,
+    "Average view duration": 14,
+    "Thumbnail impressions": 109,
+    "Likes (vs. dislikes) (%)": 100,
+    "Average percentage viewed (%)": 36.36,
+    "Thumbnail click-through rate (%)": 3.67
+   },
+   {
+    "Likes": 0,
+    "Views": 112,
+    "Shares": 0,
+    "Content": "VU_PrzbSkTo",
+    "Dislikes": 0,
+    "Duration": 59,
+    "Subscribers": 0,
+    "Video title": "Câu hỏi đuôi: 3 trường hợp đặc biệt hay ra thi | Người Việt Hay Sai #3 #shorts #tienganhkhongkho",
+    "Content type": "Shorts",
+    "Publish time": "30/10/2026",
+    "Unique reach": 100,
+    "Engaged views": 22,
+    "Comments added": 0,
+    "Unique viewers": null,
+    "Subscribers lost": 0,
+    "Views (co-viewed)": 115,
+    "Subscribers gained": 0,
+    "Video publish time": "Oct 30, 2026",
+    "Watch time (hours)": 0.1268,
+    "Stayed to watch (%)": 14.97,
+    "Average view duration": 16,
+    "Thumbnail impressions": 28,
+    "Likes (vs. dislikes) (%)": null,
+    "Average percentage viewed (%)": 27.7,
+    "Thumbnail click-through rate (%)": 0
+   },
+   {
+    "Likes": 6,
+    "Views": 267,
+    "Shares": 0,
+    "Content": "rrye24nmGb8",
+    "Dislikes": 1,
+    "Duration": 39,
+    "Subscribers": 0,
+    "Video title": "Mẹo word form dạng be + adv + adj | Tiếng Anh Không Khó #shortvideo #shorts  #wordform #hoctienganh",
+    "Content type": "Shorts",
+    "Publish time": "18/02/2026",
+    "Unique reach": 6,
+    "Engaged views": 22,
+    "Comments added": 0,
+    "Unique viewers": null,
+    "Subscribers lost": 0,
+    "Views (co-viewed)": 2,
+    "Subscribers gained": 0,
+    "Video publish time": "Feb 18, 2026",
+    "Watch time (hours)": 0.1491,
+    "Stayed to watch (%)": 8,
+    "Average view duration": 14,
+    "Thumbnail impressions": 148,
+    "Likes (vs. dislikes) (%)": 85.71,
+    "Average percentage viewed (%)": 37.28,
+    "Thumbnail click-through rate (%)": 2.03
+   },
+   {
+    "Likes": 1,
+    "Views": 52,
+    "Shares": 0,
+    "Content": "rcuet1DefeM",
+    "Dislikes": 0,
+    "Duration": 57,
+    "Subscribers": 2,
+    "Video title": "Cách đọc đuôi -ous: 90% người Việt đọc sai famous | Tiếng Anh Không Khó #shorts",
+    "Content type": "Shorts",
+    "Publish time": "15/10/2026",
+    "Unique reach": 43,
+    "Engaged views": 14,
+    "Comments added": 1,
+    "Unique viewers": null,
+    "Subscribers lost": 0,
+    "Views (co-viewed)": 56,
+    "Subscribers gained": 2,
+    "Video publish time": "Oct 15, 2026",
+    "Watch time (hours)": 0.0858,
+    "Stayed to watch (%)": 18.67,
+    "Average view duration": 18,
+    "Thumbnail impressions": 102,
+    "Likes (vs. dislikes) (%)": 100,
+    "Average percentage viewed (%)": 32.14,
+    "Thumbnail click-through rate (%)": 0.98
+   },
+   {
+    "Likes": 5,
+    "Views": 11,
+    "Shares": 0,
+    "Content": "UCRDbgU_I-g",
+    "Dislikes": 0,
+    "Duration": 459,
+    "Subscribers": 0,
+    "Video title": "\"Bí quyết diệt gọn\" dạng bài trọng âm (stress) trong kỳ thi tuyển sinh lớp 10 | Tiếng Anh Không Khó",
+    "Content type": "Long",
+    "Publish time": "22/02/2026",
+    "Unique reach": 3,
+    "Engaged views": 11,
+    "Comments added": 0,
+    "Unique viewers": null,
+    "Subscribers lost": 0,
+    "Views (co-viewed)": 2,
+    "Subscribers gained": 0,
+    "Video publish time": "Feb 22, 2026",
+    "Watch time (hours)": 0.4676,
+    "Stayed to watch (%)": null,
+    "Average view duration": 153,
+    "Thumbnail impressions": 140,
+    "Likes (vs. dislikes) (%)": 100,
+    "Average percentage viewed (%)": 33.34,
+    "Thumbnail click-through rate (%)": 3.57
+   },
+   {
+    "Likes": 0,
+    "Views": 31,
+    "Shares": 0,
+    "Content": "S6lhGFYuFkU",
+    "Dislikes": 0,
+    "Duration": 52,
+    "Subscribers": 0,
+    "Video title": "Viết lại câu so sánh: đừng giữ chữ “than” nữa! #shorts  #hoctienganh #tienganhkhongkho #learnenglish",
+    "Content type": "Shorts",
+    "Publish time": "06/11/2026",
+    "Unique reach": 22,
+    "Engaged views": 8,
+    "Comments added": 0,
+    "Unique viewers": null,
+    "Subscribers lost": 0,
+    "Views (co-viewed)": 35,
+    "Subscribers gained": 0,
+    "Video publish time": "Nov 6, 2026",
+    "Watch time (hours)": 0.1578,
+    "Stayed to watch (%)": 50,
+    "Average view duration": 69,
+    "Thumbnail impressions": 6,
+    "Likes (vs. dislikes) (%)": null,
+    "Average percentage viewed (%)": 133.41,
+    "Thumbnail click-through rate (%)": 0
+   }
+  ]
+ }
+}

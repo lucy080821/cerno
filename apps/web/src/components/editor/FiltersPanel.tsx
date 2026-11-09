@@ -7,7 +7,7 @@ import { widgetLabel } from "@/lib/editor/defaults";
 import { getRows } from "@/lib/editor/sample-data";
 import { useDataVersion, useIsRemote } from "@/lib/editor/data-store";
 import { calcDefsFor, useRemoteQuery } from "@/lib/editor/remote-query";
-import { dateBounds, distinctValues, numberRange } from "@/lib/editor/filters";
+import { dateBounds, DEFAULT_GRAINS, distinctValues, GRAIN_LABEL, numberRange } from "@/lib/editor/filters";
 import { columnsWithCalc, nonAggregateColumns } from "@/lib/editor/calc";
 import { Icon, Section, SelectField, TextField, Toggle } from "./fields";
 import { Spinner } from "@/components/Spinner";
@@ -18,7 +18,10 @@ const CONTROLS = [
   { value: "multiselect", label: "Chọn nhiều giá trị" },
   { value: "slider", label: "Khoảng số (từ – đến)" },
   { value: "date_range", label: "Khoảng ngày" },
+  { value: "grain", label: "Chọn cấp thời gian (Ngày/Tuần/Tháng…)" },
 ] as const;
+
+const ALL_GRAINS = Object.keys(GRAIN_LABEL) as Array<keyof typeof GRAIN_LABEL>;
 
 const NO_ROWS: Array<Record<string, never>> = [];
 const NO_OPTIONS: string[] = [];
@@ -34,7 +37,7 @@ export function FilterControl({ filter, compact = false }: { filter: Filter; com
   const calcFields = useEditor((st) => st.doc.calculatedFields);
   const stats = useRemoteQuery(
     filter.sourceId,
-    remote ? { mode: "stats", column: filter.column, calc: calcDefsFor(calcFields, filter.sourceId) } : null,
+    remote && filter.control !== "grain" ? { mode: "stats", column: filter.column, calc: calcDefsFor(calcFields, filter.sourceId) } : null,
     0,
   );
   const rows = useMemo(() => (remote ? NO_ROWS : getRows(filter.sourceId)), [remote, filter.sourceId, dataVersion]);
@@ -47,8 +50,25 @@ export function FilterControl({ filter, compact = false }: { filter: Filter; com
   const dates = remote ? (filter.control === "date_range" ? s0?.date ?? null : null) : localDates;
   const label = filter.label || filter.column;
   // Nguồn lớn: chưa có danh sách giá trị từ server thì hiện vòng quay thay vì ô trống.
-  if (remote && !s0 && !stats.error) {
+  if (remote && filter.control !== "grain" && !s0 && !stats.error) {
     return <div className={s.hint}><Spinner size={12} inline />{label}: đang tải…</div>;
+  }
+
+  if (filter.control === "grain") {
+    const grains = filter.grains?.length ? filter.grains : DEFAULT_GRAINS;
+    return (
+      <div className={compact ? s.fcCompact : s.fc}>
+        <span className={s.fcLabel}>{filter.label || "Xem theo"}</span>
+        <span className={s.grainSwitch} role="group" aria-label={filter.label || "Xem theo"}>
+          <button type="button" className={`${s.preset} ${!value?.values?.length ? s.presetOn : ""}`}
+            title="Giữ cấp thời gian đã đặt ở từng widget" onClick={() => setValue(filter.id, null)}>Mặc định</button>
+          {grains.map((g) => (
+            <button key={g} type="button" className={`${s.preset} ${value?.values?.[0] === g ? s.presetOn : ""}`}
+              onClick={() => setValue(filter.id, { values: [g] })}>{GRAIN_LABEL[g]}</button>
+          ))}
+        </span>
+      </div>
+    );
   }
 
   if (filter.control === "date_range") {
@@ -171,6 +191,27 @@ function FilterCard({ filter }: { filter: Filter }) {
       <SelectField label="Kiểu điều khiển" value={filter.control as (typeof CONTROLS)[number]["value"]}
         options={[...CONTROLS]}
         onChange={(v) => { patch({ control: v }); setValue(filter.id, null); }} />
+      {filter.control === "grain" && (
+        <>
+          <span className={s.label}>Cấp người xem được chọn</span>
+          <div className={s.targetList}>
+            {ALL_GRAINS.map((g) => {
+              const cur = filter.grains?.length ? filter.grains : DEFAULT_GRAINS;
+              return (
+                <label key={g} className={s.fcOption}>
+                  <input type="checkbox" checked={cur.includes(g)}
+                    onChange={(e) => {
+                      const next = e.target.checked ? ALL_GRAINS.filter((x) => cur.includes(x) || x === g) : cur.filter((x) => x !== g);
+                      if (next.length) patch({ grains: next });
+                    }} />
+                  {GRAIN_LABEL[g]}
+                </label>
+              );
+            })}
+          </div>
+          <p className={s.hint}>Bộ chọn này không lọc dòng, mà đổi cấp gom của mọi chiều thuộc cột «{filter.column}» (kể cả chiều đang để «Nguyên giá trị»). Người xem chọn «Mặc định» để về cài đặt riêng của từng widget.</p>
+        </>
+      )}
       <Toggle label="Chỉ áp cho một số widget" value={scoped}
         onChange={(on) => patch({ targets: on ? targetable.map((w) => w.id) : undefined })} />
       {scoped && (
@@ -203,12 +244,22 @@ export function FiltersPanel() {
   const setValue = useEditor((st) => st.setFilterValue);
   const dataVersion = useDataVersion();
   const source = doc.sources[0];
-  const used = new Set(doc.filters.map((f) => f.column));
+  const used = new Set(doc.filters.filter((f) => f.control !== "grain").map((f) => f.column));
+  const grainUsed = new Set(doc.filters.filter((f) => f.control === "grain").map((f) => f.column));
   // Cột gốc + trường tính toán theo dòng (trường tổng hợp không lọc được).
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const allCols = useMemo(() => (source ? nonAggregateColumns(columnsWithCalc(doc, source.id)) : []), [doc, source, dataVersion]);
   const free = allCols.filter((c) => !used.has(c.name));
+  const dateFree = allCols.filter((c) => c.type === "date" && !grainUsed.has(c.name));
   const active = Object.keys(values).length;
+
+  const addGrain = (column: string) => {
+    if (!source) return;
+    mutate((d) => ({
+      ...d,
+      filters: [...d.filters, { id: `f_${Math.random().toString(36).slice(2, 9)}`, sourceId: source.id, column, control: "grain", label: "Xem theo" }],
+    }));
+  };
 
   const add = (column: string) => {
     if (!source) return;
@@ -238,6 +289,12 @@ export function FiltersPanel() {
           <select className={s.input} value="" aria-label="Thêm bộ lọc" onChange={(e) => e.target.value && add(e.target.value)}>
             <option value="">+ Thêm bộ lọc theo cột…</option>
             {free.map((c) => <option key={c.name} value={c.name}>{c.name}</option>)}
+          </select>
+        )}
+        {source && dateFree.length > 0 && (
+          <select className={s.input} value="" aria-label="Thêm bộ chọn cấp thời gian" onChange={(e) => e.target.value && addGrain(e.target.value)}>
+            <option value="">+ Thêm bộ chọn Ngày/Tuần/Tháng cho cột…</option>
+            {dateFree.map((c) => <option key={c.name} value={c.name}>{c.name}</option>)}
           </select>
         )}
         {!source && <p className={s.hint}>Chưa có nguồn dữ liệu.</p>}

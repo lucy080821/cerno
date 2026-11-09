@@ -5,9 +5,9 @@ import { useEditor } from "@/lib/editor/store";
 import { parseDomains } from "@/lib/embed/domains";
 import { normalizeEmail } from "@/lib/embed/email";
 import {
-  disableLink, disableShare, enableLink, enableShare, getLink, getShare, iframeCode, invitePerson, invitedUrl,
+  disableLink, disableShare, enableLink, enableShare, getLink, getShare, iframeCode, invitePerson, changeRole, invitedUrl,
   listPeople, removePerson, rotateLink, rotateShare, saveShareDomains, shareUrl, viewUrl,
-  type AccessRole, type LinkState, type Person, type ShareState,
+  type AccessRole, type MailStatus, type LinkState, type Person, type ShareState,
 } from "@/lib/embed/api";
 import { Spinner } from "@/components/Spinner";
 import { useDialog } from "@/components/ui/DialogProvider";
@@ -48,6 +48,13 @@ function Loading() {
 
 const ROLE_LABEL: Record<AccessRole, string> = { viewer: "Chỉ xem", editor: "Được sửa" };
 
+/** Lý do không gửi được email: quyền vẫn đã được cấp, chủ gửi link thủ công. */
+const MAIL_FAIL: Record<NonNullable<MailStatus["reason"]>, string> = {
+  not_configured: "Đã cấp quyền nhưng chưa cấu hình gửi email trên máy chủ. Hãy gửi link bên dưới cho họ.",
+  rate_limited: "Đã cấp quyền nhưng gửi email quá nhiều trong một giờ, thử gửi lại sau. Hoặc gửi link bên dưới cho họ.",
+  send_failed: "Đã cấp quyền nhưng chưa gửi được email. Bấm \"Gửi lại\" hoặc gửi link bên dưới cho họ.",
+};
+
 /** Hook nhỏ: chạy một thao tác bất đồng bộ, theo dõi trạng thái bận và lỗi. */
 function useAction() {
   const [busy, setBusy] = useState(false);
@@ -76,7 +83,14 @@ function LinkTab({ dashboardId }: { dashboardId: string }) {
   const [people, setPeople] = useState<Person[] | null>(null);
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<AccessRole>("viewer");
+  /** Kết quả lần gửi email gần nhất: { to, ok, reason } để báo ngay dưới ô mời. */
+  const [mailNote, setMailNote] = useState<{ to: string; mail: MailStatus } | null>(null);
   const a = useAction();
+  const invite = (to: string, r: AccessRole) =>
+    a.run(() => invitePerson(dashboardId, to, r), (res) => {
+      setPeople(res.people);
+      setMailNote(res.mail ? { to, mail: res.mail } : null);
+    });
 
   useEffect(() => {
     let off = false;
@@ -133,12 +147,13 @@ function LinkTab({ dashboardId }: { dashboardId: string }) {
         <span className={s.label}>Mời người cụ thể (cần đăng nhập Google)</span>
         <p className={s.hint}>
           Nhập email Google của họ. <b>Chỉ xem</b>: xem và lọc. <b>Được sửa</b>: chỉnh sửa dashboard này (không thấy dashboard
-          hay nguồn dữ liệu khác của bạn, không chia sẻ tiếp được). Cerno không tự gửi email: hãy gửi link bên dưới cho họ.
+          hay nguồn dữ liệu khác của bạn, không chia sẻ tiếp được). Cerno sẽ gửi email mời kèm link tới họ; nếu email không tới, hãy gửi link bên dưới.
         </p>
         <form className={s.shareRow} onSubmit={(e) => {
           e.preventDefault();
           if (!normalized) return;
-          void a.run(() => invitePerson(dashboardId, normalized, role), (p) => { setPeople(p); setEmail(""); });
+          void invite(normalized, role);
+          setEmail("");
         }}>
           <input className={s.input} style={{ flex: 1, minWidth: 180 }} type="email" value={email} placeholder="ten@gmail.com"
             onChange={(e) => setEmail(e.target.value)} aria-label="Email người được mời" />
@@ -149,6 +164,11 @@ function LinkTab({ dashboardId }: { dashboardId: string }) {
           <button className={`${s.btn} ${s.btnActive}`} type="submit" disabled={a.busy || !normalized}>Mời</button>
         </form>
         {email.trim() && !normalized && <p className={s.calcError}>Email chưa đúng dạng.</p>}
+        {mailNote && (
+          mailNote.mail.sent
+            ? <p className={s.calcOk}>Đã gửi email mời tới {mailNote.to}.</p>
+            : <p className={s.calcWarn}>{MAIL_FAIL[mailNote.mail.reason ?? "send_failed"]}</p>
+        )}
 
         {people.length === 0 ? (
           <p className={s.hint}>Chưa mời ai.</p>
@@ -159,9 +179,13 @@ function LinkTab({ dashboardId }: { dashboardId: string }) {
                 <span className={s.personEmail} title={p.email}>{p.email}</span>
                 <select className={s.input} style={{ width: "auto" }} value={p.role} disabled={a.busy}
                   aria-label={`Quyền của ${p.email}`}
-                  onChange={(e) => void a.run(() => invitePerson(dashboardId, p.email, e.target.value as AccessRole), setPeople)}>
+                  onChange={(e) => void a.run(() => changeRole(dashboardId, p.email, e.target.value as AccessRole), setPeople)}>
                   {(Object.keys(ROLE_LABEL) as AccessRole[]).map((r) => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}
                 </select>
+                <button className={s.smallBtn} title="Gửi lại email mời" disabled={a.busy}
+                  onClick={() => void invite(p.email, p.role)}>
+                  Gửi lại
+                </button>
                 <button className={s.iconBtn} title="Thu hồi quyền" disabled={a.busy}
                   onClick={async () => {
                     const ok = await dialog.confirm({ title: "Thu hồi quyền?", message: `Thu hồi quyền truy cập của ${p.email}?`, confirmText: "Thu hồi", tone: "danger" });

@@ -1,3 +1,4 @@
+import { LangSwitch } from "@/components/i18n/LangSwitch";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -48,6 +49,7 @@ export default async function DashboardsPage() {
       <header className={styles.top}>
         <Link href="/" className={styles.brand}><Brand size={26} tone="strong" /></Link>
         <div className={styles.user}>
+          <LangSwitch />
           <span>{name}</span>
           <Link href="/account" className={styles.accountLink}>Tài khoản</Link>
           <SignOutButton />

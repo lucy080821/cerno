@@ -22,7 +22,7 @@ export function stepPage(dir: 1 | -1) {
  * Thanh danh sách trang bên trái, hiện khi xem trước / toàn màn hình (và trong khung xem thử ở bảng Thiết lập).
  * Toàn bộ giao diện (màu, cỡ chữ, bo góc, độ rộng) lấy từ `doc.nav`, người dùng chỉnh được.
  */
-export function PageNav({ embedded = false }: { embedded?: boolean }) {
+export function PageNav({ embedded = false, keyboardHint = true }: { embedded?: boolean; keyboardHint?: boolean }) {
   const doc = useEditor((st) => st.doc);
   const pageId = useEditor((st) => resolvePageId(st.doc, st.pageId));
   const setPage = useEditor((st) => st.setPage);
@@ -75,7 +75,7 @@ export function PageNav({ embedded = false }: { embedded?: boolean }) {
           </li>
         ))}
       </ul>
-      <div className={s.pageNavFoot}>{pages.length} trang · ← → để chuyển</div>
+      <div className={s.pageNavFoot}>{pages.length} trang{keyboardHint ? " · ← → để chuyển" : ""}</div>
     </nav>
   );
 }

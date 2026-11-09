@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { ChartConfig, ChartFormat, FieldBinding, TextStyle, Widget, WidgetConfig } from "@dashboard/schema";
+import type { ChartConfig, ChartFormat, FieldBinding, KpiCompare, TextStyle, Widget, WidgetConfig } from "@dashboard/schema";
 import {
   AGG_LABEL, CHART_SPECS, CHART_TYPE_ORDER, chartColorKeys, chartColorKeysFromTable, chartFields, clampFields, defaultAxisTitles, resolveFormat,
   resolveSeriesColors,
@@ -79,6 +79,54 @@ function AlignOrder({ single }: { single: boolean }) {
   );
 }
 
+function KpiCompareSection({
+  cfg, columns, onChange,
+}: {
+  cfg: Extract<WidgetConfig, { kind: "kpi" }>;
+  columns: Array<{ name: string; type: string; aggregate?: boolean }>;
+  onChange: (p: Record<string, unknown>) => void;
+}) {
+  const dateCols = columns.filter((c) => c.type === "date" && !c.aggregate);
+  const cmp = cfg.compare;
+  const set = (p: Partial<KpiCompare>) => cmp && onChange({ compare: { ...cmp, ...p } });
+  return (
+    <Section title="So sánh với kỳ khác">
+      <Toggle label="Hiện mức tăng/giảm" value={!!cmp}
+        onChange={(on) => {
+          if (!on) return onChange({ compare: undefined });
+          if (!dateCols[0]) return;
+          onChange({ compare: { to: "prev_period", dateColumn: dateCols[0].name, grain: "month", show: "percent", goodWhen: "up", toDate: true } });
+        }} />
+      {!cmp && dateCols.length === 0 && <p className={s.hint}>Nguồn dữ liệu này chưa có cột kiểu ngày nên chưa so sánh kỳ được.</p>}
+      {cmp && (
+        <>
+          <SelectField label="So với" value={cmp.to}
+            options={[{ value: "prev_period", label: "Kỳ trước" }, { value: "prev_year", label: "Cùng kỳ năm ngoái" }]}
+            onChange={(v) => set({ to: v })} />
+          <SelectField label="Cột ngày" value={cmp.dateColumn}
+            options={dateCols.map((c) => ({ value: c.name, label: c.name }))}
+            onChange={(v) => set({ dateColumn: v })} />
+          <SelectField label="Độ dài một kỳ" value={cmp.grain}
+            options={[{ value: "day", label: "Ngày" }, { value: "week", label: "Tuần" }, { value: "month", label: "Tháng" }, { value: "quarter", label: "Quý" }, { value: "year", label: "Năm" }]}
+            onChange={(v) => set({ grain: v })} />
+          <SelectField label="Hiện dạng" value={cmp.show}
+            options={[{ value: "percent", label: "% tăng trưởng" }, { value: "diff", label: "Chênh lệch" }, { value: "pp", label: "Chênh lệch điểm % (pp)" }]}
+            onChange={(v) => set({ show: v })} />
+          <SelectField label="Tăng là" value={cmp.goodWhen}
+            options={[{ value: "up", label: "Tốt (xanh)" }, { value: "down", label: "Xấu (đỏ), ví dụ chi phí" }]}
+            onChange={(v) => set({ goodWhen: v })} />
+          <Toggle label="So cùng số ngày khi kỳ chưa trọn" value={cmp.toDate} onChange={(v) => set({ toDate: v })} />
+          <p className={s.hint}>
+            Có bộ lọc khoảng ngày trên cột này thì kỳ hiện tại chính là khoảng đó (kỳ trước = khoảng liền kề cùng độ dài).
+            Không có thì lấy {cmp.grain === "day" ? "ngày" : cmp.grain === "week" ? "tuần" : cmp.grain === "month" ? "tháng" : cmp.grain === "quarter" ? "quý" : "năm"} chứa
+            ngày mới nhất trong dữ liệu. Bộ lọc khoảng ngày trên cột này không làm rỗng kỳ so sánh.
+          </p>
+        </>
+      )}
+    </Section>
+  );
+}
+
 function BindingRow({
   binding, columns, metric, onChange, onRemove, role,
 }: {
@@ -110,6 +158,22 @@ function BindingRow({
         <button className={s.iconBtn} title="Bỏ trường" onClick={onRemove}><Icon name="close" size={12} /></button>
       )}
     </div>
+    {!metric && cols.find((c) => c.name === binding.column)?.type === "date" && (
+      <SelectField label="Gom ngày theo" value={binding.grain ?? ""}
+        options={[
+          { value: "", label: "Nguyên giá trị" },
+          { value: "day", label: "Ngày" },
+          { value: "week", label: "Tuần (2025-W36)" },
+          { value: "month", label: "Tháng-năm (2025-03)" },
+          { value: "quarter", label: "Quý-năm (2025-Q1)" },
+          { value: "year", label: "Năm" },
+          { value: "month_of_year", label: "Tháng trong năm (gộp mọi năm)" },
+          { value: "weekday", label: "Thứ trong tuần" },
+          { value: "hour", label: "Ngày + giờ (cột cần có giờ)" },
+          { value: "hour_of_day", label: "Giờ trong ngày (gộp mọi ngày)" },
+        ]}
+        onChange={(v) => onChange({ ...binding, grain: v || undefined })} />
+    )}
     </>
   );
 }
@@ -215,6 +279,8 @@ export function PropertyPanel() {
           <BindingRow binding={cfg.metric} columns={columns} metric onChange={(b) => patchConfig({ metric: b })} />
         </Section>
       )}
+
+      {cfg.kind === "kpi" && <KpiCompareSection cfg={cfg} columns={columns} onChange={patchConfig} />}
 
       {cfg.kind === "kpi" && (
         <Section title="Định dạng chữ">

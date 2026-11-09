@@ -50,7 +50,7 @@ const WidgetBox = memo(function WidgetBox({
   );
 });
 
-export function Canvas() {
+export function Canvas({ wheel = "pan" }: { wheel?: "pan" | "page" } = {}) {
   const containerRef = useRef<HTMLDivElement>(null);
   const gesture = useRef<Gesture | null>(null);
   const spaceRef = useRef(false);
@@ -117,7 +117,8 @@ export function Canvas() {
   // --- cuộn chuột: Ctrl/⌘ + cuộn (hoặc pinch) = zoom, còn lại = pan -------------
   useEffect(() => {
     const el = containerRef.current;
-    if (!el) return;
+    // "page": canvas nằm giữa một trang dài (trang giới thiệu), cuộn chuột phải cuộn trang, không bắt sự kiện.
+    if (!el || wheel === "page") return;
     const onWheel = (e: WheelEvent) => {
       const st = useEditor.getState();
       // Khi xem trước: cuộn chuột trên bảng còn chỗ để cuộn thì cuộn bảng, không pan canvas.
@@ -141,7 +142,7 @@ export function Canvas() {
     };
     el.addEventListener("wheel", onWheel, { passive: false });
     return () => el.removeEventListener("wheel", onWheel);
-  }, []);
+  }, [wheel]);
 
   const toWorld = (clientX: number, clientY: number): Pt => {
     const r = containerRef.current!.getBoundingClientRect();

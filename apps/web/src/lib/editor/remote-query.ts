@@ -94,7 +94,10 @@ export function specForWidget(
 ): { sourceId: string; spec: QuerySpec } | null {
   const cfg = widget.config;
   if (cfg.kind === "kpi") {
-    return { sourceId: cfg.sourceId, spec: { mode: "aggregate", dims: [], metrics: [cfg.metric], filters, selfId: widget.id, calc } };
+    return {
+      sourceId: cfg.sourceId,
+      spec: { mode: "aggregate", dims: [], metrics: [cfg.metric], filters, selfId: widget.id, calc, ...(cfg.compare ? { compare: cfg.compare } : {}) },
+    };
   }
   if (cfg.kind !== "chart") return null;
   if (cfg.chartType === "table") {

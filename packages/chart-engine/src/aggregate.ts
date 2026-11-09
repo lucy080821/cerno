@@ -1,5 +1,7 @@
 import type { FieldBinding } from "@dashboard/schema";
+import { hourOf, toIsoDate } from "./filter";
 import { evalAggField, type CalcSet } from "./formula";
+import { grainLabel, grainSortKey } from "./period";
 
 export type Cell = string | number | boolean | null;
 export type Row = Record<string, Cell>;
@@ -119,6 +121,7 @@ export function aggregate(
     return planBins(nums, { bins: d.bins, width: d.binWidth, start: d.binStart });
   });
   const binned = dims.some(isBinned);
+  const order = new Map<string, string>(); // nhãn → khoá sắp xếp (chiều ngày có grain)
   if (binned && dims.length === 1 && plans[0]) {
     // Giữ cả khoảng trống (đếm 0) để hình dạng phân phối không bị đứt.
     for (const label of plans[0].labels) groups.set(label, { keys: [label], rows: [] });
@@ -127,6 +130,25 @@ export function aggregate(
     let skip = false;
     const keys = dims.map((d, i) => {
       const v = row[d.column] ?? null;
+      if (d.grain) {
+        const iso = toIsoDate(v);
+        if (!iso) {
+          skip = true;
+          return null;
+        }
+        let hour = 0;
+        if (d.grain === "hour" || d.grain === "hour_of_day") {
+          const h = hourOf(v);
+          if (h === null) {
+            skip = true; // ô chỉ có ngày, không có giờ
+            return null;
+          }
+          hour = h;
+        }
+        const label = grainLabel(iso, d.grain, hour);
+        if (d === dims[0] && !order.has(label)) order.set(label, grainSortKey(iso, d.grain, hour));
+        return label;
+      }
       if (!isBinned(d)) return v;
       const plan = plans[i];
       if (!plan || typeof v !== "number" || !Number.isFinite(v)) {
@@ -154,7 +176,14 @@ export function aggregate(
   return {
     dimLabels: dims.map((d) => bindingLabel(d, false)),
     metricLabels: metrics.map((m) => (aggField(m) ? m.label ?? m.column : bindingLabel(m, true))),
-    rows: [...groups.values()].map((g) => ({
+    rows: (dims[0]?.grain
+      ? [...groups.values()].sort((a, b) => {
+          const ka = order.get(String(a.keys[0])) ?? String(a.keys[0]);
+          const kb = order.get(String(b.keys[0])) ?? String(b.keys[0]);
+          return ka < kb ? -1 : ka > kb ? 1 : 0;
+        })
+      : [...groups.values()]
+    ).map((g) => ({
       keys: g.keys,
       values: metrics.map((m) => {
         const f = aggField(m);

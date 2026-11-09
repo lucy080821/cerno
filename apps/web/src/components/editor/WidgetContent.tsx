@@ -17,7 +17,10 @@ import {
   formatNumber,
   themeColors,
   titleCss,
+  computeCompare,
+  formatGrowth,
   type AggregatedTable,
+  type RowFilter,
   type CalcSet,
   type ChartTheme,
   type QueryResult,
@@ -27,7 +30,7 @@ import { getRows } from "@/lib/editor/sample-data";
 import { useData, useDataVersion, useIsRemote } from "@/lib/editor/data-store";
 import { calcDefsFor, specForWidget, useRemoteQuery } from "@/lib/editor/remote-query";
 import { Spinner } from "@/components/Spinner";
-import { toRowFilters } from "@/lib/editor/filters";
+import { toRowFilters, withGrainOverride } from "@/lib/editor/filters";
 import s from "./editor.module.css";
 
 // Chỉ nạp những phần ECharts thực sự dùng, và dùng SVG để chart vẫn nét khi zoom canvas.
@@ -123,7 +126,12 @@ function ChartView({ option, pick }: { option: Record<string, unknown>; pick?: P
 
   useEffect(() => {
     try {
-      chartRef.current?.setOption(option as EChartsOption, true);
+      // Tooltip gắn vào <body> để tràn ra ngoài khung chart/widget (nếu không sẽ bị cắt bởi overflow của khung).
+      const t = option.tooltip;
+      const withBodyTooltip = t && typeof t === "object" && !Array.isArray(t)
+        ? { ...option, tooltip: { ...(t as Record<string, unknown>), appendToBody: true } }
+        : option;
+      chartRef.current?.setOption(withBodyTooltip as EChartsOption, true);
     } catch (err) {
       // Không để lỗi vẽ của một chart làm sập cả editor.
       console.warn("Không vẽ được chart:", err);
@@ -320,8 +328,8 @@ function TableView({ widget, rows, theme, calc, remote, useRemote, mobile }: {
   );
 }
 
-function KpiView({ widget, rows, theme, mobile, calc, remote, useRemote }: {
-  widget: Widget; rows: Row[]; theme: ChartTheme; mobile?: MobileCtx; calc?: CalcSet; remote?: QueryResult | null; useRemote?: boolean;
+function KpiView({ widget, rows, allRows, filters, theme, mobile, calc, remote, useRemote }: {
+  widget: Widget; rows: Row[]; /** Dòng chưa lọc + bộ lọc đang áp: để tính kỳ so sánh. */ allRows: Row[]; filters: RowFilter[]; theme: ChartTheme; mobile?: MobileCtx; calc?: CalcSet; remote?: QueryResult | null; useRemote?: boolean;
 }) {
   const cfg = widget.config.kind === "kpi" ? widget.config : null;
   const c = themeColors(theme);
@@ -333,6 +341,14 @@ function KpiView({ widget, rows, theme, mobile, calc, remote, useRemote }: {
     },
     [cfg, rows, calc, remote, useRemote],
   );
+  const cmp = cfg?.compare;
+  const growth = useMemo(() => {
+    if (!cfg || !cmp) return null;
+    const res = useRemote
+      ? remote?.mode === "aggregate" ? remote.compare ?? null : null
+      : computeCompare(allRows, filters, widget.id, cfg.metric, cmp, calc);
+    return res ? { ...formatGrowth(res, cmp), label: res.label } : null;
+  }, [cfg, cmp, useRemote, remote, allRows, filters, widget.id, calc]);
   if (!cfg) return null;
   const size = Math.max(16, Math.min(widget.h * 0.38, widget.w * 0.2));
   return (
@@ -350,6 +366,27 @@ function KpiView({ widget, rows, theme, mobile, calc, remote, useRemote }: {
       >
         {formatCompact(value)}
       </div>
+      {growth && (
+        <div
+          className={s.kpiGrowth}
+          style={{
+            fontSize: mobile ? 12 : Math.max(11, Math.min(size * 0.38, 18)),
+            justifyContent: cfg.align === "center" ? "center" : cfg.align === "right" ? "flex-end" : "flex-start",
+          }}
+          title={growth.text ? undefined : "Chưa có dữ liệu kỳ so sánh"}
+        >
+          {growth.text ? (
+            <>
+              <span style={{ color: growth.tone === "good" ? "#16a34a" : growth.tone === "bad" ? "#dc2626" : c.muted, fontWeight: 600 }}>
+                {growth.dir === "up" ? "▲" : growth.dir === "down" ? "▼" : "▬"} {growth.text}
+              </span>
+              <span style={{ color: c.muted }}>{growth.label}</span>
+            </>
+          ) : (
+            <span style={{ color: c.muted }}>Chưa có dữ liệu {growth.label.replace("so với ", "")}</span>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -395,6 +432,7 @@ function WidgetContentInner({ widget, theme, mobile }: { widget: Widget; theme: 
   // Gauge/heatmap không có "mục" để bấm; treemap 2 tầng bấm vào ô con sẽ không khớp chiều đầu nên cũng tắt.
   const pickable = cfg.kind === "chart" && cfg.chartType !== "table" && cfg.chartType !== "gauge" && cfg.chartType !== "heatmap" &&
     cfg.chartType !== "histogram" && // mỗi cột là một khoảng, không khớp giá trị gốc của cột số
+    !cfg.dimensions[0]?.grain && // nhãn "2025-03" không khớp giá trị ngày gốc để lọc
     !(cfg.chartType === "treemap" && cfg.dimensions.length >= 2);
   const pickColumn = pickable && cfg.kind === "chart" ? cfg.dimensions[0]?.column : undefined;
   const highlight = useMemo(
@@ -467,7 +505,7 @@ function WidgetContentInner({ widget, theme, mobile }: { widget: Widget; theme: 
         </div>
       );
     case "kpi":
-      return <KpiView widget={widget} rows={rows} theme={theme} mobile={mobile} calc={calc} remote={remote.data} useRemote={isRemote} />;
+      return <KpiView widget={widget} rows={rows} allRows={allRows} filters={rowFilters} theme={theme} mobile={mobile} calc={calc} remote={remote.data} useRemote={isRemote} />;
     case "text":
       return (
         <div
@@ -499,13 +537,15 @@ function WidgetContentInner({ widget, theme, mobile }: { widget: Widget; theme: 
 function WidgetContentRoot(props: { widget: Widget; theme: ChartTheme; mobile?: MobileCtx }) {
   const { widget } = props;
   const isMobile = !!props.mobile;
-  const shown = useMemo(
-    () =>
-      isMobile && widget.config.kind === "chart"
-        ? { ...widget, config: { ...widget.config, format: mobileChartFormat(widget.config.format) } }
-        : widget,
-    [widget, isMobile],
-  );
+  // Bộ chọn cấp thời gian của người xem (Ngày/Tuần/Tháng…) đổi grain của chiều ngày trước khi vẽ.
+  const dashFilters = useEditor((st) => st.doc.filters);
+  const filterValues = useEditor((st) => st.filterValues);
+  const shown = useMemo(() => {
+    const w = withGrainOverride(widget, dashFilters, filterValues);
+    return isMobile && w.config.kind === "chart"
+      ? { ...w, config: { ...w.config, format: mobileChartFormat(w.config.format) } }
+      : w;
+  }, [widget, isMobile, dashFilters, filterValues]);
   return <WidgetContentInner {...props} widget={shown} />;
 }
 

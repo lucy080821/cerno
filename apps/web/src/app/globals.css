@@ -420,3 +420,6 @@ select option:checked {
 select option:disabled {
   color: #6b7794;
 }
+
+/* Đoạn chỉ có ý nghĩa với bản tiếng Việt (vd bản dịch của tuyên bố Google đã có bản gốc tiếng Anh) */
+html[lang="en"] [data-vi-only] { display: none; }

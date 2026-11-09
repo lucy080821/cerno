@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import type { Cell, Row } from "@dashboard/chart-engine";
+import { toIsoDate, type Cell, type Row } from "@dashboard/chart-engine";
 
 export type ColumnType = "string" | "number" | "date" | "boolean";
 export interface InferredColumn {
@@ -23,7 +23,6 @@ export const MAX_CELLS = 2_000_000;
 /** Số dòng dữ liệu tối đa cho một sheet có `columns` cột. */
 export const maxRowsFor = (columns: number) => Math.max(1, Math.min(MAX_ROWS, Math.floor(MAX_CELLS / Math.max(1, columns))));
 
-const DATE_ISO = /^\d{4}-\d{2}-\d{2}$/;
 const DURATION = /^\d{1,3}:[0-5]\d(:[0-5]\d)?$/;
 /** Ô điền chữ thay cho "không có dữ liệu": coi như rỗng khi đoán kiểu và khi lưu. */
 const PLACEHOLDER = /^(-|–|—|n\/a|na|null|none|#n\/a|#div\/0!|#value!|#ref!)$/i;
@@ -36,7 +35,6 @@ export function parseDuration(raw: string): number | null {
   const p = t.split(":").map(Number);
   return p.length === 3 ? p[0] * 3600 + p[1] * 60 + p[2] : p[0] * 60 + p[1];
 }
-const DATE_VN = /^\d{1,2}\/\d{1,2}\/\d{4}$/;
 
 /** "1.234.567" / "1,234.5" / "12%" / "1.200đ" → số. Trả null nếu không phải số. */
 export function parseNumber(raw: string): number | null {
@@ -62,7 +60,7 @@ export function parseNumber(raw: string): number | null {
 function cellKind(v: string): Kind {
   const t = v.trim();
   if (/^(true|false|đúng|sai)$/i.test(t)) return "boolean";
-  if (DATE_ISO.test(t) || DATE_VN.test(t)) return "date";
+  if (toIsoDate(t)) return "date";
   if (DURATION.test(t)) return "duration";
   if (parseNumber(t) !== null) return "number";
   return "string";
@@ -136,5 +134,6 @@ export function hashValues(values: string[][]): string {
   // Băm từng đoạn thay vì JSON.stringify cả mảng một lần: với hàng trăm nghìn dòng, chuỗi JSON khổng lồ làm tốn RAM.
   const h = createHash("sha256");
   for (let i = 0; i < values.length; i += 5000) h.update(JSON.stringify(values.slice(i, i + 5000)));
-  return h.update(`#${values.length}`).digest("hex");
+  // "t2": đổi cách nhận diện kiểu cột (ngày có giờ, "Sep 5, 2025"...) thì phải đồng bộ lại một lần để cập nhật kiểu cột.
+  return h.update(`#${values.length}#t2`).digest("hex");
 }

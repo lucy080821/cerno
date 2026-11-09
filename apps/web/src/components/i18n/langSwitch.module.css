@@ -1,0 +1,71 @@
+/* Màu lấy theo currentColor nên hợp cả nền tối lẫn sáng của từng trang. */
+.wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 3px 2px 8px;
+  border: 1px solid color-mix(in srgb, currentColor 28%, transparent);
+  border-radius: 999px;
+  font-size: 12px;
+  line-height: 1;
+  color: inherit;
+  background: color-mix(in srgb, currentColor 6%, transparent);
+}
+
+.globe {
+  flex: none;
+  margin-right: 4px;
+  opacity: 0.75;
+}
+
+.btn {
+  min-width: 30px;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  opacity: 0.65;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+}
+
+.btn:hover {
+  opacity: 1;
+}
+
+.btn:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 1px;
+}
+
+.on,
+.on:hover {
+  opacity: 1;
+  background: color-mix(in srgb, currentColor 22%, transparent);
+}
+
+/* Gọn cho thanh công cụ chật (editor): bỏ quả cầu, nút nhỏ lại, không co. */
+.compact {
+  flex: none;
+  padding: 2px;
+  gap: 0;
+}
+.compact .btn {
+  min-width: 26px;
+  padding: 5px 6px;
+  font-size: 11px;
+}
+
+.floating {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  z-index: 500000;
+  color: #e6eaf4;
+  background: rgba(18, 26, 43, 0.85);
+  backdrop-filter: blur(6px);
+}

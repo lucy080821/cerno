@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { site } from "@/lib/site";
+import { LangSwitch } from "@/components/i18n/LangSwitch";
 import { Brand } from "@/components/Brand";
 import s from "./legal.module.css";
 
@@ -14,6 +15,7 @@ export function LegalShell({ title, children }: { title: string; children: React
           <Link href="/privacy">Quyền riêng tư</Link>
           <Link href="/terms">Điều khoản</Link>
         </nav>
+        <LangSwitch />
       </header>
       <main className={s.article}>
         <h1>{title}</h1>
@@ -22,6 +24,7 @@ export function LegalShell({ title, children }: { title: string; children: React
       </main>
       <footer className={s.footer}>
         © {new Date().getFullYear()} {site.name} · Liên hệ: <a href={`mailto:${site.legal.contactEmail}`}>{site.legal.contactEmail}</a>
+        {site.legal.phone && <> · <a href={`tel:${site.legal.phone.replace(/[^+\d]/g, "")}`}>{site.legal.phone}</a></>}
       </footer>
     </div>
   );

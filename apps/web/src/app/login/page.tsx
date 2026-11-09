@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { LangSwitch } from "@/components/i18n/LangSwitch";
 import { Brand } from "@/components/Brand";
 import { safeNext } from "@/lib/auth/next";
 import { LoginButton } from "./LoginButton";
@@ -15,6 +16,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   const { error, deleted, next } = await searchParams;
   return (
     <main className={styles.wrap}>
+      <LangSwitch floating />
       <div className={styles.card}>
         <Link href="/" className={styles.brand}><Brand size={30} tone="strong" /></Link>
         <h1>Đăng nhập</h1>

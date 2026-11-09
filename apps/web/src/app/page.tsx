@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { BRAND, MAX_PAGES } from "@dashboard/schema";
 import { HeroScene } from "@/components/HeroScene";
 import { RevealController } from "@/components/landing/RevealController";
+import { DemoSlot } from "@/components/landing/DemoSlot";
 import { CountUp } from "@/components/landing/CountUp";
 import { FlowDiagram } from "@/components/landing/FlowDiagram";
 import { CircuitBackground } from "@/components/landing/CircuitBackground";
+import { LangSwitch } from "@/components/i18n/LangSwitch";
 import { Brand } from "@/components/Brand";
 import { site } from "@/lib/site";
 import { jsonLd, siteUrl } from "@/lib/seo";
@@ -313,6 +314,7 @@ export default function HomePage() {
             <a href="#bieu-do">Biểu đồ</a>
             <a href="#bao-mat">Bảo mật</a>
             <a href="#hoi-dap">Hỏi đáp</a>
+            <LangSwitch />
             <Link href="/login" className="btn btnGhost btnSm">Đăng nhập</Link>
             <Link href="/dashboards" className="btn btnPrimary btnSm">Dùng thử miễn phí</Link>
           </div>
@@ -348,24 +350,18 @@ export default function HomePage() {
           <span className={s.eyebrow}>Dashboard thật</span>
           <h2 data-rv className={s.h2} id="h-demo">Một báo cáo hoàn chỉnh, dựng từ Google Sheets bằng {site.name}</h2>
           <p data-rv className={s.lead}>
-            Đây là dashboard phân tích kênh YouTube: ba thẻ KPI, biểu đồ đường theo thời gian, biểu đồ cột và bảng có
-            thanh cuộn. Tất cả đặt tự do trên canvas, lấy số liệu trực tiếp từ một file Google Sheets.
+            Đây là dashboard phân tích kênh YouTube, thiết kế bằng chính {site.name} và lấy số liệu từ một file Google Sheets.
+            Bạn đang xem bản chạy thật: bấm vào một cột hay một lát để lọc các biểu đồ còn lại, chuyển giữa hai trang ở
+            thanh bên trái.
           </p>
           <div className={s.shotFloat}>
           <figure data-rv className={s.shot}>
             <div className={s.shotBar} aria-hidden>
               <i /><i /><i />
-              <span>Chế độ xem toàn màn hình</span>
+              <span>Dùng thử ngay: bấm vào biểu đồ, đổi trang ở thanh bên trái</span>
             </div>
-            <Image
-              src="/img/dashboard-demo.webp"
-              alt="Dashboard phân tích kênh YouTube tạo bằng Cerno gồm thẻ KPI tổng lượt xem, biểu đồ đường người đăng ký theo thời gian, biểu đồ cột và bảng video"
-              width={1667}
-              height={938}
-              sizes="(max-width: 1100px) 100vw, 1040px"
-              className={s.shotImg}
-            />
-            <figcaption>Ví dụ thực tế: dashboard phân tích kênh YouTube &quot;Tiếng Anh Không Khó&quot;, thiết kế hoàn toàn trong {site.name}.</figcaption>
+            <DemoSlot />
+            <figcaption>Ví dụ thực tế: dashboard phân tích kênh YouTube &quot;Tiếng Anh Không Khó&quot;, thiết kế hoàn toàn trong {site.name}. Bản dùng thử, số liệu chỉ để minh hoạ.</figcaption>
           </figure>
           </div>
         </section>
@@ -569,6 +565,7 @@ export default function HomePage() {
           </nav>
         </div>
         <p className={s.copy}>© {new Date().getFullYear()} {site.name}. {site.legal.operator}.</p>
+        <div className={s.footLang}><LangSwitch /></div>
       </footer>
     </>
   );

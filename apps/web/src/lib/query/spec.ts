@@ -1,4 +1,4 @@
-import { FieldBinding, z } from "@dashboard/schema";
+import { FieldBinding, KpiCompare, z } from "@dashboard/schema";
 import type { QuerySpec } from "@dashboard/chart-engine";
 
 /**
@@ -26,6 +26,7 @@ export const QuerySpecSchema = z.discriminatedUnion("mode", [
     mode: z.literal("aggregate"),
     dims: z.array(FieldBinding).max(3),
     metrics: z.array(FieldBinding).max(6),
+    compare: KpiCompare.optional(),
     filters,
     selfId: text(100).optional(),
     calc,

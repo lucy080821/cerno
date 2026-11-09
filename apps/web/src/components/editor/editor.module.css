@@ -143,8 +143,9 @@
 /* ---------- Thanh trên ---------- */
 .top {
   display: grid;
-  /* minmax(0,1fr): hai bên co lại thay vì tràn đè lên nhóm giữa (zoom, undo/redo). */
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  /* Bên trái co lại được (minmax 0); bên phải không bao giờ nhỏ hơn nội dung của nó (max-content), nên không tràn đè lên
+     nhóm giữa (zoom, undo/redo). Khi đủ chỗ thì hai bên bằng nhau và nhóm giữa nằm chính giữa. */
+  grid-template-columns: minmax(0, 1fr) auto minmax(max-content, 1fr);
   align-items: center;
   gap: 12px;
   padding: 0 12px;
@@ -910,6 +911,15 @@
 .kpiTitle {
   font-size: 12.5px;
   margin-bottom: 4px;
+}
+
+.kpiGrowth {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  margin-top: 2px;
+  line-height: 1.3;
 }
 
 .kpiValue {
@@ -2864,6 +2874,49 @@
 
 .rightShell {
   position: relative;
+  transition: width 0.2s ease;
+}
+
+.rightShellDragging {
+  transition: none;
+}
+
+.rightShellClosed {
+  border-left-color: transparent;
+}
+
+/* Vùng cắt: khi bảng thu về 0 thì nội dung bị cắt, nhưng nút và tay nắm kéo (nằm ngoài vùng này) vẫn thấy được */
+.rightClip {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* Giữ bề ngang cố định để nội dung không bị bóp méo trong lúc trượt */
+.rightInner {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* Nút ở mép trái bảng phải (đối xứng với nút của bảng trái) */
+.panelToggleRight {
+  left: auto;
+  right: 100%;
+  border: 1px solid var(--line);
+  border-right: 0;
+  border-radius: 10px 0 0 10px;
+}
+
+.panelToggleRight svg {
+  transform: rotate(-90deg);
+}
+
+.rightShellClosed .panelToggleRight svg {
+  transform: rotate(90deg);
 }
 
 /* Tay nắm kéo ở mép trái bảng phải */
@@ -2901,6 +2954,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .leftShell,
+  .rightShell,
   .panelToggle svg {
     transition: none;
   }
@@ -2931,3 +2985,22 @@
 .iconBtn { display: grid; place-items: center; height: 34px; border: 1px solid transparent; border-radius: 8px; background: transparent; color: var(--text); cursor: pointer; }
 .iconBtn:hover { background: rgba(255, 255, 255, 0.08); }
 .iconBtnOn, .iconBtnOn:hover { border-color: var(--brand-a, #6d5efc); background: rgba(109, 94, 252, 0.25); }
+
+/* Nút chuyển ngôn ngữ của trang nhúng (không có thanh tiêu đề): góc dưới bên trái */
+.embedLang { position: absolute; left: 12px; bottom: 12px; z-index: 20; color: var(--text); background: rgba(18, 26, 43, 0.85); }
+
+/* Bộ chọn cấp thời gian (Ngày/Tuần/Tháng…) của người xem */
+.grainSwitch {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.presetOn {
+  background: var(--brand-a, #6d5efc);
+  border-color: var(--brand-a, #6d5efc);
+  color: #fff;
+}
+
+/* Trình xem đặt trong một khung của trang khác (trang giới thiệu): theo khung cha, không theo chiều cao màn hình */
+.viewRootContained { height: 100%; background: transparent; }

@@ -79,21 +79,35 @@ export interface Person {
   role: AccessRole;
 }
 
-async function accessCall(id: string, init?: RequestInit): Promise<Person[]> {
+/** Kết quả gửi email mời (chỉ có khi yêu cầu gửi thư). */
+export interface MailStatus {
+  sent: boolean;
+  reason?: "not_configured" | "rate_limited" | "send_failed";
+}
+export interface AccessResult {
+  people: Person[];
+  mail?: MailStatus;
+}
+
+async function accessCall(id: string, init?: RequestInit): Promise<AccessResult> {
   const res = await apiFetch(`/api/dashboards/${id}/access`, {
     ...init,
     headers: { "content-type": "application/json", ...init?.headers },
   });
-  const json = (await res.json().catch(() => ({}))) as { people?: Person[]; error?: string };
+  const json = (await res.json().catch(() => ({}))) as { people?: Person[]; mail?: MailStatus; error?: string };
   if (!res.ok) throw new Error(json.error ?? "Có lỗi xảy ra, thử lại sau.");
-  return json.people ?? [];
+  return { people: json.people ?? [], mail: json.mail };
 }
 
-export const listPeople = (id: string) => accessCall(id);
+export const listPeople = (id: string) => accessCall(id).then((r) => r.people);
+/** Đổi quyền của người đã mời (không gửi email). */
+export const changeRole = (id: string, email: string, role: AccessRole) =>
+  accessCall(id, { method: "POST", body: JSON.stringify({ email, role }) }).then((r) => r.people);
+/** Mời (hoặc gửi lại lời mời): thêm/cập nhật quyền và gửi email kèm link (thư song ngữ Việt/Anh). */
 export const invitePerson = (id: string, email: string, role: AccessRole) =>
-  accessCall(id, { method: "POST", body: JSON.stringify({ email, role }) });
+  accessCall(id, { method: "POST", body: JSON.stringify({ email, role, notify: true }) });
 export const removePerson = (id: string, email: string) =>
-  accessCall(id, { method: "DELETE", body: JSON.stringify({ email }) });
+  accessCall(id, { method: "DELETE", body: JSON.stringify({ email }) }).then((r) => r.people);
 
 /** Link riêng cho người được mời (cần đăng nhập Google bằng đúng email đã mời). */
 export const invitedUrl = (origin: string, id: string, role: AccessRole) =>

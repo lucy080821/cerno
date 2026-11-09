@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { site } from "@/lib/site";
 import { siteUrl } from "@/lib/seo";
+import { I18nRoot } from "@/components/i18n/I18nRoot";
 import { DialogProvider } from "@/components/ui/DialogProvider";
 import "./globals.css";
 
@@ -31,6 +32,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="vi">
       {/* Extension trình duyệt (ColorZilla, Grammarly...) hay chèn attribute vào <body> trước khi React chạy. */}
       <body suppressHydrationWarning>
+        <I18nRoot />
         <DialogProvider>{children}</DialogProvider>
       </body>
     </html>

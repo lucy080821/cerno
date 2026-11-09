@@ -1,5 +1,6 @@
 "use client";
 
+import { LangSwitch } from "@/components/i18n/LangSwitch";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useDialog } from "@/components/ui/DialogProvider";
@@ -131,6 +132,7 @@ export function TopBar({ onMobile, onFullscreen, notify, canShare = true }: {
       </div>
 
       <div className={s.topRight}>
+        <LangSwitch compact />
         <RefreshData variant="bar" />
         <button className={s.btn} title="Toàn màn hình (F)" aria-label="Toàn màn hình" onClick={onFullscreen}>
           <Icon name="expand" size={14} /><span className={s.lblWide}>Toàn màn hình</span>

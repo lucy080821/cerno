@@ -4,6 +4,8 @@ import { applyAiActions, MAX_TOOL_CALLS_PER_TURN } from "./ai-actions";
 import { runShowChart, type ChartPreview } from "./ai-chart";
 import { wantsTools } from "./ai-intent";
 import { MAX_CONTEXT_LEVEL } from "./ai-context";
+import { tr } from "@/lib/i18n";
+import { useLang } from "@/lib/i18n/store";
 import { useEditor, type FilterValue } from "./store";
 
 export interface ChatAction {
@@ -189,6 +191,7 @@ export const useChat = create<ChatState>((set, get) => ({
             context: await getContext(Math.min(MAX_CONTEXT_LEVEL, baseLevel + shrink)),
             tools: intent && get().canEdit && shrink < 2,
             charts: intent && shrink < 3,
+            lang: useLang.getState().lang,
           });
           res = await fetch("/api/chat", {
             method: "POST",
@@ -296,7 +299,7 @@ export const useChat = create<ChatState>((set, get) => ({
           api.push({ role: "tool", tool_call_id: c.id, content: `${results[i]?.ok ? "OK" : "LỖI"}: ${results[i]?.message ?? "không rõ"}`.slice(0, 1800) });
         });
       }
-      patchReply((m) => ({ content: (m.content + "\n\n(Dừng vì đã gọi công cụ quá nhiều vòng.)").trim() }));
+      patchReply((m) => ({ content: (m.content + "\n\n" + tr("(Dừng vì đã gọi công cụ quá nhiều vòng.)", useLang.getState().lang)).trim() }));
     } catch (e) {
       if ((e as Error).name === "AbortError") {
         patchReply((m) => (m.content || m.actions?.length || m.charts?.length ? {} : { content: "(đã dừng)", error: true }));

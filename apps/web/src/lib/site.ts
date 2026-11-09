@@ -12,6 +12,8 @@ export const site = {
   legal: {
     operator: process.env.NEXT_PUBLIC_OPERATOR_NAME || "[điền tên đơn vị vận hành: NEXT_PUBLIC_OPERATOR_NAME]",
     contactEmail: process.env.NEXT_PUBLIC_CONTACT_EMAIL || "[điền email liên hệ: NEXT_PUBLIC_CONTACT_EMAIL]",
+    /** Số điện thoại liên hệ (tuỳ chọn): chỉ hiện khi đã đặt NEXT_PUBLIC_OPERATOR_PHONE. */
+    phone: (process.env.NEXT_PUBLIC_OPERATOR_PHONE || "").trim(),
     updated: "08/11/2026",
   },
 };

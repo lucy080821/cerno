@@ -849,3 +849,29 @@
     opacity: 0.6;
   }
 }
+
+.footLang { max-width: 1120px; margin: 14px auto 0; color: var(--muted); }
+
+/* ---- Dashboard dùng thử (tương tác) trong khung trình duyệt ---- */
+.demoScroll {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+
+.demoFrame {
+  position: relative;
+  width: 100%;
+  min-width: 720px; /* màn hình hẹp: kéo ngang trong khung thay vì thu nhỏ đến mức không đọc được */
+  aspect-ratio: 2.08 / 1;
+  background: #f1f4f9;
+  overflow: hidden;
+}
+
+.demoPoster {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top left;
+}
