@@ -1,0 +1,2933 @@
+/* ---------- Khung tổng ---------- */
+.app {
+  --bg: #0b0f1a;
+  --panel: #121a2b;
+  --panel-2: #172036;
+  --line: rgba(255, 255, 255, 0.08);
+  --text: #e6eaf4;
+  --muted: #8b97b1;
+  --accent: #6d5efc;
+  --danger: #f0568a;
+  position: relative;
+  display: grid;
+  grid-template-rows: 52px 1fr;
+  height: 100vh;
+  height: 100dvh;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 13px;
+  overflow: hidden;
+  /* Thanh cuộn mảnh, tối màu cho cả editor (thuộc tính này được kế thừa xuống mọi panel). */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+}
+
+/* Chrome/Edge mới dùng scrollbar-width ở trên; WebKit cũ cần thêm bộ này. */
+.app ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.app ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+}
+.app ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+.app ::-webkit-scrollbar-track,
+.app ::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+.appFullscreen {
+  grid-template-rows: 1fr;
+}
+
+/* Nút thoát nhỏ, mờ dần để không che dashboard. */
+.fsExit {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 20;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(18, 26, 43, 0.85);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+  opacity: 0.35;
+  transition: opacity 0.2s;
+}
+.fsExit:hover,
+.fsExit:focus-visible {
+  opacity: 1;
+}
+
+/* Thanh hiển thị bộ lọc chéo đang bật */
+.filterBar {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 20;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  max-width: calc(100% - 120px);
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: rgba(18, 26, 43, 0.92);
+  border: 1px solid var(--line);
+  color: var(--text);
+}
+.filterLabel {
+  color: var(--muted);
+  padding: 0 4px;
+}
+.filterChip,
+.filterClear {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  font: inherit;
+  cursor: pointer;
+}
+.filterChip {
+  background: var(--accent);
+  border-color: transparent;
+  color: #fff;
+}
+.filterClear {
+  background: transparent;
+  color: var(--muted);
+}
+.filterClear:hover {
+  color: var(--text);
+}
+
+.loading {
+  display: grid;
+  place-items: center;
+  height: 100vh;
+  background: #0b0f1a;
+  color: #8b97b1;
+}
+
+.body {
+  display: flex;
+  min-height: 0;
+}
+
+.center {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-width: 0;
+}
+
+/* Vùng canvas (bên phải thanh trang khi xem). Các lớp nổi (bộ lọc, nút chuyển trang) định vị theo vùng này. */
+.stage {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* ---------- Thanh trên ---------- */
+.top {
+  display: grid;
+  /* minmax(0,1fr): hai bên co lại thay vì tràn đè lên nhóm giữa (zoom, undo/redo). */
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  padding: 0 12px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+  position: relative;
+  z-index: 20;
+}
+
+/* Chữ trên nút thanh công cụ: chỉ hiện khi đủ rộng, còn lại chỉ icon (có title khi rê chuột). */
+.lblWide {
+  display: none;
+}
+.lblXWide {
+  display: none;
+}
+@media (min-width: 1500px) {
+  .lblWide {
+    display: inline;
+  }
+}
+@media (min-width: 1800px) {
+  .lblXWide {
+    display: inline;
+  }
+}
+
+.menuWrap {
+  position: relative;
+}
+.menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 40;
+  min-width: 220px;
+  padding: 4px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+  display: grid;
+  gap: 2px;
+}
+.menuItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+.menuItem:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.topLeft,
+.topCenter,
+.topRight {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.topRight {
+  justify-content: flex-end;
+}
+
+.logoLink {
+  display: grid;
+  place-items: center;
+}
+
+.nameInput {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  padding: 6px 8px;
+  min-width: 0;
+  width: 240px;
+}
+
+.nameInput:hover {
+  border-color: var(--line);
+}
+
+.nameInput:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: var(--panel-2);
+}
+
+.saved {
+  color: var(--muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.sep {
+  width: 1px;
+  height: 20px;
+  background: var(--line);
+  margin: 0 4px;
+}
+
+.iconBtn {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  flex: none;
+}
+
+.iconBtn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.iconBtn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.zoomLabel {
+  min-width: 52px;
+  height: 30px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.zoomLabel:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--panel-2);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.btn:hover {
+  background: #1d2944;
+}
+
+.btnActive {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+/* ---------- Panel trái / phải ---------- */
+.left,
+.right {
+  flex: none;
+  width: 248px;
+  overflow-y: auto;
+  /* Không bao giờ cuộn ngang: nội dung dài (tên lớp) phải tự cắt bằng dấu … */
+  overflow-x: hidden;
+  background: var(--panel);
+  padding: 4px 0 24px;
+}
+
+.left {
+  border-right: 1px solid var(--line);
+}
+
+.right {
+  width: 280px;
+  border-left: 1px solid var(--line);
+}
+
+/* Mục trong bảng bên: nền mặc định (bảng trái). Bảng phải có kiểu thẻ riêng ở cuối file. */
+.section {
+  border-bottom: 1px solid var(--line);
+}
+
+.sectionTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  list-style: none;
+  cursor: pointer;
+  user-select: none;
+}
+
+.sectionTitle::-webkit-details-marker {
+  display: none;
+}
+
+.sectionIcon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
+  color: #c4beff;
+}
+
+.sectionText {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sectionChevron {
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  transition: transform 0.15s ease;
+}
+
+.section:not([open]) .sectionChevron {
+  transform: rotate(-90deg);
+}
+
+.sectionBody {
+  padding: 0 14px 12px;
+}
+
+.addGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.addTile {
+  display: grid;
+  place-items: center;
+  gap: 4px;
+  padding: 10px 0 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel-2);
+  color: var(--text);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.addTile:hover {
+  border-color: var(--accent);
+  background: #1d2944;
+}
+
+.layers,
+.fields {
+  list-style: none;
+  display: grid;
+  /* minmax(0,1fr): cột co lại theo panel thay vì giãn theo tên dài (nguyên nhân gây thanh cuộn ngang). */
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2px;
+}
+
+.layer {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 4px 2px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.layer:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.layerActive,
+.layerActive:hover {
+  background: rgba(109, 94, 252, 0.22);
+}
+
+.layerHidden .layerName {
+  opacity: 0.4;
+}
+
+.layerName {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.layer .iconBtn {
+  width: 24px;
+  height: 24px;
+  color: var(--muted);
+}
+
+.fields li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 4px;
+}
+
+.badge {
+  min-width: 34px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(109, 94, 252, 0.22);
+  color: #b4abff;
+  font-size: 10px;
+  text-align: center;
+}
+
+.badgeNum {
+  background: rgba(25, 195, 177, 0.18);
+  color: #5eead4;
+}
+
+/* ---------- Ô nhập ---------- */
+.field {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 8px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.label {
+  display: block;
+  margin: 10px 0 6px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.input {
+  width: 100%;
+  height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel-2);
+  color: var(--text);
+  font-size: 12px;
+  min-width: 0;
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.textarea {
+  height: 84px;
+  padding: 6px 8px;
+  resize: vertical;
+  font-family: inherit;
+  margin-bottom: 8px;
+}
+
+.numWrap {
+  position: relative;
+  display: block;
+}
+
+.numWrap em {
+  position: absolute;
+  right: 22px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  font-style: normal;
+  pointer-events: none;
+}
+
+.two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 8px;
+}
+
+.colorWrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.color {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.colorText {
+  flex: 1;
+  color: var(--text);
+  font-size: 12px;
+}
+
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0;
+  cursor: pointer;
+}
+
+.btnGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.btnRow {
+  display: flex;
+  gap: 6px;
+}
+
+.smallBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel-2);
+  color: var(--text);
+  font-size: 11.5px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.smallBtn:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.smallBtn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.danger {
+  color: var(--danger);
+}
+
+.bindingRow {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.addBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 0;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.hint {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 11.5px;
+  line-height: 1.5;
+  list-style: none;
+}
+
+.right > .hint,
+.rightBody > div > .hint {
+  padding: 12px 14px;
+}
+
+.hint kbd {
+  padding: 0 4px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--panel-2);
+  font-size: 10.5px;
+}
+
+.sourceCard {
+  display: grid;
+  gap: 2px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel-2);
+}
+
+.sourceCard span {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.sourceCard + .sourceCard {
+  margin-top: 8px;
+}
+
+.sourceCard .btnRow {
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+.sourceAdd {
+  margin-top: 10px;
+}
+
+.sourceSelect {
+  flex: 1;
+  width: auto;
+  cursor: pointer;
+  text-overflow: ellipsis;
+}
+
+/* ---------- Canvas ---------- */
+.viewport {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  touch-action: none;
+  user-select: none;
+  background-color: #0b0f1a;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+.world {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  transform-origin: 0 0;
+}
+
+.artboard {
+  position: relative;
+  box-shadow: 0 10px 50px rgba(0, 0, 0, 0.5);
+}
+
+.widget,
+.widgetEdit {
+  position: absolute;
+}
+
+.widgetEdit {
+  cursor: move;
+}
+
+.widgetEdit[data-locked] {
+  cursor: default;
+}
+
+.widgetEdit:hover::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 1.5px solid rgba(109, 94, 252, 0.55);
+  border-radius: 4px;
+  pointer-events: none;
+}
+
+.widgetInner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+/* Khi sửa, mọi sự kiện chuột đi tới widget (để kéo), không rơi vào chart bên trong */
+.widgetEdit .widgetInner * {
+  pointer-events: none;
+}
+
+.fill {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.chartCol {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+}
+.chartTitle {
+  flex: none;
+  padding: 8px 10px 0 12px;
+  line-height: 1.3;
+}
+.chartBody {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+.chartBody > * {
+  position: absolute;
+  inset: 0;
+}
+
+/* Nút B / I / U và nhóm định dạng chữ */
+.fmtRow {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+.fmtBtn {
+  flex: 1;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+.fmtBtn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.fmtBtnOn {
+  background: var(--accent);
+  border-color: transparent;
+  color: #fff;
+}
+.fmtBlock {
+  margin-bottom: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
+}
+.fmtBlockHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  font-weight: 600;
+  color: var(--text);
+}
+.fmtBlockBody {
+  padding: 2px 10px 6px;
+  border-top: 1px solid var(--line);
+}
+.fmtBlockHead:only-child {
+  padding-bottom: 8px;
+}
+/* Công tắc dạng gạt */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 30px;
+  height: 17px;
+  cursor: pointer;
+}
+.switch input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  margin: 0;
+  cursor: pointer;
+}
+.switch i {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  transition: background 0.15s;
+  pointer-events: none;
+}
+.switch i::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.15s;
+}
+.switch input:checked + i {
+  background: var(--accent);
+}
+.switch input:checked + i::after {
+  transform: translateX(13px);
+}
+.fmtGroup {
+  margin: 10px 0 4px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+  font-weight: 600;
+  color: var(--text);
+}
+
+.placeholder {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  padding: 12px;
+  color: #8b95a7;
+  font-size: 13px;
+  text-align: center;
+  background: repeating-linear-gradient(45deg, transparent 0 10px, rgba(127, 140, 160, 0.08) 10px 20px);
+}
+
+.text {
+  width: 100%;
+  height: 100%;
+  padding: 4px 6px;
+  overflow: hidden;
+  white-space: pre-wrap;
+  line-height: 1.25;
+}
+
+.kpi {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  height: 100%;
+  padding: 10px 16px;
+}
+
+.kpiTitle {
+  font-size: 12.5px;
+  margin-bottom: 4px;
+}
+
+.kpiValue {
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.tableWrap {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 10px 14px 6px;
+}
+
+.cardTitle {
+  margin-bottom: 6px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.tableScroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  /* Màu thanh cuộn lấy từ biến theo chủ đề widget (nền sáng cần thanh tối, nền tối cần thanh sáng). */
+  scrollbar-width: auto;
+  scrollbar-color: var(--tbl-thumb) transparent;
+}
+
+.tableScroll::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.tableScroll::-webkit-scrollbar-thumb {
+  background: var(--tbl-thumb);
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.tableScroll::-webkit-scrollbar-track,
+.tableScroll::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.table th {
+  position: sticky;
+  top: 0;
+  padding: 6px 8px;
+  border-bottom: 1px solid;
+  font-weight: 600;
+  background: inherit;
+}
+
+.table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid;
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 100000;
+}
+
+.selBox {
+  position: absolute;
+  box-sizing: border-box;
+  border: 1.5px solid #6d5efc;
+  pointer-events: none;
+}
+
+.handle {
+  position: absolute;
+  box-sizing: border-box;
+  border: 1.5px solid #6d5efc;
+  background: #fff;
+  border-radius: 2px;
+  pointer-events: auto;
+}
+
+.stem {
+  position: absolute;
+  left: 50%;
+  background: #6d5efc;
+  pointer-events: none;
+}
+
+.rotateHandle {
+  position: absolute;
+  left: 50%;
+  box-sizing: border-box;
+  border: 1.5px solid #6d5efc;
+  background: #fff;
+  border-radius: 50%;
+  cursor: grab;
+  pointer-events: auto;
+}
+
+.sizeTag {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: #6d5efc;
+  color: #fff;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.guide {
+  position: absolute;
+  background: #ff3d81;
+  pointer-events: none;
+}
+
+.marquee {
+  position: absolute;
+  box-sizing: border-box;
+  border: 1px solid #6d5efc;
+  background: rgba(109, 94, 252, 0.12);
+  pointer-events: none;
+}
+
+.emptyHint {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #8b95a7;
+  pointer-events: none;
+}
+
+.previewBadge {
+  position: absolute;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: rgba(18, 26, 43, 0.9);
+  border: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 12px;
+  pointer-events: none;
+}
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  padding: 10px 16px;
+  border-radius: 10px;
+  background: #1d2944;
+  border: 1px solid var(--line);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  z-index: 300000;
+}
+
+/* ---------- Preview mobile ---------- */
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 200000;
+  display: grid;
+  place-items: center;
+  background: rgba(4, 7, 14, 0.72);
+  backdrop-filter: blur(4px);
+}
+
+.phoneWrap {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+}
+
+.modalClose {
+  position: absolute;
+  right: -44px;
+  top: 0;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--panel);
+  color: var(--text);
+  cursor: pointer;
+}
+
+/* Nút xoay: nằm ngay dưới nút đóng, luôn thấy được dù màn hình thấp. */
+.modalRotate {
+  position: absolute;
+  right: -44px;
+  top: 44px;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--panel);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.phone {
+  position: relative;
+  width: 390px;
+  max-width: 92vw;
+  height: min(780px, 88vh);
+  border: 10px solid #1b2233;
+  border-radius: 44px;
+  background: #000;
+  overflow: hidden;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+}
+
+.phoneNotch {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 110px;
+  height: 22px;
+  transform: translateX(-50%);
+  border-radius: 0 0 16px 16px;
+  background: #1b2233;
+  z-index: 2;
+}
+
+.phoneScreen {
+  height: 100%;
+  overflow-y: auto;
+  padding-top: 34px !important;
+  box-sizing: border-box;
+}
+
+/* Xoay ngang: máy rộng ~800 x cao ~390, tai thỏ chuyển sang cạnh trái. */
+.phoneLandscape {
+  width: 800px;
+  max-width: 96vw;
+  height: min(410px, 80vh);
+  border-radius: 36px;
+}
+
+.phoneNotchSide {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 22px;
+  height: 110px;
+  transform: translateY(-50%);
+  border-radius: 0 16px 16px 0;
+  background: #1b2233;
+  z-index: 2;
+}
+
+.phoneScreenLandscape {
+  padding-top: 12px !important;
+  padding-left: 34px !important;
+}
+
+.phoneTitle {
+  margin: 4px 2px 12px;
+  font-size: 18px;
+}
+
+.phoneItem {
+  position: relative;
+  margin-bottom: 10px;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.phoneCaption {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+@media (max-width: 1100px) {
+  .saved {
+    display: none;
+  }
+  .nameInput {
+    width: 160px;
+  }
+}
+
+/* Tab Dữ liệu / Kiểu dáng ở bảng thuộc tính */
+.tabs {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+}
+.tab {
+  flex: 1;
+  padding: 10px 0;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.tab:hover {
+  color: var(--text);
+}
+.tabOn {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+}
+
+/* ---------- Bảng phải: 3 tab lớn ---------- */
+.rightShell {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  width: 300px;
+  min-height: 0;
+  background: var(--panel);
+  border-left: 1px solid var(--line);
+}
+.mainTabs {
+  flex: none;
+  display: flex;
+  background: var(--panel-2);
+  border-bottom: 1px solid var(--line);
+}
+.mainTab {
+  position: relative;
+  flex: 1;
+  padding: 11px 4px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.mainTab:hover { color: var(--text); }
+.mainTabOn {
+  color: var(--text);
+  background: var(--panel);
+  border-bottom-color: var(--accent);
+}
+.badge {
+  margin-left: 6px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 10.5px;
+}
+.rightBody {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 0 24px;
+}
+.rightBodyChat {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+}
+
+/* ---------- Bộ lọc ---------- */
+.filterCard { display: block; }
+.filterCardHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.filterTry {
+  margin-top: 6px;
+  padding-top: 4px;
+  border-top: 1px dashed var(--line);
+}
+.targetList {
+  max-height: 150px;
+  overflow-y: auto;
+  margin-bottom: 6px;
+  padding: 4px 6px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+.fc, .fcCompact { display: grid; gap: 4px; margin-bottom: 8px; }
+.fcCompact { margin: 0; min-width: 120px; }
+.fcLabel { color: var(--muted); font-size: 11px; }
+.fcRange { display: flex; align-items: center; gap: 6px; }
+.fcRange em { color: var(--muted); font-style: normal; }
+.fcSummary {
+  display: grid;
+  gap: 4px;
+  list-style: none;
+  cursor: pointer;
+}
+.fcSummary::-webkit-details-marker { display: none; }
+.fcValue {
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel-2);
+  color: var(--text);
+}
+.fc[open], .fcCompact[open] { position: relative; }
+.fcMenu {
+  max-height: 220px;
+  overflow-y: auto;
+  margin-top: 4px;
+  padding: 4px 6px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel-2);
+}
+.fcCompact .fcMenu {
+  position: absolute;
+  z-index: 30;
+  min-width: 100%;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+.fcOption {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 0;
+  color: var(--text);
+  cursor: pointer;
+}
+.fcReset {
+  margin-top: 4px;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font: inherit;
+  cursor: pointer;
+}
+
+/* ---------- Chat AI ---------- */
+.chat {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+.chatHead {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--line);
+}
+.chatScope {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted);
+  font-size: 11.5px;
+}
+.chatList {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.chatEmpty p { margin: 0 0 10px; color: var(--muted); }
+.chatSuggest { display: grid; gap: 6px; margin-bottom: 12px; }
+.suggestBtn {
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel-2);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.suggestBtn:hover { border-color: var(--accent); }
+.msg {
+  max-width: 92%;
+  padding: 8px 11px;
+  border-radius: 10px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.msg p { margin: 0 0 6px; }
+.msg p:last-child, .msg ul:last-child, .msg ol:last-child { margin-bottom: 0; }
+.msg ul, .msg ol { margin: 0 0 6px; padding-left: 18px; }
+.msg code {
+  padding: 0 4px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  font-size: 12px;
+}
+.msgUser { align-self: flex-end; background: var(--accent); color: #fff; }
+.msgBot { align-self: flex-start; background: var(--panel-2); border: 1px solid var(--line); }
+.msgErr { border-color: var(--danger); color: var(--danger); }
+.typing { color: var(--muted); font-style: italic; }
+.chatForm {
+  flex: none;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px;
+  align-items: end;
+  padding: 10px 12px;
+  border-top: 1px solid var(--line);
+}
+.chatInput { resize: none; min-height: 40px; }
+.sendBtn { background: var(--accent); border-color: transparent; color: #fff; }
+.sendBtn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.datePresets { display: flex; flex-wrap: wrap; gap: 4px; }
+.preset {
+  padding: 2px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--panel-2);
+  color: var(--muted);
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+.preset:hover { color: var(--text); border-color: var(--accent); }
+
+.chatEdit {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 11.5px;
+  cursor: pointer;
+}
+.actionLog {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+.actionTitle { color: var(--muted); font-size: 11px; margin-bottom: 4px; }
+.actionLog ul { margin: 0 0 8px; padding: 0; list-style: none; }
+.actionLog li { padding: 1px 0; }
+.actionOk { color: #22c3a6; }
+.actionBad { color: var(--danger); }
+.chatNote { margin: 0; padding: 6px 12px; color: var(--danger); font-size: 11.5px; }
+
+/* ---------- Tải ảnh ---------- */
+.imgDrop {
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+  padding: 14px 10px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  background: var(--panel-2);
+  color: var(--muted);
+  font-size: 11.5px;
+  text-align: center;
+  cursor: pointer;
+}
+
+.imgDrop:hover,
+.imgDropOver {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.imgDrop[aria-disabled="true"] {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.imgPreview {
+  width: 100%;
+  max-height: 110px;
+  object-fit: contain;
+  border-radius: 6px;
+  background: repeating-conic-gradient(#0000001a 0 25%, transparent 0 50%) 0 0 / 12px 12px;
+}
+
+.imgError {
+  margin-top: 6px;
+  color: var(--danger);
+  font-size: 11px;
+}
+
+/* ---------- Trạng thái lưu ---------- */
+.savedOk { color: var(--muted); }
+.savedBusy { color: var(--accent); }
+.savedWarn { color: #fbbf24; }
+.savedErr { color: var(--danger); }
+
+.saveBanner {
+  position: absolute;
+  top: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: min(640px, calc(100vw - 24px));
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  font-size: 12px;
+}
+
+.saveBannerWarn { border-color: #fbbf24; }
+.saveBannerErr { border-color: var(--danger); }
+
+/* ---------- Danh sách trang (editor, bên trái) ---------- */
+.pageList {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 8px;
+  list-style: none;
+}
+
+.pageRow {
+  display: grid;
+  gap: 4px;
+  padding: 2px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+}
+
+.pageRowOn {
+  border-color: var(--accent);
+  background: rgba(109, 94, 252, 0.1);
+}
+
+.pageBtn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.pageBtn:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.pageName {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pageCount {
+  flex: none;
+  min-width: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--muted);
+  font-size: 11px;
+  text-align: center;
+}
+
+.pageActions {
+  display: flex;
+  gap: 2px;
+  padding: 0 4px 4px;
+}
+
+.pageEdit {
+  width: 100%;
+}
+
+/* ---------- Thanh trang khi xem (kiểu lấy từ doc.nav qua biến CSS) ---------- */
+.pageNav {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 10px;
+  background: var(--nav-bg);
+  color: var(--nav-text);
+  border-right: 1px solid color-mix(in srgb, var(--nav-text) 16%, transparent);
+  overflow-y: auto;
+}
+
+.pageNavHead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 2px 6px 14px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid color-mix(in srgb, var(--nav-text) 16%, transparent);
+}
+
+.pageNavLogo {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: var(--nav-active-bg);
+  color: var(--nav-active);
+}
+
+.pageNavName {
+  min-width: 0;
+  color: var(--nav-active);
+  font-size: calc(var(--nav-size) + 1px);
+  font-weight: 700;
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+
+.pageNavSection {
+  padding: 6px 10px 2px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.6;
+}
+
+.pageNavList {
+  display: grid;
+  gap: 2px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.pageNavItem {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: var(--nav-radius);
+  background: transparent;
+  color: var(--nav-text);
+  font-family: inherit;
+  font-size: var(--nav-size);
+  font-weight: var(--nav-weight);
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.pageNavIcon {
+  flex: none;
+  opacity: 0.75;
+}
+
+.pageNavLabel {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pageNavNum {
+  flex: none;
+  min-width: 20px;
+  padding: 1px 6px;
+  border-radius: 99px;
+  background: color-mix(in srgb, var(--nav-text) 14%, transparent);
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+  opacity: 0.8;
+}
+
+.pageNavItem:hover {
+  background: color-mix(in srgb, var(--nav-text) 12%, transparent);
+}
+
+.pageNavItem:focus-visible {
+  outline: 2px solid var(--nav-active);
+  outline-offset: -2px;
+}
+
+.pageNavItemOn,
+.pageNavItemOn:hover {
+  background: var(--nav-active-bg);
+  color: var(--nav-active);
+}
+
+.pageNavItemOn::before {
+  content: "";
+  position: absolute;
+  left: -10px;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--nav-active);
+}
+
+.pageNavItemOn .pageNavIcon {
+  opacity: 1;
+}
+
+.pageNavFoot {
+  margin-top: auto;
+  padding: 12px 10px 0;
+  font-size: 11px;
+  opacity: 0.5;
+}
+
+/* Khung xem thử trong bảng Thiết lập: giữ đúng độ rộng thật nhưng thu nhỏ vừa panel. */
+.navPreviewBox {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  max-height: 260px;
+}
+
+.pageNavEmbedded {
+  max-width: 100%;
+  overflow: hidden;
+}
+
+/* ---------- Nút chuyển trang khi xem ---------- */
+.pageSwitcher {
+  position: absolute;
+  left: 50%;
+  bottom: 16px;
+  z-index: 15;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(18, 26, 43, 0.9);
+  color: var(--text);
+  transform: translateX(-50%);
+  backdrop-filter: blur(6px);
+}
+
+.pageSwitchBtn {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.pageSwitchBtn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.pageSwitchBtn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.pageSwitchLabel {
+  padding: 0 8px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+/* Khi có nút chuyển trang thì nhãn "Chế độ xem trước" dời lên trên để không đè nhau. */
+.stage .previewBadge {
+  bottom: 64px;
+}
+
+/* ---------- Hiệu ứng chuyển trang ---------- */
+.pageAnim {
+  position: absolute;
+  inset: 0;
+}
+
+/* --d = hướng chuyển (1 tới, -1 lui), đặt inline ở PageStage. */
+.pg_slide { animation: pgSlide 0.4s cubic-bezier(0.2, 0.7, 0.2, 1); }
+.pg_slideUp { animation: pgSlideUp 0.45s cubic-bezier(0.2, 0.7, 0.2, 1); }
+.pg_fade { animation: pgFade 0.35s ease; }
+.pg_zoomIn { animation: pgZoomIn 0.45s cubic-bezier(0.2, 0.7, 0.2, 1); }
+.pg_zoomOut { animation: pgZoomOut 0.45s cubic-bezier(0.2, 0.7, 0.2, 1); }
+.pg_flip { animation: pgFlip 0.6s cubic-bezier(0.2, 0.7, 0.2, 1); }
+.pg_flipX { animation: pgFlipX 0.6s cubic-bezier(0.2, 0.7, 0.2, 1); }
+.pg_cube { animation: pgCube 0.65s cubic-bezier(0.2, 0.7, 0.2, 1); transform-origin: calc(50% - var(--d) * 50%) 50%; }
+.pg_rotate { animation: pgRotate 0.55s cubic-bezier(0.2, 0.7, 0.2, 1); }
+.pg_blur { animation: pgBlur 0.5s ease; }
+.pg_wipe { animation: pgWipe 0.6s cubic-bezier(0.65, 0, 0.35, 1); }
+.pg_drop { animation: pgDrop 0.55s cubic-bezier(0.3, 1.3, 0.5, 1); }
+.pg_bounce { animation: pgBounce 0.65s cubic-bezier(0.34, 1.56, 0.64, 1); }
+
+@keyframes pgSlide {
+  from { opacity: 0; transform: translateX(calc(var(--d) * 56px)); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes pgSlideUp {
+  from { opacity: 0; transform: translateY(calc(var(--d) * 48px)); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes pgFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes pgZoomIn {
+  from { opacity: 0; transform: scale(0.85); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes pgZoomOut {
+  from { opacity: 0; transform: scale(1.15); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes pgFlip {
+  from { opacity: 0; transform: perspective(1400px) rotateY(calc(var(--d) * 70deg)); }
+  to { opacity: 1; transform: perspective(1400px) rotateY(0); }
+}
+@keyframes pgFlipX {
+  from { opacity: 0; transform: perspective(1400px) rotateX(calc(var(--d) * -70deg)); }
+  to { opacity: 1; transform: perspective(1400px) rotateX(0); }
+}
+@keyframes pgCube {
+  from { opacity: 0.2; transform: perspective(1800px) rotateY(calc(var(--d) * -90deg)); }
+  to { opacity: 1; transform: perspective(1800px) rotateY(0); }
+}
+@keyframes pgRotate {
+  from { opacity: 0; transform: rotate(calc(var(--d) * 8deg)) scale(0.8); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes pgBlur {
+  from { opacity: 0; filter: blur(18px); transform: scale(1.04); }
+  to { opacity: 1; filter: blur(0); transform: none; }
+}
+@keyframes pgWipe {
+  from { clip-path: inset(0 calc(50% + var(--d) * 50%) 0 calc(50% - var(--d) * 50%)); }
+  to { clip-path: inset(0 0 0 0); }
+}
+@keyframes pgDrop {
+  from { opacity: 0; transform: translateY(-80px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes pgBounce {
+  from { opacity: 0; transform: scale(0.6) translateY(40px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pageAnim { animation: none !important; }
+}
+
+/* ---------- Chọn trang trong xem thử mobile ---------- */
+.phoneTabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+  overflow-x: auto;
+}
+
+.phoneTab {
+  flex: none;
+  padding: 5px 12px;
+  border: 1px solid rgba(15, 23, 42, 0.15);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.7);
+  color: #334155;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.phoneTabOn {
+  border-color: transparent;
+  background: #2563eb;
+  color: #fff;
+}
+
+/* ---------- Nút cập nhật dữ liệu ---------- */
+.refreshBar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.refreshSub {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+/* Thông báo tạm thời không được làm thanh công cụ tràn sang nhóm zoom. */
+.refreshBar .refreshMsg {
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.refreshMsg {
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.refreshFloat {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  z-index: 15;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.refreshFloatBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(18, 26, 43, 0.9);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+}
+
+.refreshFloatBtn:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.refreshFloatBtn:disabled {
+  cursor: progress;
+  opacity: 0.8;
+}
+
+.spin {
+  display: inline-flex;
+  animation: refreshSpin 0.9s linear infinite;
+}
+
+@keyframes refreshSpin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spin { animation-duration: 3s; }
+}
+
+/* ---------- Trường tính toán ---------- */
+.modalBack {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.55);
+}
+.dialog {
+  width: min(820px, 100%);
+  max-height: min(88vh, 720px);
+  display: flex;
+  flex-direction: column;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+.modalHead,
+.modalFoot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+}
+.modalFoot {
+  border-bottom: 0;
+  border-top: 1px solid var(--line);
+}
+.modalHead strong {
+  flex: 1;
+  font-size: 14px;
+}
+.modalBody {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: 16px;
+  padding: 16px;
+  overflow-y: auto;
+}
+@media (max-width: 720px) {
+  .modalBody {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.calcMain,
+.calcSide {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.calcExpr {
+  min-height: 110px;
+  resize: vertical;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.calcError {
+  color: var(--danger);
+  font-size: 12.5px;
+}
+.calcWarn {
+  color: #fbbf24;
+  font-size: 12.5px;
+}
+.calcOk {
+  color: var(--muted);
+  font-size: 12.5px;
+}
+.calcPreview {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel-2);
+}
+.calcPreviewRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12.5px;
+}
+.calcPreviewRow span {
+  color: var(--muted);
+}
+.calcExamples {
+  display: grid;
+  gap: 6px;
+  justify-items: start;
+}
+.chipWrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.chip {
+  max-width: 100%;
+  padding: 3px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--panel-2);
+  color: var(--text);
+  font-size: 12px;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.chip:hover {
+  border-color: var(--accent);
+}
+.fnGroup {
+  display: grid;
+  gap: 4px;
+}
+.fnGroupTitle {
+  color: var(--muted);
+  font-size: 11px;
+}
+.fieldCalc {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 4px;
+}
+.fieldCalc > .calcName {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.badgeCalc {
+  background: rgba(160, 108, 245, 0.25);
+  color: #d6b9ff;
+}
+.badgeErr {
+  background: rgba(240, 86, 138, 0.25);
+  color: #ff9db9;
+}
+
+/* ---------- Trang xem công khai / nhúng ---------- */
+.embedLoading {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  background: rgba(11, 15, 26, 0.55);
+  pointer-events: none;
+}
+.embedError {
+  position: absolute;
+  left: 50%;
+  bottom: 14px;
+  transform: translateX(-50%);
+  z-index: 30;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: rgba(240, 86, 138, 0.9);
+  color: #fff;
+  font-size: 12.5px;
+}
+.embedBrand {
+  position: absolute;
+  right: 10px;
+  bottom: 8px;
+  z-index: 20;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(11, 15, 26, 0.55);
+  color: #c9d1e6;
+  font-size: 11px;
+  text-decoration: none;
+}
+.embedBrand:hover {
+  color: #fff;
+}
+
+/* ---------- Hộp thoại chia sẻ / nhúng ---------- */
+.dialogShare {
+  width: min(680px, 100%);
+  max-height: min(90vh, 780px);
+}
+.shareHead {
+  display: grid;
+  gap: 2px;
+  padding: 16px 20px 12px;
+  border-bottom: 0;
+}
+.shareHeadRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.shareHeadRow strong {
+  font-size: 16px;
+  letter-spacing: 0.1px;
+}
+.shareSub {
+  color: var(--muted);
+  font-size: 12.5px;
+}
+.shareTabs {
+  display: flex;
+  gap: 4px;
+  padding: 0 20px;
+  border-bottom: 1px solid var(--line);
+}
+.shareTab {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 14px;
+  margin-bottom: -1px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.shareTab:hover {
+  color: var(--text);
+}
+.shareTabOn {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+}
+.shareBody {
+  display: grid;
+  gap: 16px;
+  align-content: start;
+  padding: 18px 20px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+.shareLoading {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 40px 0;
+  color: var(--muted);
+}
+.shareFoot {
+  display: flex;
+  justify-content: flex-end;
+  padding: 12px 20px;
+  border-top: 1px solid var(--line);
+}
+.shareCard {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel-2);
+}
+.shareCard > p {
+  margin: 0;
+  line-height: 1.55;
+}
+
+/* Các bước hướng dẫn: số thứ tự tròn, bước đã xong có dấu tích. */
+.steps {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.step {
+  position: relative;
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr);
+  gap: 12px;
+  padding-bottom: 14px;
+}
+.step:last-child {
+  padding-bottom: 0;
+}
+.step::before {
+  content: "";
+  position: absolute;
+  left: 12px;
+  top: 28px;
+  bottom: 2px;
+  width: 1px;
+  background: var(--line);
+}
+.step:last-child::before {
+  display: none;
+}
+.stepNum {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--panel);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+.stepDone .stepNum {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+.stepTitle {
+  font-weight: 600;
+  line-height: 26px;
+}
+.stepText {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 1.55;
+}
+.guideBox {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.guideBox > summary {
+  padding: 11px 14px;
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+}
+.guideBox > summary::-webkit-details-marker {
+  display: none;
+}
+.guideBox > summary::after {
+  content: "+";
+  float: right;
+  color: var(--muted);
+}
+.guideBox[open] > summary::after {
+  content: "–";
+}
+.guideBody {
+  display: grid;
+  gap: 8px;
+  padding: 0 14px 14px;
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 1.55;
+}
+.guideBody ul {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding-left: 18px;
+}
+.guideBody b {
+  color: var(--text);
+}
+.guideBody code,
+.shareCard code,
+.stepText code {
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.07);
+  font-size: 12px;
+}
+.shareNote {
+  display: flex;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid rgba(251, 191, 36, 0.35);
+  border-radius: 8px;
+  background: rgba(251, 191, 36, 0.07);
+  color: #fcd34d;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+.shareBox {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+.shareRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.shareRow > textarea {
+  flex: 1;
+  min-width: 0;
+}
+.shareCode {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  resize: vertical;
+}
+
+/* ---------- Trình xem chỉ-đọc: thanh tiêu đề (link xem / người được mời) ---------- */
+.viewRoot {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+  background: #0b0f1a;
+}
+.appFill {
+  height: auto;
+  flex: 1;
+  min-height: 0;
+}
+.viewBar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 44px;
+  padding: 0 14px;
+  background: #121a2b;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  color: #e6eaf4;
+  font-size: 13px;
+}
+.viewBarName {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+  font-size: 14px;
+}
+.viewBarLink {
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 7px;
+  color: #e6eaf4;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.viewBarLink:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+.viewBarBrand {
+  color: #8b97b1;
+  text-decoration: none;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.peopleList {
+  list-style: none;
+  display: grid;
+  gap: 4px;
+}
+.personRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel-2);
+}
+.personEmail {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------- Nguồn lớn: số liệu do server tính ---------- */
+.truncNote {
+  position: absolute;
+  right: 8px;
+  bottom: 4px;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.45);
+  color: #e6eaf4;
+  font-size: 10.5px;
+  pointer-events: auto;
+}
+.remoteBusy {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  opacity: 0.8;
+  pointer-events: none;
+}
+
+/* ---------- Chart quá rộng/cao so với khung (điện thoại): vùng cuộn có thanh kéo ---------- */
+.chartScroll {
+  /* Chỉ cuộn theo chiều cần thiết, để thanh cuộn của chiều kia không chiếm chỗ làm chart bị cuộn thừa. */
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(128, 138, 170, 0.7) rgba(128, 138, 170, 0.18);
+}
+.chartScrollX { overflow-x: auto; overflow-y: hidden; }
+.chartScrollY { overflow-x: hidden; overflow-y: auto; }
+.chartScrollBoth { overflow: auto; }
+.chartScroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.chartScroll::-webkit-scrollbar-thumb {
+  background: rgba(128, 138, 170, 0.7);
+  border-radius: 8px;
+}
+.chartScroll::-webkit-scrollbar-track {
+  background: rgba(128, 138, 170, 0.18);
+  border-radius: 8px;
+}
+
+/* ---------- Biểu đồ AI vẽ trong khung chat ---------- */
+.chatChartCard {
+  display: grid;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel-2);
+}
+.chatChartTitle {
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.chatChartBody {
+  position: relative;
+  height: 230px;
+}
+
+
+/* =====================================================================================================
+   Bảng bên phải: các mục là thẻ riêng, ô nhập rõ ràng hơn, tab dạng nút gạt.
+   (Đặt cuối file để thắng các quy tắc chung ở trên.)
+   ===================================================================================================== */
+.rightShell {
+  background: color-mix(in srgb, var(--panel) 88%, #000);
+}
+
+.mainTabs {
+  gap: 4px;
+  margin: 10px 10px 0;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.28);
+}
+
+.mainTab {
+  padding: 8px 4px;
+  border: 0;
+  border-radius: 9px;
+  font-size: 12.5px;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.mainTabOn {
+  border-bottom-color: transparent;
+  background: color-mix(in srgb, var(--accent) 30%, var(--panel-2));
+  color: #fff;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08) inset, 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+.rightBody:not(.rightBodyChat) {
+  padding: 10px 10px 28px;
+}
+
+.rightBody:not(.rightBodyChat) > div {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Mỗi mục là một thẻ */
+.rightBody .section {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.022));
+  overflow: hidden;
+}
+
+.rightBody .sectionTitle {
+  padding: 11px 12px;
+  color: #d3daec;
+  font-size: 11.5px;
+}
+
+.rightBody .sectionTitle:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.rightBody .section[open] > .sectionTitle {
+  border-bottom: 1px solid var(--line);
+}
+
+.rightBody .sectionBody {
+  padding: 12px;
+}
+
+/* Ô nhập */
+.rightBody .field {
+  gap: 5px;
+  margin-bottom: 10px;
+  color: #a9b4cc;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.rightBody .field:last-child {
+  margin-bottom: 0;
+}
+
+.rightBody .input {
+  height: 32px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.26);
+  border-color: rgba(255, 255, 255, 0.12);
+  font-size: 12.5px;
+  font-weight: 400;
+}
+
+.rightBody .input:hover {
+  border-color: rgba(255, 255, 255, 0.24);
+}
+
+.rightBody .input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+.rightBody .textarea {
+  height: 96px;
+}
+
+.rightBody .two {
+  column-gap: 10px;
+}
+
+.rightBody .color {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.rightBody .colorWrap {
+  padding: 0;
+}
+
+.rightBody .colorText {
+  font-size: 12.5px;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.rightBody .toggle {
+  padding: 6px 0;
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 400;
+  color: #d3daec;
+}
+
+.rightBody .smallBtn {
+  height: 30px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.rightBody .addBtn {
+  margin-top: 2px;
+  padding: 6px 10px;
+  border: 1px dashed color-mix(in srgb, var(--accent) 55%, transparent);
+  border-radius: 8px;
+  color: #c4beff;
+}
+
+.rightBody .addBtn:hover {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+.rightBody .label {
+  margin: 14px 0 6px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--line);
+  color: #cfd7ea;
+  font-weight: 700;
+}
+
+.rightBody .label:first-child {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.rightBody .fmtBlock {
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.16);
+}
+
+/* Tab Dữ liệu / Kiểu dáng của widget */
+.rightBody .tabs {
+  top: -10px;
+  margin: 0;
+  padding: 4px;
+  gap: 4px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--panel) 80%, #000);
+}
+
+.rightBody .tab {
+  padding: 7px 0;
+  border: 0;
+  border-radius: 7px;
+  font-size: 12px;
+}
+
+.rightBody .tabOn {
+  background: color-mix(in srgb, var(--accent) 28%, var(--panel-2));
+  color: #fff;
+}
+
+/* Gợi ý cuối bảng */
+.rightBody:not(.rightBodyChat) > div > .hint {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px dashed rgba(255, 255, 255, 0.16);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+/* =====================================================================================================
+   Bảng phải: các chi tiết trang trí từng màu tím nay dùng #172036 (nền tối xanh). Viền và vòng sáng của ô nhập dùng
+   trắng mờ vì #172036 trên nền bảng quá tối để nhìn thấy. Trạng thái BẬT (công tắc, nút B/I/U) vẫn giữ màu nhấn
+   để phân biệt bật/tắt.
+   ===================================================================================================== */
+.sectionIcon {
+  background: #172036;
+  color: #cfd7ea;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.mainTabOn,
+.rightBody .tabOn {
+  background: #172036;
+  color: #fff;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14) inset, 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.rightBody .input:focus {
+  border-color: rgba(255, 255, 255, 0.5);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.09);
+}
+
+.rightBody .smallBtn:hover:not(:disabled) {
+  border-color: rgba(255, 255, 255, 0.42);
+  background: #172036;
+}
+
+.rightBody .addBtn {
+  border-color: rgba(255, 255, 255, 0.28);
+  color: #cfd7ea;
+}
+
+.rightBody .addBtn:hover {
+  background: #172036;
+}
+
+.rightBody .badge,
+.mainTab .badge {
+  background: #172036;
+  color: #e8edf7;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+
+/* ---------- Thu gọn bảng trái + kéo giãn bảng phải ---------- */
+.leftShell {
+  position: relative;
+  z-index: 15;
+  flex: none;
+  display: flex;
+  width: 248px;
+  transition: width 0.2s ease;
+}
+
+.leftShellClosed {
+  width: 0;
+}
+
+.leftInner {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.leftInner > .left {
+  flex: none;
+}
+
+/* Nút ở mép phải bảng trái: luôn nằm đúng mép, dù bảng đang mở hay thu gọn */
+.panelToggle {
+  position: absolute;
+  top: 50%;
+  left: 100%;
+  z-index: 16;
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 56px;
+  padding: 0;
+  transform: translateY(-50%);
+  border: 1px solid var(--line);
+  border-left: 0;
+  border-radius: 0 10px 10px 0;
+  background: var(--panel-2);
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.panelToggle:hover {
+  color: #fff;
+  background: #1f2b47;
+}
+
+.panelToggle svg {
+  transform: rotate(90deg);
+  transition: transform 0.2s ease;
+}
+
+.leftShellClosed .panelToggle svg {
+  transform: rotate(-90deg);
+}
+
+.rightShell {
+  position: relative;
+}
+
+/* Tay nắm kéo ở mép trái bảng phải */
+.rightResizer {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -5px;
+  z-index: 30;
+  width: 11px;
+  cursor: col-resize;
+  touch-action: none;
+}
+
+.rightResizer::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 5px;
+  width: 2px;
+  background: transparent;
+  transition: background 0.15s ease;
+}
+
+.rightResizer:hover::after,
+.rightResizer:focus-visible::after,
+.rightResizerOn::after {
+  background: rgba(255, 255, 255, 0.45);
+}
+
+.rightResizer:focus-visible {
+  outline: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .leftShell,
+  .panelToggle svg {
+    transition: none;
+  }
+}
+
+
+/* Ô "Kích thước bong bóng" của biểu đồ phân tán: khung nét đứt, gợi ý đây là phần tuỳ chọn */
+.bubbleSlot {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 8px;
+  padding: 8px 10px;
+  border: 1px dashed rgba(255, 255, 255, 0.22);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.bubbleSlot > span {
+  color: #a9b4cc;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+/* ---------- Chọn icon trang ---------- */
+.iconPicker { display: grid; gap: 8px; max-height: 240px; overflow-y: auto; padding: 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); }
+.iconGroup { margin-bottom: 4px; color: var(--muted); font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
+.iconGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(34px, 1fr)); gap: 4px; }
+.iconBtn { display: grid; place-items: center; height: 34px; border: 1px solid transparent; border-radius: 8px; background: transparent; color: var(--text); cursor: pointer; }
+.iconBtn:hover { background: rgba(255, 255, 255, 0.08); }
+.iconBtnOn, .iconBtnOn:hover { border-color: var(--brand-a, #6d5efc); background: rgba(109, 94, 252, 0.25); }

@@ -1,0 +1,18 @@
+node_modules
+dist
+.env
+.env.local
+.expo
+
+# Giữ file env khác (backup, local) ngoài git, chỉ commit .env.example
+.env.*
+!.env.example
+
+# Build và tạm
+.next
+out
+*.tsbuildinfo
+*.log
+.DS_Store
+.vercel
+.claude

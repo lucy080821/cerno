@@ -1,0 +1,40 @@
+.panel { display: flex; flex-direction: column; gap: 12px; padding: 12px; color: var(--text); font-size: 13px; }
+.form, .replyForm { display: flex; flex-direction: column; gap: 8px; }
+.replyForm { margin: 6px 0 0 14px; }
+.panel textarea, .panel select {
+  width: 100%; box-sizing: border-box; resize: vertical; font: inherit; color: var(--text);
+  background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px;
+}
+.formRow { display: flex; gap: 8px; }
+.formRow select { flex: 1; min-width: 0; }
+.panel button[type="submit"] {
+  border: 0; border-radius: 8px; padding: 6px 14px; font: inherit; font-weight: 600; cursor: pointer;
+  color: #fff; background: var(--brand-a, #6d5efc);
+}
+.panel button[type="submit"]:disabled { opacity: 0.5; cursor: default; }
+.list { display: flex; flex-direction: column; gap: 10px; }
+.thread { border: 1px solid var(--line); border-radius: 10px; padding: 10px; background: var(--panel-2); }
+.reply { margin: 8px 0 0 14px; padding-left: 10px; border-left: 2px solid var(--line); }
+.meta { display: flex; justify-content: space-between; gap: 8px; color: var(--muted); font-size: 11px; }
+.author { color: var(--text); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tag { display: inline-block; margin-top: 4px; padding: 1px 8px; border-radius: 99px; font-size: 11px; color: var(--muted); border: 1px solid var(--line); }
+.body { margin: 4px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.45; }
+.actions { display: flex; gap: 12px; margin-top: 4px; }
+.actions button { background: none; border: 0; padding: 0; font: inherit; font-size: 11px; color: var(--muted); cursor: pointer; }
+.actions button:hover { color: var(--text); text-decoration: underline; }
+.hint { color: var(--muted); margin: 0; }
+.error { color: #ff7a7a; margin: 0; }
+
+/* Trình xem chỉ-đọc: nút nổi + ngăn trượt bên phải. */
+.fab {
+  position: absolute; right: 16px; bottom: 56px; z-index: 30; border: 1px solid var(--line); border-radius: 99px;
+  padding: 8px 14px; font: inherit; font-size: 13px; cursor: pointer; color: var(--text); background: var(--panel);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+.drawer {
+  position: absolute; top: 0; right: 0; bottom: 0; z-index: 40; width: min(360px, 100%); display: flex; flex-direction: column;
+  background: var(--panel); border-left: 1px solid var(--line); box-shadow: -8px 0 24px rgba(0, 0, 0, 0.3);
+}
+.drawerHead { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border-bottom: 1px solid var(--line); font-weight: 600; color: var(--text); }
+.drawerHead button { background: none; border: 0; color: var(--muted); font-size: 18px; cursor: pointer; }
+.drawerBody { flex: 1; overflow-y: auto; }

@@ -1,0 +1,391 @@
+.page {
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.brand {
+  font-weight: 700;
+  color: var(--cyan);
+}
+
+.user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+/* Mỗi mục là một khung riêng, có màu nhấn riêng (--k) để tách bạch dashboard / nguồn dữ liệu / được chia sẻ. */
+.section {
+  --k: var(--cyan);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--k);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.kDash {
+  --k: var(--brand-a);
+}
+
+.kSource {
+  --k: #22c3a6;
+}
+
+.kShared {
+  --k: #a06cf5;
+}
+
+.secHead {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.secIcon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--k) 16%, transparent);
+  color: var(--k);
+}
+
+.secText {
+  flex: 1;
+  min-width: 220px;
+}
+
+.secTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1.25rem;
+  line-height: 1.3;
+}
+
+.secCount {
+  padding: 1px 9px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--k) 18%, transparent);
+  color: var(--k);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.secActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.head h1 {
+  font-size: 1.5rem;
+}
+
+.muted {
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.link {
+  color: var(--cyan);
+}
+
+.empty {
+  padding: 32px;
+  text-align: center;
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  color: var(--muted);
+}
+
+.list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.item {
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--bg-2);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.itemTop {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip {
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  font-size: 0.78rem;
+}
+
+.chip em {
+  color: var(--muted);
+  font-style: normal;
+}
+
+.connect {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.tabPick {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  font-size: 0.85rem;
+}
+
+.tabPick label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tabPick select {
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--text);
+}
+
+.primary,
+.ghost {
+  padding: 9px 14px;
+  border-radius: 9px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.primary {
+  border: 0;
+  background: var(--cyan);
+  color: #04101c;
+}
+
+.ghost {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--text);
+}
+
+.primary:disabled,
+.ghost:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.msg {
+  font-size: 0.85rem;
+  color: var(--amber);
+}
+
+.warn {
+  font-size: 0.8rem;
+  color: #fca5a5;
+}
+
+.head h2 {
+  font-size: 1.25rem;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+a.ghost {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.dashName {
+  font-weight: 600;
+}
+
+.dashName:hover {
+  color: var(--cyan);
+}
+
+.notice {
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--bg-2);
+  font-size: 0.88rem;
+  color: var(--amber);
+}
+
+.linkBtn {
+  border: 0;
+  background: none;
+  color: var(--cyan);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* Cả thẻ dashboard là vùng bấm để mở; các nút bên phải nổi lên trên. */
+.item {
+  position: relative;
+}
+
+.dashName::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+}
+
+.item:has(.dashName):hover {
+  border-color: rgba(34, 211, 238, 0.4);
+}
+
+.item .row {
+  position: relative;
+  z-index: 1;
+}
+
+/* ---------- Bảng xem trước dữ liệu ---------- */
+.tableWrap {
+  max-height: 380px;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.table {
+  width: max-content;
+  min-width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+.table th,
+.table td {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  white-space: nowrap;
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.table th {
+  position: sticky;
+  top: 0;
+  background: #0f1a30;
+  color: var(--muted);
+  font-weight: 600;
+  z-index: 1;
+}
+
+.table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.table .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.table .rowNo {
+  color: var(--muted);
+  text-align: right;
+  width: 1%;
+}
+
+.colType {
+  margin-left: 4px;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 0.72rem;
+  opacity: 0.7;
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  background: rgba(6, 10, 20, 0.6);
+  backdrop-filter: blur(2px);
+}
+
+.legalFoot {
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.legalFoot a:hover {
+  color: var(--text);
+}
+
+.accountLink {
+  color: var(--muted);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.accountLink:hover {
+  color: var(--text);
+}

@@ -1,0 +1,89 @@
+.wrap {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: radial-gradient(60% 50% at 50% 0%, rgba(34, 211, 238, 0.12), transparent), var(--bg);
+}
+
+.card {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 32px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--bg-2);
+}
+
+.brand {
+  font-weight: 700;
+  color: var(--cyan);
+}
+
+.card h1 {
+  font-size: 1.6rem;
+}
+
+.sub,
+.fine {
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.fine {
+  font-size: 0.8rem;
+}
+
+.google {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  border: 1px solid #dadce0;
+  background: #fff;
+  color: #1f1f1f;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.google:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.error {
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(248, 113, 113, 0.12);
+  color: #fca5a5;
+  font-size: 0.88rem;
+}
+
+.alt {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.alt:hover {
+  color: var(--text);
+}
+
+.fine a {
+  color: var(--cyan);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.notice {
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(52, 211, 153, 0.12);
+  color: #6ee7b7;
+  font-size: 0.88rem;
+}

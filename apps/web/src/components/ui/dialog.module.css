@@ -1,0 +1,170 @@
+/* Hộp thoại xác nhận / nhập liệu dùng chung. Nằm trên mọi lớp khác (editor dùng tới 200000). */
+.back {
+  position: fixed;
+  inset: 0;
+  z-index: 300000;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(3, 6, 14, 0.66);
+  backdrop-filter: blur(3px);
+}
+
+.box {
+  width: min(440px, 100%);
+  padding: 22px 22px 18px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 16px;
+  background: #101729;
+  color: #e8edf7;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+}
+
+.danger {
+  border-color: rgba(248, 113, 113, 0.45);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.badge {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--brand-a, #6d5efc) 22%, transparent);
+  color: var(--brand-a, #6d5efc);
+  font-weight: 800;
+  font-size: 15px;
+}
+
+.danger .badge {
+  background: rgba(248, 113, 113, 0.18);
+  color: #f87171;
+}
+
+.title {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.3;
+  font-weight: 700;
+}
+
+.msg {
+  margin: 12px 0 0 44px;
+  color: #a9b4cc;
+  font-size: 14.5px;
+  line-height: 1.55;
+  white-space: pre-line;
+}
+
+.field {
+  display: grid;
+  gap: 6px;
+  margin: 14px 0 0 44px;
+  font-size: 13px;
+  color: #a9b4cc;
+}
+
+.input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 9px;
+  background: #0b1222;
+  color: #e8edf7;
+  font: inherit;
+  font-size: 14.5px;
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--brand-a, #6d5efc);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-a, #6d5efc) 28%, transparent);
+}
+
+.error {
+  color: #f87171;
+  font-style: normal;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.ghost,
+.primary,
+.dangerBtn {
+  padding: 9px 18px;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.ghost {
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: transparent;
+  color: #e8edf7;
+}
+
+.ghost:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.primary {
+  border: 0;
+  background: linear-gradient(135deg, var(--brand-a, #6d5efc), var(--brand-b, #19c3b1));
+  color: #fff;
+}
+
+.dangerBtn {
+  border: 0;
+  background: #dc2626;
+  color: #fff;
+}
+
+.primary:hover,
+.dangerBtn:hover {
+  filter: brightness(1.1);
+}
+
+.ghost:focus-visible,
+.primary:focus-visible,
+.dangerBtn:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .back {
+    animation: dlgFade 0.15s ease-out;
+  }
+  .box {
+    animation: dlgPop 0.18s cubic-bezier(0.2, 0.8, 0.3, 1);
+  }
+}
+
+@keyframes dlgFade {
+  from { opacity: 0; }
+}
+
+@keyframes dlgPop {
+  from { opacity: 0; transform: translateY(8px) scale(0.97); }
+}
+
+@media (max-width: 480px) {
+  .msg,
+  .field {
+    margin-left: 0;
+  }
+}

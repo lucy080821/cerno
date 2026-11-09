@@ -1,0 +1,252 @@
+# Cerno: app thiết kế dashboard theo dữ liệu riêng
+
+Tên "Cerno" (Latin *cernere*: nhìn rõ) đổi ở `apps/web/src/lib/site.ts`. Logo: chữ C + chấm dữ liệu, ở `apps/web/src/app/icon.svg` (favicon) và `components/Logo.tsx` (`LogoMark`), hai nơi phải khớp nhau. Tab trình duyệt trong editor hiện tên dashboard của người dùng (`EditorApp.tsx`) nhưng favicon luôn là của Cerno. Icon app mobile (`apps/mobile/assets/*.png`) chưa đổi sang logo mới.
+
+## Tổng quan
+
+App cho người dùng/doanh nghiệp tự thiết kế dashboard từ dữ liệu của họ (kiểu Looker Studio / Power BI).
+
+- **Web (Next.js)**: đăng ký, kết nối dữ liệu, **editor đặt chart tự do** (không dùng lưới), chia sẻ.
+- **Mobile (React Native + Expo)**: chỉ **xem**, đổi **filter**, **bình luận**, nhận **push notification**. Không có editor.
+- **Không làm desktop app, không làm PWA.**
+- **Backend: Supabase** (Auth, Postgres, Realtime). Web và mobile dùng chung một tài khoản và một nguồn dữ liệu.
+- **Nguồn dữ liệu giai đoạn đầu: chỉ Google Sheets.**
+- **Miễn phí** để test thị trường, chưa thu tiền. Cần hạn mức mềm (số dashboard, số nguồn, tần suất đồng bộ) và analytics.
+
+## Quyết định thiết kế (đã chốt)
+
+1. **Canvas tự do**: mỗi widget lưu toạ độ tuyệt đối `x, y, w, h, rotation, z`. Có snap guide, nhóm, khoá, undo/redo.
+2. **Layout mobile tự sinh** từ layout web bằng `deriveMobileLayout()` (xếp một cột, trên→dưới, trái→phải). Người dùng chỉnh sau qua `widget.mobile.{order,hidden,height}`.
+3. **Dashboard = một file JSON** theo `@dashboard/schema`, lưu ở cột `dashboards.doc` (jsonb). Mọi thứ khác (template, versioning, import/export, AI) dựa vào đó.
+4. **Google Sheets**: đăng nhập Google + **Picker** với scope `drive.file` (không nhạy cảm, tránh phải xét duyệt app). Sheets không có webhook đáng tin, nên server **đồng bộ định kỳ (≥15 phút)** vào bảng `source_rows`. Chart truy vấn bản sao, không gọi Google mỗi lần xem.
+5. **Chart: Apache ECharts** (chạy trên web; mobile render trong WebView để dùng lại code).
+6. **Cảnh báo/push**: sau mỗi lần đồng bộ, kiểm tra `alert_rules`, gửi push qua Expo Push (FCM/APNs).
+
+## Công nghệ
+
+| Lớp | Công nghệ |
+|---|---|
+| Monorepo | npm workspaces (có thể chuyển pnpm + Turborepo sau) |
+| Web | Next.js 15 (App Router), React 19, TypeScript, CSS thuần (CSS Modules) |
+| Mobile | React Native + Expo SDK 58 (khung `apps/mobile` đã tạo, mới có màn kiểm tra kết nối) |
+| Backend | Supabase: Auth, Postgres + RLS, Realtime, Edge Functions |
+| Chart | Apache ECharts 5 (render SVG để nét khi zoom canvas), import theo module để nhẹ bundle |
+| Query nhanh | DuckDB-WASM / aggregate phía server (chưa làm) |
+| Canvas editor | Tự viết bằng Pointer Events (không dùng lưới), Zustand cho state + undo/redo |
+| Test | Vitest |
+| Analytics | PostHog (chưa gắn) |
+
+## Cấu trúc thư mục
+
+Ký hiệu: ✅ đã có · 🚧 dự kiến, chưa làm.
+
+```
+Dashboard/
+├─ CLAUDE.md                         ✅ file này
+├─ package.json                      ✅ npm workspaces + script gốc
+├─ .gitignore                        ✅
+│
+├─ apps/
+│  ├─ web/                           ✅ Next.js 15
+│  │  ├─ package.json, tsconfig.json, next.config.mjs     ✅
+│  │  └─ src/
+│  │     ├─ app/
+│  │     │  ├─ layout.tsx, globals.css, icon.svg          ✅
+│  │     │  ├─ page.tsx                                   ✅ trang chủ (hero: database → dashboard)
+│  │     │  ├─ editor/page.tsx, editor/[id]/page.tsx      ✅ EDITOR canvas tự do (cần đăng nhập, lưu Supabase)
+│  │     │  ├─ login/, signup/                            🚧 (trang chủ có link "Đăng nhập", hiện 404)
+│  │     │  ├─ (app)/dashboards/ …                        🚧 danh sách, trang xem, quản lý nguồn Sheets
+│  │     │  ├─ privacy/, terms/                           ✅ Chính sách quyền riêng tư, Điều khoản (công khai)
+│  │     │  ├─ share/[token]/page.tsx                     🚧 xem công khai qua link
+│  │     │  └─ api/                                       🚧 route handlers (OAuth callback, ...)
+│  │     ├─ components/
+│  │     │  ├─ HeroScene.tsx + .module.css                ✅ minh hoạ SVG động trang chủ
+│  │     │  └─ editor/                                    ✅
+│  │     │     ├─ EditorApp.tsx        khung, phím tắt, tự lưu localStorage
+│  │     │     ├─ Canvas.tsx           kéo/resize/xoay, snap guide, marquee, zoom/pan
+│  │     │     ├─ SelectionOverlay.tsx khung chọn + handle (kích thước cố định theo zoom)
+│  │     │     ├─ WidgetContent.tsx    chart (ECharts SVG), KPI, bảng, text, ảnh
+│  │     │     ├─ TopBar.tsx           undo/redo, zoom, xem trước, xuất/nhập JSON
+│  │     │     ├─ LeftPanel.tsx        thêm widget, lớp (khoá/ẩn), trường dữ liệu
+│  │     │     ├─ PropertyPanel.tsx    vị trí/kích thước, dữ liệu, khung, căn, thứ tự lớp
+│  │     │     ├─ MobilePreview.tsx    xem trước layout mobile tự sinh
+│  │     │     ├─ fields.tsx           ô nhập + icon dùng chung
+│  │     │     └─ editor.module.css
+│  │     └─ lib/
+│  │        ├─ site.ts                                    ✅ tên/tagline
+│  │        └─ editor/                                    ✅
+│  │           ├─ geometry.ts (+ .test.ts)   hình học: xoay, resize đúng khi xoay, snap
+│  │           ├─ store.ts                   Zustand: doc, selection, undo/redo, gesture, view
+│  │           ├─ defaults.ts                factory widget + dashboard mẫu
+│  │           ├─ sample-data.ts             dữ liệu mẫu + getRows() (điểm truy cập dữ liệu duy nhất)
+│  │           └─ io.ts                      localStorage, xuất/nhập JSON
+│  │        └─ supabase/                                  🚧 client (browser/server)
+│  │
+│  └─ mobile/                        🚧 Expo (khung ✅: App.tsx, scripts/show-link.mjs; còn lại chỉ xem, filter, bình luận, push)
+│     └─ src/ screens/ (DashboardList, DashboardView, Comments), components/ChartWebView, lib/push
+│
+├─ packages/
+│  ├─ schema/                        ✅ dùng chung web + mobile
+│  │  └─ src/
+│  │     ├─ dashboard.ts             ✅ Zod schema + type (Dashboard, Widget, DataSource, Filter, ...)
+│  │     ├─ mobileLayout.ts          ✅ deriveMobileLayout() (theo loại widget)
+│  │     ├─ mobileLayout.test.ts     ✅
+│  │     └─ index.ts                 ✅
+│  └─ chart-engine/                  ✅ dùng chung web + mobile, không phụ thuộc echarts
+│     └─ src/
+│        ├─ aggregate.ts             ✅ nhóm theo dimension, sum/avg/count/min/max/count_distinct
+│        ├─ option.ts                ✅ config widget + dữ liệu → option ECharts (bar/line/area/pie)
+│        ├─ format.ts                ✅ formatNumber, formatCompact
+│        └─ chart-engine.test.ts     ✅
+│
+└─ supabase/
+   ├─ migrations/0001_init.sql       ✅ bảng + RLS + realtime (CHƯA chạy trên Supabase thật)
+   ├─ migrations/0002_google_auth.sql ✅ workspace tự tạo, google_credentials, cột data_sources
+   ├─ migrations/0003_images.sql     ✅ bucket ảnh dashboard-images + policy theo user
+   ├─ migrations/0004_dashboard_save.sql ✅ trigger updated_at, hạn mức 20 dashboard, giới hạn 2 MB
+   ├─ migrations/0005_auto_sync.sql  ✅ chu kỳ tự cập nhật 120 phút, cột last_attempt_at
+   ├─ migrations/0006_account_delete.sql ✅ khóa ngoại cho phép xóa tài khoản
+   └─ functions/                     🚧 Edge Functions
+      ├─ sync-sheets/                🚧 đồng bộ Google Sheets theo lịch
+      ├─ evaluate-alerts/            🚧 kiểm tra ngưỡng, gửi push
+      └─ share-dashboard/            🚧 trả dashboard công khai theo share_token
+```
+
+## Editor (apps/web/src/components/editor)
+
+Mở ở `/editor/<id>` (chọn dashboard từ `/dashboards`; `/editor` trần chuyển về `/dashboards`). Cần đăng nhập. Dashboard **lưu trên Supabase** (xem mục "Lưu dashboard"); nguồn dữ liệu là dữ liệu mẫu hoặc Google Sheets.
+
+- **Canvas tự do**: mỗi widget có `x,y,w,h,rotation,z`; lưu toạ độ góc trên-trái của hình chữ nhật chưa xoay, xoay quanh tâm. Resize tính trong hệ toạ độ của widget nên đúng cả khi đang xoay (`resizeGeometry`).
+- **Cử chỉ**: kéo (Shift khoá trục, Alt tắt snap), 8 handle resize (Shift giữ tỉ lệ), handle xoay (Shift snap 15°), kéo vùng trống để khoanh chọn, Shift/Ctrl+click chọn nhiều.
+- **Snap guide**: hút vào mép/tâm của artboard và các widget khác (ngưỡng 6px màn hình), vẽ đường hồng.
+- **View**: Ctrl/⌘+cuộn hoặc pinch = zoom, cuộn = pan, giữ Space hoặc chuột giữa kéo = pan, Ctrl+0 = vừa màn hình.
+- **Lịch sử**: undo/redo tối đa 100 bước. Cử chỉ kéo chỉ ghi 1 bước khi thả chuột; gõ liên tục vào một ô được gộp (trong 1s).
+- **Phím tắt**: Ctrl+Z/Shift+Z/Y, Ctrl+D nhân đôi, Ctrl+C/V, Ctrl+A, Delete, mũi tên (Shift = 10px), Ctrl+]/[ đổi thứ tự lớp, Esc bỏ chọn.
+- **Widget**: biểu đồ cột/đường/vùng/tròn, bảng, KPI, văn bản, ảnh. Chart có 2 chiều thì chiều thứ hai tách thành nhiều series.
+- **Mobile preview**: gọi đúng `deriveMobileLayout()` mà app mobile sẽ dùng. Layout mobile ưu tiên gọn và dễ đọc: chữ thu theo bề ngang rồi kẹp 14–30px (`mobileFontSize`), KPI thẻ 84–104px với số 26–40px và tiêu đề ≤ 14px (`mobileKpiValueSize/TitleSize`), ảnh/logo không phóng quá kích thước thiết kế, chữ biểu đồ/bảng kẹp trần (tiêu đề 16px, trục/nhãn/chú giải 11px, bảng 12px; `mobileChartFormat`), chiều cao chữ tính theo số dòng sau khi xuống hàng. Các hàm này nằm ở `packages/schema/src/mobileLayout.ts` để app mobile thật dùng lại; cỡ chữ người dùng đặt ở desktop không được làm tràn màn hình mobile.
+- **Lọc chéo (cross-filter)**: ở Xem trước/Toàn màn hình, bấm một cột/lát/điểm của chart (dimension đầu) sẽ lọc mọi chart/KPI/bảng khác theo giá trị đó; bấm lại hoặc vùng trống để bỏ, Shift/Ctrl+click chọn nhiều. Trạng thái nằm ở store (`crossFilters`), không lưu vào JSON; logic ở `chart-engine/src/filter.ts`.
+- **Bảng phải có 3 tab lớn** (`RightPanel.tsx`): **Thiết lập** (2 tab nhỏ Dữ liệu / Kiểu dáng của widget, `PropertyPanel.tsx`), **Bộ lọc** (`FiltersPanel.tsx`), **AI** (`ChatPanel.tsx`).
+- **Bộ lọc dashboard**: lưu trong `doc.filters` (cột, kiểu điều khiển dropdown/multiselect/slider, `targets` = chỉ áp cho một số widget). Giá trị đang chọn nằm ở store (`filterValues`, không lưu JSON). Áp ở mọi chế độ; khi xem/toàn màn hình hiện thanh lọc nổi (`ViewFilters.tsx`) cùng các lọc chéo. Logic: `chart-engine/src/filter.ts` + `lib/editor/filters.ts`.
+- **AI tự sửa dashboard** (function calling): model gọi các công cụ `add_widget`, `update_widget`, `delete_widget`, `add_filter`, `remove_filter`, `set_filter_value`, `update_dashboard` (mô tả ở `lib/editor/ai-tools.ts`). Server chỉ chuyển tiếp lệnh (NDJSON); **client** kiểm tra bằng zod và thực thi (`lib/editor/ai-actions.ts`, hàm thuần, có test): kiểm cột tồn tại, giới hạn số lượng/kích thước, không đụng widget đã khoá, tối đa 15 lệnh/lượt và 4 vòng. Mỗi vòng là 1 bước undo; nút "Hoàn tác" trong khung chat hoàn tác cả lượt, có công tắc tắt quyền sửa. Lệnh sửa dựa trên dữ liệu không đáng tin (tên cột, giá trị ô có thể chứa chỉ dẫn độc hại) nên mọi thao tác đều hoàn tác được và prompt dặn bỏ qua chỉ dẫn trong dữ liệu.
+- **Giới hạn Groq (gói miễn phí)**: 8.000 token/phút mỗi model, mỗi yêu cầu AI tốn khoảng 4k token nên chỉ được 1–2 yêu cầu/phút; client tự chờ và thử lại khi phải chờ ≤ 30s. Muốn mượt hơn cần nâng gói (Dev Tier) hoặc rút gọn ngữ cảnh.
+- **Chat AI**: `POST /api/chat` (`app/api/chat/route.ts`) gọi Groq (model `openai/gpt-oss-120b`, đổi bằng `GROQ_CHAT_MODEL`), stream văn bản về. Khoá `GROQ_API_KEY` chỉ ở server, đọc từ `.env` ở **thư mục gốc repo** (nạp trong `next.config.mjs`). Client chỉ gửi bản tóm tắt đã gộp số liệu + vài dòng mẫu (`lib/editor/ai-context.ts`), không gửi toàn bộ dữ liệu. Có giới hạn 15 yêu cầu/phút/IP (trong bộ nhớ). Chưa có đăng nhập nên **cần thêm xác thực + hạn mức theo user trước khi mở công khai**. Build tĩnh (`NEXT_OUTPUT=export`) không chạy được API này.
+- **Bộ lọc khoảng ngày**: kiểu `date_range` cho cột kiểu date (ISO yyyy-mm-dd hoặc dd/mm/yyyy), có lối tắt 7/30/90 ngày cuối tính từ ngày mới nhất trong dữ liệu.
+- **Đổi màu series/lát**: `format.colors` (khoá theo TÊN series hoặc lát) trong `ChartFormat`; engine: `chartColorKeys`, `resolveSeriesColors` (`chart-engine/src/option.ts`); UI: khối "Màu từng cột/đường/lát" (`SeriesColors` trong `PropertyPanel.tsx`), AI cũng đặt được qua `update_widget.format.colors`. Đổi tên metric/giá trị thì màu đã đặt cho tên cũ không còn áp.
+- **Trường tính toán** (calculated field, như Looker Studio): lưu ở `doc.calculatedFields` (`{id, sourceId, name, expression}`). Công thức do parser riêng trong `chart-engine/src/formula.ts` phân tích rồi chạy trên cây cú pháp (KHÔNG eval; giới hạn 1000 ký tự, 300 nút, sâu 40). Tên cột có dấu cách viết `[Doanh thu]`. Hai loại: **theo dòng** (không có SUM/AVG...: thêm cột mới vào từng dòng qua `materializeRows`, dùng như cột thường) và **tổng hợp** (có SUM/AVG/COUNT/COUNT_DISTINCT/MIN/MAX, vd `SUM([Doanh thu]) / SUM([Đơn])`: tính theo từng nhóm trong `aggregate(..., calc)`, chỉ làm số đo). Chia cho 0 ra trống. Trường dùng được trường theo dòng khác (có phát hiện vòng lặp), không dùng được trường tổng hợp khác. Phía web: `lib/editor/calc.ts` (`syncCalc` biên dịch vào `data-store`, `columnsWithCalc`), `getRows()` trả dòng đã thêm cột tính toán (có cache theo tham chiếu), `getRawRows()` là dòng gốc. UI: nút "Trường tính toán" ở Trường dữ liệu (`LeftPanel.tsx`) mở `CalcFieldDialog.tsx` (chèn cột/hàm, xem thử kết quả). Đổi tên trường thì widget/bộ lọc đang dùng được đổi theo; xoá thì chúng giữ nguyên và hiện trống. Cột tính toán tính ở trình duyệt (cùng giới hạn 20.000 dòng). AI thấy và dùng được các trường này, nhưng chưa có công cụ AI tạo trường mới.
+- **Chia sẻ công khai và nhúng iframe** (cần chạy migration `0007_embed.sql`): nút "Chia sẻ" ở TopBar mở `ShareDialog.tsx` (bật/tắt, tạo link mới, danh sách tên miền được nhúng, đoạn mã `<iframe>`). Cài đặt lưu ở bảng riêng `dashboard_shares` (token 32 ký tự do server sinh + `embed_domains`), KHÔNG để trong `dashboards` vì mỗi lần sửa bảng đó làm đổi `updated_at` và editor sẽ báo xung đột. API quản lý: `api/dashboards/[id]/share` (RLS: chỉ owner/editor). Người xem vào `/embed/<token>` (`app/embed/[token]/page.tsx` + `EmbedViewer.tsx`): chỉ xem, đổi được bộ lọc và lọc chéo, không autosave; dữ liệu lấy qua `GET /api/embed/<token>/rows?source=<id>` (service role, chỉ nguồn mà dashboard đó dùng và cùng workspace, giới hạn 60 lượt/phút/IP). **Giới hạn tên miền** là header CSP `frame-ancestors` do `middleware.ts` đặt riêng cho từng token (gọi RPC `embed_domains_for` bằng khoá anon; lỗi hoặc rỗng = không ai nhúng được); mọi trang khác bị `frame-ancestors 'none'` trong `next.config.mjs`. Chuẩn hoá/kiểm tra tên miền ở `lib/embed/domains.ts` (có test): `congty.com` = cả www, `*.congty.com` = mọi tên miền con. LƯU Ý bảo mật: token trong URL là thứ DUY NHẤT bảo vệ dữ liệu; giới hạn tên miền chỉ chặn website khác nhúng, không che được link. Trang nhúng đặt `Referrer-Policy: no-referrer` để token không lọt sang bên thứ ba. `spreadsheetId` được bỏ khỏi doc gửi cho người xem công khai. Chưa làm: gộp số liệu ở server cho trang công khai (hiện vẫn tải tới 20.000 dòng), tuỳ chọn ẩn dòng "Tạo bằng Cerno", ẩn bớt trang/bộ lọc cho bản nhúng.
+- **Chia sẻ loại 2: link xem + mời theo email** (cần migration `0008_dashboard_access.sql`, chạy SAU 0007): `ShareDialog.tsx` có 2 tab ("Link và mời người", "Nhúng vào website"). **Link xem** (`dashboard_links`, mã riêng, `/view/<mã>`): ai có link cũng xem + lọc được, không đăng nhập, không sửa; chủ thu hồi/đổi link được. **Mời theo email** (`dashboard_access`: email chữ thường + vai trò `viewer`/`editor`): người được mời KHÔNG vào workspace của chủ, chỉ chạm tới đúng dashboard đó và các nguồn nó đang dùng. Quyền do hàm SQL `dashboard_role(d)` quyết định (`owner` = thành viên owner/editor của workspace, `member` = viewer của workspace, `editor`/`viewer` = được mời), dùng trong RLS (security definer, tránh đệ quy policy); `source_shared_with_me` cho đọc nguồn/dòng dữ liệu mà dashboard được mời dùng (đối chiếu `doc->'sources'`). Người `editor` chỉ UPDATE được dashboard (không tạo/xoá), trigger `lock_dashboard_workspace` cấm đổi `workspace_id` (nếu không họ chuyển dashboard về workspace của mình), họ không thấy nút Chia sẻ (`canShare` ở `EditorApp`), không đồng bộ Sheets được (route sync đòi `can_edit`). Người `viewer` mở `/d/<id>` (`ReadOnlyViewer`, dữ liệu qua `/api/sources/<id>/rows` bằng phiên đăng nhập). Chưa đăng nhập mở link được mời thì chuyển tới `/login?next=` rồi quay lại (`lib/auth/next.ts`: danh sách trang cho phép, chống open redirect, nhớ bằng cookie vì Supabase so khớp chính xác redirect URL). `/dashboards` tách "của bạn" (lọc theo workspace) và "Được chia sẻ với bạn" (RPC `shared_dashboards`). Cerno KHÔNG gửi email mời: chủ gửi link `/editor/<id>` hoặc `/d/<id>` cho người được mời. API: `api/dashboards/[id]/{share,link,access}` (đều đòi vai trò `owner`). Hạn chế đã biết: người được mời quyền Sửa có thể thêm `id` nguồn khác (nếu biết uuid) vào dashboard để đọc nó; thêm nguồn mới của họ nằm ở workspace riêng của họ.
+- **Menu chuột phải của widget** (chỉ chế độ sửa; `WidgetContextMenu.tsx` + `contextMenu.module.css`, gắn ở `Canvas.tsx`): Sao chép/Dán/Nhân đôi/Xoá, và **sao chép thông số** sang widget khác: "Lấy vị trí, kích thước, kiểu dáng" lưu ảnh chụp widget vào `formatClip` (store), rồi Dán kích thước / vị trí (gồm góc xoay) / kiểu dáng / tất cả lên mọi widget đang chọn, gộp một bước undo (`copyFormat`/`pasteFormat`). Logic thuần ở `lib/editor/widget-format.ts` (có test): kiểu dáng = khung (`style`) + trường kiểu riêng từng loại (`CONFIG_STYLE_KEYS`: chart `format`, kpi `titleStyle/valueStyle/align`, text, image `fit`); khác loại chỉ áp khung; KHÔNG BAO GIỜ đổi dữ liệu (nguồn, cột, số đo, văn bản); bỏ qua widget khoá. Thêm trường kiểu dáng mới vào schema thì thêm vào `CONFIG_STYLE_KEYS`. Lưu ý `format.colors` khoá theo tên series nên chỉ có tác dụng khi tên trùng.
+- **Bình luận trên dashboard được chia sẻ** (cần migration `0011_comments_shared.sql`, chạy SAU 0008): dùng lại bảng `comments` của 0001. Ai có `dashboard_role` khác null (chủ, thành viên workspace, người được mời Xem hoặc Sửa) đọc + viết được; xoá được bình luận của mình, vai trò `owner` xoá được tất cả. Link xem công khai (`/view/<mã>`, `/embed`) KHÔNG bình luận được vì không biết người viết là ai. Trigger DB đặt lại `author_id`/`author_name` theo JWT (không tin client), cấm trả lời lồng nhiều cấp hoặc khác dashboard, tối đa 500 bình luận/dashboard. Bình luận gắn được vào một widget (`widget_id`) hoặc cả dashboard; cập nhật realtime (`replica identity full` để nhận sự kiện xoá). Phía web: `lib/comments/comments.ts` (truy cập qua RLS bằng client trình duyệt, `buildThreads`, có test), `CommentsPanel.tsx` + `comments.module.css`. UI: tab "Bình luận" trong `RightPanel` (editor, chỉ ở chế độ sửa) và nút nổi + ngăn trượt trong `ReadOnlyViewer` (prop `commentsFor`, chỉ truyền ở `/d/[id]`). Chưa có: sửa bình luận, thông báo/push khi có bình luận mới, bình luận trên mobile.
+- **Nguồn dữ liệu LỚN (tới ~200.000 dòng/nguồn)** (cần migration `0009_source_rows_chunk.sql`; GHI ĐÈ các câu "tối đa 20.000 dòng" và "kéo 20.000 dòng về trình duyệt" ở trên): giới hạn mới ở `lib/google/sheet-data.ts` (`MAX_ROWS` 200.000, `MAX_CELLS` 2 triệu ô: sheet nhiều cột thì ít dòng hơn) và `lib/limits.ts` (`MAX_ROWS_PER_WORKSPACE` 300.000 dòng cộng mọi nguồn; vượt thì cắt và báo ở `last_error`). Đồng bộ (`sync.ts`/`readTab`) đọc Sheets theo đoạn 20.000 dòng (độ dài lưới lấy từ `gridProperties.rowCount`, đệm dòng trống cuối đoạn để không lệch vị trí), băm nội dung theo đoạn, ghi DB 4 luồng song song. **Ngưỡng 20.000 dòng** (`LOCAL_ROW_LIMIT` ở `data-store.ts`): nguồn ≤ ngưỡng tải hết về trình duyệt và gộp tại máy như cũ; nguồn > ngưỡng KHÔNG tải về, trình duyệt chỉ giữ 500 dòng mẫu (`SAMPLE_ROWS_REMOTE`; `getRows()` của nguồn lớn chỉ trả dòng mẫu, dùng để đoán kiểu cột, xem thử công thức) còn số liệu do **server gộp** qua `POST /api/query` (đăng nhập, RLS kiểm quyền nguồn) hoặc `POST /api/embed/<mã>/query` (xem công khai; trường tính toán lấy từ dashboard đã lưu, không tin trình duyệt). Engine chạy ở `chart-engine/src/query.ts` (`runQuery`: tái dùng `applyFilters`, `materializeRows`, `aggregate` nên kết quả y hệt tính tại máy; chỉ tính cột theo dòng khi truy vấn dùng tới; cắt tối đa 5.000 nhóm, báo `truncated`). Server nạp dòng bằng RPC `source_rows_chunk` (10.000 dòng/lần) vào bộ nhớ (`lib/server/row-cache.ts`: khoá theo `last_sync_hash`, dùng chung khi nhiều yêu cầu cùng lúc, bỏ nguồn ít dùng khi vượt `ROW_CACHE_MAX_ROWS`, mặc định 300.000 dòng ≈ vài trăm MB, đặt thấp hơn nếu host ít RAM) và nhớ kết quả truy vấn (`query-service.ts`). Xác thực spec bằng zod có giới hạn (`lib/query/spec.ts`), giới hạn tần suất 300 truy vấn/phút. Phía widget: `useRemoteQuery`/`specForWidget` (`lib/editor/remote-query.ts`) và `buildChartOptionFromTable` (engine); `FilterControl` hỏi server chế độ `stats` (giá trị khác nhau tối đa 200, khoảng số, khoảng ngày); `SeriesColors`, xem thử công thức tổng hợp và `buildAiContext` (nay là `async`) cũng dùng truy vấn server. Trình xem công khai/được mời nhận `sourceRows` (số dòng từng nguồn) từ server để biết nguồn nào lớn. KHÔNG tính số liệu từ `getRows()` ở bất cứ chỗ mới nào. Hạn chế: lần đầu mở nguồn lớn phải nạp ~vài giây (có vòng quay); cache nằm trong từng tiến trình Node; chưa tính ở DB nên không vượt ~vài trăm nghìn dòng; bảng "dữ liệu thô" chỉ hiện 100 dòng đầu; sắp xếp bảng chỉ trên các nhóm đã nhận.
+- **Thương hiệu (màu logo + tên) đồng bộ**: bảng màu duy nhất là `BRAND` ở `packages/schema/src/brand.ts` (ink `#14162b`, violet `#6d5efc`, teal `#19c3b1`), dùng cho `components/Logo.tsx`, ảnh OG, HeroScene và app mobile. CSS/SVG không import được nên khai báo lại: `--brand-ink/--brand-a/--brand-b/--brand-gradient` ở `app/globals.css` (và `--cyan`/`--violet` cũ nay trỏ về `--brand-b`/`--brand-a`), stop màu ở `app/icon.svg`. Màu nhấn của editor (trước là xanh dương `#4f7cff`) đã đổi sang violet thương hiệu; bảng màu mặc định của CHART (`DEFAULT_PALETTE`) cố ý giữ nguyên vì là màu dữ liệu. Tên + logo luôn đi cùng nhau qua `components/Brand.tsx` (`tone="strong"` ở tiêu đề trang, mặc định ở dòng nhỏ "Tạo bằng"). Test `lib/brand.test.ts` giữ cho mọi nơi khớp nhau, cấm sót màu cũ và cấm tự vẽ lại logo ngoài `Logo.tsx`/`icon.svg`/`opengraph-image.tsx`. Đổi màu thương hiệu: sửa `BRAND` + `--brand-*` + `icon.svg` + sinh lại icon mobile/apple-icon (`apps/web/src/app/apple-icon.png`, `apps/mobile/assets/*.png`).
+- **Chart tràn khung trên điện thoại thì cuộn được**: khi vẽ trong khung mobile (`mobile` ctx của `WidgetContent`), chart có trục danh mục mà cần nhiều chỗ hơn khung (quá nhiều cột/điểm) được vẽ ở kích thước đủ đọc rồi đặt trong vùng cuộn có thanh kéo (`.chartScroll`), thay vì bóp nhỏ. Quy tắc nằm ở `chart-engine/src/chartSize.ts` (`chartMinSize`/`chartScrollSize`, thuần nên app mobile WebView dùng lại được; có test): cột 40px/mục (rộng hơn khi nhiều số đo cạnh nhau), đường/vùng 32px/mục, cột ngang và heatmap cuộn dọc; pie/phễu/gauge/radar/treemap/scatter không cuộn. Bảng nhiều cột giữ tối thiểu 96px/cột và cuộn ngang. Tiêu đề chart đứng yên; trục và chú giải cuộn cùng chart. Chưa làm: ghim trục Y khi cuộn ngang.
+- **AI vẽ biểu đồ ngay trong khung chat** (công cụ `show_chart`, `lib/editor/ai-chart.ts`): model gọi `show_chart` (chartType, dimensions, metrics, tuỳ chọn `calculated_fields` = trường tính toán TẠM, ví dụ nhóm theo tháng bằng `YEAR_MONTH([cột ngày])`) → client kiểm bằng zod + biên dịch công thức + kiểm cột, tính bảng đã gộp (nguồn nhỏ: `runQuery` tại máy; nguồn lớn: `fetchQuery` lên server; có áp bộ lọc dashboard đang bật) rồi hiện biểu đồ tĩnh (`StaticChart`) trong tin nhắn, kèm nút **"Thêm vào dashboard"**. Công cụ chỉ ĐỌC dữ liệu nên luôn được gửi cho model kể cả khi tắt "Cho phép AI sửa dashboard" (các công cụ sửa vẫn bị chặn khi tắt, cả ở server lẫn client). Bấm nút → `addChartToDashboard`: tạo kèm trường tính toán tạm (nếu chưa có; trùng tên khác công thức thì từ chối) rồi `add_widget`, gộp thành MỘT bước Ctrl+Z (cùng khoá `mutate`). Kết quả `show_chart` trả cho model có bảng số liệu rút gọn (≤ 20 dòng) để nó nhận xét ngắn. Lời nhắc + cú pháp công thức ở `CHART_PROMPT` (`app/api/chat/route.ts`; tốn thêm ~400 token mỗi yêu cầu, lưu ý hạn mức Groq 8k token/phút). Lỗi `tool_use_failed` (400) của Groq được báo thân thiện và client tự thử lại 1 lần.
+- **Ngân sách token của chat AI (lỗi "Dịch vụ AI gặp lỗi")**: Groq gói miễn phí giới hạn 8.000 token/phút/model và tính CẢ lời nhắc, định nghĩa công cụ lẫn `max_completion_tokens`; MỘT yêu cầu tự nó vượt 8.000 thì bị từ chối hẳn bằng **HTTP 413** (khác 429 là "chờ rồi thử lại"), trước đây bị gộp thành lỗi chung. Đo thực tế: định nghĩa công cụ ~1.360 token (đã rút gọn từ 2.420), ngữ cảnh dashboard ~2,4 ký tự/token. Cách xử lý: (1) `lib/editor/ai-intent.ts` (`wantsTools`) chỉ gửi công cụ + lời nhắc vẽ/sửa (~3.000 token) khi câu hỏi có ý định vẽ/sửa, câu phân tích thuần tuý thì không; (2) `buildAiContext(..., level)` có 4 cấp ngân sách (`CONTEXT_LEVELS`: 11.000/7.500/5.000/3.000 ký tự; cấp cao bỏ thống kê cột, dòng mẫu, định dạng), cấp khởi điểm 0 (không công cụ), 1 (chỉ show_chart), 2 (có công cụ sửa); (3) khi server báo `tooLarge` (413) client tự tăng cấp rút gọn rồi bỏ dần công cụ, tối đa 3 lần; (4) lịch sử chỉ 6 tin gần nhất, tin của AI cắt 700 ký tự; `max_completion_tokens` 1.200. Tổng token của MỘT yêu cầu luôn phải < 8.000, nên đừng thêm lời nhắc/công cụ dài mà không đo lại.
+- **AI trả phí (Anthropic) làm đường lui cho Groq + hạn mức** (cần migration `0010_ai_usage.sql`; `npm i @anthropic-ai/sdk` đã có ở `apps/web`): `app/api/chat/route.ts` chỉ còn lo xác thực, lời nhắc, xác thực body; việc gọi AI nằm ở `lib/server/ai/`: `groq.ts` (miễn phí, 8.000 token/phút), `anthropic.ts` (SDK chính thức, `claude-haiku-5-5` mặc định đổi bằng `ANTHROPIC_CHAT_MODEL`; `thinking: disabled` + `effort: low` cho rẻ và khỏi phải giữ khối suy nghĩ giữa các vòng công cụ; đổi hội thoại kiểu OpenAI sang `tool_use`/`tool_result`; bảng giá `PRICING` phải cập nhật khi Anthropic đổi giá hoặc khi đổi model, model lạ tính giá cao nhất), `router.ts` (`routeChat`: thứ tự `AI_PROVIDER_ORDER`, mặc định `groq,anthropic`; Groq lỗi 429/413/5xx/lệnh sai định dạng thì chuyển sang Anthropic nếu còn hạn mức; lỗi sau khi giữ chỗ thì trả lại lượt) và `quota.ts` (RPC `ai_usage_reserve` kiểm tra + tăng bộ đếm NGUYÊN TỬ theo giờ Việt Nam, lỗi DB thì TỪ CHỐI). Hạn mức chỉ áp cho AI trả phí: `AI_USER_DAILY_PAID` (5), `AI_USER_MONTHLY_PAID` (30), trần chi phí tháng cả hệ thống `AI_MONTHLY_BUDGET_USD` (4; chạm trần thì AI trả phí tự dừng, Groq vẫn chạy). Bảng `ai_usage` chỉ service role đọc/ghi (xem tổng quan bằng RPC `ai_usage_month_summary`). Chi phí ghi theo token thật của Anthropic, bị ngắt giữa chừng thì ghi ước lượng (không bao giờ ghi 0). Response có header `X-AI-Provider`, UI hiện "Trả lời bởi Claude (AI nâng cao)" khi dùng AI trả phí. CHƯA thử với khoá Anthropic thật: lần đầu có khoá cần thử một câu phân tích và một câu vẽ chart (vòng gọi công cụ nhiều lượt) rồi xem `ai_usage`.
+- **Chưa có**: kéo-thả field vào chart, gradient/shape, nhóm (`groupId` mới có trong schema), chỉnh text ngay trên canvas, đồng bộ lên Supabase.
+- **Định dạng chữ cho mọi widget có chữ** (trường tuỳ chọn trong schema, không cần đổi `SCHEMA_VERSION`): Văn bản (`fontFamily/italic/underline/color`, tab Dữ liệu), KPI (`titleStyle`, `valueStyle` cỡ tới 300px, tab Dữ liệu), Bảng (`format.tableHeader`, `format.tableCell`, tab Kiểu dáng), Chart (`format.title/axis/dataLabel/legend`). Dùng chung `TextStyleEditor` (PropertyPanel) và `textCss` (WidgetContent). Trường bỏ trống = giữ mặc định theo chủ đề/kích thước widget.
+- **Nhiều trang trong một dashboard** (schema bổ sung, không đổi `SCHEMA_VERSION`): `doc.pages` (id, tên, màu nền riêng), `widget.pageId`, `doc.nav` (kiểu thanh trang). `pages` rỗng = một trang ngầm định `page-1`; widget không có/sai `pageId` thuộc trang đầu. Helper dùng chung web + mobile ở `packages/schema/src/pages.ts` (`getPages`, `resolvePageId`, `pageIdOf`, `widgetsOnPage`); `deriveMobileLayout(doc, width, pageId)` theo từng trang. Mọi trang **dùng chung** kích thước canvas, bộ lọc, nguồn dữ liệu, chủ đề (bộ lọc/lọc chéo áp cho cả dashboard). `doc.widgets` vẫn là một danh sách phẳng; mọi chỗ thao tác theo canvas (vẽ, snap, khoanh chọn, Ctrl+A, lớp, đổi thứ tự lớp, dán, AI) phải lọc theo trang đang xem. Store: `pageId` (UI, không lưu), `setPage/addPage/renamePage/deletePage/duplicatePage/movePage/patchPage/patchNav`; lần đầu có >1 trang thì ghi rõ `pageId` cho widget cũ để xoá/đổi chỗ trang không làm chúng trôi. Giới hạn 20 trang. UI: `PagesPanel` (trái, nhấp đúp đổi tên), `PageSettings` (Thiết lập: tên/nền trang + kiểu thanh trang + hiệu ứng), `PageNav`/`PageSwitcher`/`PageStage` (xem trước/toàn màn hình: thanh trang bên trái, nút ‹ ›, phím ← →/PageUp/PageDown, hiệu ứng trượt/mờ dần). AI thêm widget vào trang đang xem; `buildAiContext` chỉ mô tả widget trang đó và liệt kê các trang.
+- **Loại chart** (13): cột, cột ngang `hbar`, cột chồng `stackedbar`, đường, vùng, tròn, phễu `funnel`, `treemap`, phân tán `scatter`, `radar`, đồng hồ `gauge`, bản đồ nhiệt `heatmap`, bảng. Mỗi loại cần bao nhiêu chiều/số đo và ô nào mang ý nghĩa gì nằm ở **một nơi**: `CHART_SPECS` (`chart-engine/src/chartTypes.ts`); thanh Thêm widget, ô chọn loại, bảng Dữ liệu (nhãn vai trò, cảnh báo thiếu ô), AI và engine đều đọc từ đó. Đổi loại thì `refit` (PropertyPanel) cắt ô thừa và tự bù ô thiếu. Scatter: số đo 1=X, 2=Y, 3=cỡ chấm; radar: mỗi số đo là một cạnh (≥3); gauge: không chiều, giá trị tối đa `format.gaugeMax` (bỏ trống = `niceMax`); heatmap: đúng 2 chiều. Lọc chéo tắt cho gauge, heatmap và treemap 2 tầng. Tooltip tự viết (scatter, heatmap) phải thoát HTML (`esc`).
+- Muốn thêm loại chart: thêm vào enum `ChartType` (schema), `CHART_SPECS` + `CHART_TYPE_ORDER` (chartTypes.ts), nhánh trong `buildChartOption`/`buildSpecialOption` (option.ts), đăng ký series ECharts trong `WidgetContent.tsx`, `createChart` (defaults.ts), icon `KIND_GLYPH` (LeftPanel).
+
+## Mobile: chạy thử bằng Expo Go khi camera iPhone hỏng (không quét được QR)
+
+Cần Node >= 22.13 (Expo 58). iPhone và máy tính cùng Wi-Fi. Chạy `npm run dev:mobile`, terminal in link `exp://IP:8081`:
+1. Expo Go → **Enter URL manually** → dán link.
+2. Hoặc gửi link vào Notes/Zalo/Telegram rồi bấm trên iPhone.
+3. Hoặc `npm run mobile:login` và đăng nhập cùng tài khoản Expo trong Expo Go: dự án hiện trong danh sách.
+Không vào được: cho phép Node.js qua firewall Windows (mạng Private) hoặc dùng `npm run dev:mobile:tunnel`.
+Push từ xa không chạy trong Expo Go trên Android (SDK 53+): cần development build.
+
+## Đăng nhập Google + nguồn Google Sheets (đã code, CHƯA chạy thử với Supabase/Google thật)
+
+- **Đăng nhập chỉ bằng Google** (`app/login`): Supabase OAuth, scope `drive.file`, `access_type=offline` + `prompt=consent` để có refresh token. Không làm email/mật khẩu (Supabase free giới hạn email, người dùng nào cũng có Google).
+- `app/auth/callback/route.ts` đổi code lấy phiên, lưu **refresh token mã hoá AES-256-GCM** (`lib/server/crypto.ts`, khoá `TOKEN_ENCRYPTION_KEY`) vào `google_credentials` (RLS bật, không policy: chỉ service role đọc/ghi).
+- **Luồng người dùng**: đăng nhập Google một lần (phiên nằm trong cookie Supabase, middleware làm mới, không phải đăng nhập lại) → `/dashboards` (danh sách, bấm cả thẻ để mở) → `/editor/<id>`. Người đã đăng nhập vào `/` hoặc `/login` được chuyển thẳng tới `/dashboards`; mọi nút của trang chủ trỏ tới `/dashboards`. Sau đăng nhập luôn về `/dashboards` (chưa nhớ trang đang mở dở).
+- `middleware.ts` làm mới phiên, chặn `/dashboards/*` và `/editor/*` khi chưa đăng nhập. `/editor` cũng yêu cầu đăng nhập, `/api/chat` trả 401 nếu chưa đăng nhập.
+- Migration `0002_google_auth.sql`: trigger tạo workspace cá nhân cho user mới, bảng `google_credentials`, thêm cột vào `data_sources`, unique (workspace, file, tab). **Phải chạy sau 0001** trên Supabase thật.
+- Luồng thêm nguồn (`app/(app)/dashboards`): Picker (`ConnectSheet.tsx`) → `/api/google/tabs` → `POST /api/sources` (kiểm quyền bằng RLS, tối đa 10 nguồn/workspace) → `lib/google/sync.ts` đọc Sheets API, `lib/google/sheet-data.ts` nhận diện kiểu cột (số kiểu VN `1.234,5`, ngày ISO/dd/mm/yyyy; có test) và thay toàn bộ `source_rows`. Tối đa 20.000 dòng, 60 cột. `POST /api/sources/sync` đồng bộ lại, chặn < 15 phút.
+- Biến môi trường: đọc từ `.env` ở thư mục gốc repo (không còn file `.env.example`; tên các biến xem ở `next.config.mjs` và nơi code dùng `process.env`).
+- **Editor dùng dữ liệu thật**: `GET /api/sources` (danh sách), `GET /api/sources/[id]/rows` (đọc `source_rows` qua RLS, phân trang 1000). Kho client `lib/editor/data-store.ts`; `getRows(id)` vẫn là điểm truy cập duy nhất (đọc kho, không reactive: component thêm `useDataVersion()` vào deps của useMemo). `lib/editor/remote-data.ts` tải dữ liệu và `hydrateSources()` chạy khi mở editor. UI chọn nguồn: `SourcesPanel.tsx` (Thiết lập > bỏ chọn widget). **Nguồn đầu danh sách `doc.sources` là nguồn chính**: widget/bộ lọc/AI tạo mới dùng nguồn này; `smartFields()` (defaults.ts) chọn cột mặc định theo kiểu cột. **Lưu ý hiệu năng**: hiện kéo tối đa 20.000 dòng về trình duyệt rồi gộp ở client (lệch quy ước "aggregate trước"); khi dữ liệu lớn hơn phải chuyển sang gộp ở server.
+- Nhận diện kiểu cột (`sheet-data.ts`): ô `-`, `n/a`, `—`, `#N/A` coi là rỗng; cột `h:mm:ss` thành số giây (đơn vị "giây"); cột rỗng hoàn toàn là chữ. Dev (không phải production) cho đồng bộ lại ngay, production chặn < 15 phút.
+- **Tải ảnh từ máy** (widget Ảnh): `ImageUpload.tsx` + `lib/editor/upload-image.ts` thu nhỏ (cạnh ≤ 2000px) và nén WebP rồi đưa lên Supabase Storage bucket công khai `dashboard-images` (thư mục theo user id, tối đa 5 MB). Cần chạy migration `0003_images.sql`.
+- **Tự cập nhật dữ liệu mỗi 2 giờ + nút "Cập nhật dữ liệu"** (migration `0005_auto_sync.sql`, hằng số ở `lib/google/constants.ts`):
+  - `lib/google/sync.ts`: `syncSource` so **dấu vân tay** nội dung sheet (`hashValues`, SHA-256) với `last_sync_hash`; không đổi thì chỉ ghi `last_synced_at`. Có đổi thì **upsert tại chỗ** theo `(source_id,row_index)` rồi xoá dòng dôi (không xoá hết trước nên người đang xem không thấy bảng trống), dấu vân tay ghi sau cùng. `syncDueSources` chọn nguồn đến hạn (`isDue`: quá `sync_interval_minutes` mặc định 120 VÀ lần thử gần nhất cách ≥ 15 phút), tối đa 20 nguồn/lượt, dùng quyền Google của `created_by`, mỗi người lấy token một lần.
+  - **Bộ hẹn giờ phía server**: `GET|POST /api/cron/sync` yêu cầu `Authorization: Bearer <CRON_SECRET>` (≥ 16 ký tự, so sánh hằng thời gian; thiếu cấu hình → 503). Phải có thứ gọi nó định kỳ, ví dụ mỗi 30 phút (chỉ nguồn đến hạn mới được đồng bộ, gọi dày hơn không hại): cron của Hostinger (`curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" https://<domain>/api/cron/sync`), hoặc Supabase `pg_cron` + `pg_net` (`net.http_post`), hoặc GitHub Actions. localhost thì dùng curl tay.
+  - **Khi đang mở editor** (`lib/editor/auto-refresh.ts`, không cần bộ hẹn giờ): sau 4 giây, mỗi 5 phút và khi quay lại tab, nguồn quá 2 giờ thì gọi `syncNow`, nguồn đã được nơi khác cập nhật (`last_synced_at` khác bản đang giữ) thì chỉ tải dòng mới. Nguồn vừa lỗi chờ 15 phút.
+  - **Nút tay**: `RefreshData` (thanh trên khi sửa; nổi góc dưới phải khi xem trước/toàn màn hình; hiện "cập nhật x phút trước" theo nguồn cũ nhất), `SourcesPanel` ("Cập nhật từ Google Sheets"), `/dashboards` ("Cập nhật ngay"). `POST /api/sources/sync` giới hạn 1 lần/phút/nguồn ở production. Nếu quyền Google hết hạn (OAuth đang Testing: 7 ngày) lỗi hiện ở `last_error` của nguồn, cần đăng nhập lại.
+- **Chưa làm**: sửa tay kiểu cột, đồng bộ định kỳ tự động (Edge Function `sync-sheets`), đăng nhập trên mobile. Google OAuth còn ở chế độ Testing: refresh token hết hạn sau 7 ngày và chỉ test users đăng nhập được, cần chuyển In production trước khi mở công khai.
+
+## Lưu dashboard (Supabase, đã code, CHƯA chạy thử với dữ liệu thật)
+
+- Dashboard = một dòng bảng `dashboards` (cột `doc` jsonb theo `@dashboard/schema`). `/dashboards` có danh sách (tạo trống/từ mẫu, mở, đổi tên, xoá) và đề nghị chuyển bản nháp `localStorage` cũ lên tài khoản. `/editor/[id]` (server component) đọc qua RLS, kiểm bằng zod, truyền vào `EditorApp`.
+- **Tự lưu** (`lib/editor/autosave.ts`, có test): gom lần sửa (1,5s), không bao giờ hai lần lưu song song, lưu tiếp nếu sửa trong lúc lưu, thử lại mỗi 5s khi lỗi. `lib/editor/save-store.ts` nối với store + `lib/dashboards/api.ts`. Có trạng thái ở thanh trên (Đã lưu / Chưa lưu / Đang lưu / Lỗi), Ctrl+S, cảnh báo khi rời trang chưa lưu, lưu ngay khi ẩn tab.
+- **Xung đột**: `UPDATE ... WHERE updated_at = <rev lúc mở>`; 0 dòng + dashboard còn tồn tại = xung đột → dừng tự lưu, banner cho chọn "Tải bản mới" hoặc "Ghi đè". `updated_at`/`updated_by` do trigger DB đặt (migration 0004), `rev` là chuỗi Postgres, không qua `Date`. Lưu ý: viewer (chưa có UI) cũng sẽ thấy "xung đột" vì RLS chặn ghi; cần phân biệt khi làm chia sẻ.
+- Hạn mức mềm 20 dashboard/workspace (trigger DB), `doc` tối đa 2 MB (check constraint + kiểm ở client). Nhập JSON/dashboard mẫu/trống thay nội dung nhưng giữ `id`.
+- `lib/editor/io.ts` (`loadDraft`...) chỉ còn dùng để chuyển bản nháp cũ lên; xoá được sau khi mọi người đã chuyển.
+
+## Landing page + SEO (`app/page.tsx`)
+
+- Trang chủ là landing đầy đủ: hero, số liệu nhanh, 3 bước, 7 nhóm tính năng, thư viện 13 biểu đồ, bảo mật, chi phí, "sắp có", hỏi đáp, chân trang. Nội dung ở các mảng đầu file (`STEPS`, `GROUPS`, `CHARTS`, `TRUST`, `SOON`, `FAQ`); mọi con số lấy từ hằng số thật (`lib/limits.ts`, `sheet-data.ts`, `AUTO_SYNC_MINUTES`, `MAX_PAGES`) nên đổi hạn mức thì trang tự đúng. **Không ghi tính năng chưa có**: app mobile, thông báo ngưỡng, bình luận nằm ở mục "Sắp có"; khi làm xong phải chuyển lên mục tính năng.
+- SEO: `layout.tsx` (metadataBase, Open Graph, Twitter, canonical), JSON-LD `SoftwareApplication` + `WebSite` + `FAQPage` (FAQ lấy từ chính mảng `FAQ`, nên chữ hiển thị và dữ liệu có cấu trúc luôn khớp; `lib/seo.ts#jsonLd` thoát `<`), `app/sitemap.ts`, `app/robots.ts` (chặn /api, /editor, /dashboards, /account, /d, /view, /embed, /login), `app/opengraph-image.tsx` (chỉ chữ KHÔNG DẤU vì font mặc định thiếu tiếng Việt). Một `h1` duy nhất, mỗi phần một `h2`.
+- **Đặt `NEXT_PUBLIC_SITE_URL` (https://tenmien.com) TRƯỚC khi build**, nếu không canonical/sitemap/OG trỏ về localhost.
+- Sau khi deploy: gửi sitemap vào Google Search Console, kiểm tra ảnh chia sẻ bằng trình gỡ lỗi của Facebook/Zalo.
+
+## Trang pháp lý (công khai, không cần đăng nhập)
+
+- `/privacy` (Chính sách quyền riêng tư) và `/terms` (Điều khoản sử dụng), khung chung ở `components/legal/`. Có tuyên bố **Limited Use** của Google (bản gốc tiếng Anh + tiếng Việt), bắt buộc cho app dùng dữ liệu Google. Liên kết ở footer trang chủ, trang đăng nhập và `/dashboards`. Dùng URL `/privacy` làm "Privacy policy link" và `/terms` làm "Terms of service link" trong Google Auth Platform (Branding).
+- **Thông tin pháp lý lấy từ biến môi trường, đặt TRƯỚC khi build**: `NEXT_PUBLIC_OPERATOR_NAME`, `NEXT_PUBLIC_CONTACT_EMAIL` (`lib/site.ts` → `site.legal`). Chưa đặt thì trang hiện dòng nhắc "[điền ...]" để không công bố thiếu liên hệ.
+- Con số hạn mức trong Điều khoản lấy từ hằng số thật (`lib/limits.ts`, `MAX_ROWS/MAX_COLUMNS`, `AUTO_SYNC_MINUTES`, `MAX_PAGES`) và có test (`app/legal-pages.test.tsx`) khẳng định các cam kết chính (Limited Use, chỉ đọc, không huấn luyện AI, AI gửi tối đa 3 dòng mẫu, xóa trong 30 ngày). **Khi đổi hành vi thật của app (thêm analytics, đổi dữ liệu gửi cho AI, đổi nhà cung cấp, thêm cookie...) phải sửa trang này cùng lúc.**
+- **Tự xóa dữ liệu** (đã code, CHƯA chạy thử xóa thật; cần chạy migration `0006_account_delete.sql` trước):
+  - **Xóa nguồn dữ liệu**: nút "Xóa nguồn" ở `/dashboards` (`SourceItem.tsx`, qua RLS bằng client của người dùng; `source_rows` xóa theo cascade). Cảnh báo số dashboard đang dùng bằng truy vấn jsonb `contains`. Dashboard vẫn giữ tham chiếu cũ; editor (`SourcesPanel`) hiện "nguồn đã bị xóa khỏi tài khoản".
+  - **Xóa tài khoản**: trang `/account` (cần đăng nhập, middleware) → `POST /api/account/delete`: chặn Origin lạ (403), bắt `application/json` (415), cần phiên (401), **phải gõ lại đúng email** (400). Thứ tự: `revokeGoogleAccess` (làm hết sức) → xóa mọi ảnh trong `dashboard-images/<userId>/` (Storage không tự cascade) → `auth.admin.deleteUser` (DB tự xóa workspace → dashboard, nguồn, dòng, token, thiết bị) → đăng xuất → `/login?deleted=1`. Không đụng file Google Sheets gốc.
+  - Migration 0006 đổi 3 khóa ngoại không cascade (`dashboards.updated_by`, `data_sources.created_by` → `set null`; `comments.author_id` → `cascade`) để không chặn việc xóa tài khoản. Hiện mỗi người chỉ có workspace cá nhân; **khi làm chia sẻ/workspace nhiều thành viên phải xử lý lại việc xóa owner** (đang xóa luôn workspace của họ, kể cả dữ liệu của thành viên khác).
+  - Chính sách quyền riêng tư đã mô tả đúng cách tự xóa này, vẫn giữ email hỗ trợ (xử lý trong 30 ngày).
+
+## Database (supabase/migrations/0001_init.sql)
+
+`workspaces`, `workspace_members` (owner/editor/viewer), `dashboards` (cột `doc` jsonb), `data_sources`, `source_rows`, `comments`, `alert_rules`, `push_devices`. Tất cả bật RLS. `source_rows` chỉ ghi bằng service role (job đồng bộ). `comments` và `dashboards` bật realtime.
+
+Link công khai (`dashboards.share_token`) chưa có policy cho người chưa đăng nhập: làm qua Edge Function `share-dashboard`, không mở quyền đọc cả bảng.
+
+## Lệnh thường dùng
+
+Chạy ở thư mục gốc:
+
+```bash
+npm install                 # cài toàn bộ workspace
+npm run dev:web             # chạy web ở http://localhost:3000 (editor: /editor)
+npm run build:web           # build production
+npm run typecheck           # typecheck schema + chart-engine + web
+npm run dev:mobile          # Expo, in link exp://IP:8081 (đã copy clipboard)
+npm run dev:mobile:tunnel   # Expo qua tunnel (khác mạng Wi-Fi/firewall chặn)
+npm run mobile:login        # đăng nhập Expo để dự án hiện trong Expo Go
+npm test                    # test schema + chart-engine + hình học editor
+```
+
+## Deploy lên Hostinger
+
+- **Cần gói có Node.js** (Business hoặc Cloud, mục "Node.js Web App"). Gói shared cũ không chạy được Next.js server.
+- Thiết lập: Build command `npm run build:web`, Start command `npm run start -w @dashboard/web`, Node 20+ trở lên. Build **từ thư mục gốc repo** vì web phụ thuộc `packages/schema` trong workspace.
+- Biến môi trường (khi có Supabase): `CRON_SECRET` (bộ hẹn giờ gọi `/api/cron/sync`), `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`. `SUPABASE_SERVICE_ROLE_KEY` chỉ dùng phía server/Edge Function, **không bao giờ** đưa lên client.
+- Nếu chỉ có hosting tĩnh: `NEXT_OUTPUT=export npm run build:web` (thư mục `apps/web/out`). Bản này chỉ phù hợp trang giới thiệu, không có API route/SSR.
+
+## Quy ước
+
+- TypeScript strict. Package nội bộ import qua `@dashboard/schema` (được `transpilePackages`).
+- Mọi thay đổi cấu trúc dashboard JSON phải đổi `SCHEMA_VERSION` nếu không tương thích, và có bước migrate.
+- Giao diện tiếng Việt (`lang="vi"`).
+- **KHÔNG BAO GIỜ dùng `alert` / `confirm` / `prompt` của trình duyệt** (người dùng đã yêu cầu rõ). Mọi chỗ cần hỏi, xác nhận, nhập tên hay báo lỗi dùng `useDialog()` (`components/ui/DialogProvider.tsx`, đã bọc ở `app/layout.tsx`): `await dialog.confirm({ title, message, confirmText, tone: "danger" })`, `dialog.prompt({ label, defaultValue, validate })`, `dialog.alert(...)`. Hộp thoại xóa/nguy hiểm dùng `tone: "danger"` (nút Hủy được chọn sẵn). Hỏi TRƯỚC khi vào hàm bật lớp phủ "Đang xử lý" (ví dụ `run()`), kẻo lớp phủ che hộp thoại. Test `lib/dialog-rule.test.ts` quét mã nguồn và fail nếu còn dùng hàm của trình duyệt. Ngoại lệ không tránh được: chữ cảnh báo `beforeunload` khi rời trang chưa lưu (trình duyệt không cho tùy biến).
+- Hiệu năng: không kéo toàn bộ dữ liệu về trình duyệt; aggregate trước rồi trả kết quả đã gộp.
+- Bảo mật: cô lập dữ liệu theo workspace bằng RLS; thông tin truy cập nguồn dữ liệu của khách phải mã hoá.
+
+## Lộ trình
+
+1. ✅ Schema dùng chung, layout mobile tự sinh, migration Supabase
+2. ✅ Khung Next.js + trang chủ
+3. ✅ Editor canvas tự do (kéo, resize, xoay, snap, undo/redo) + ECharts với dữ liệu mẫu
+4. ✅ Đăng nhập Supabase (Google), lưu/tải dashboard (cần chạy thử với Supabase thật)
+5. 🚧 Kết nối Google Sheets (Picker + đồng bộ)
+6. 🚧 Filter, cross-filter, theme, chia sẻ link, bình luận
+7. 🚧 Mobile app Expo: xem, filter, bình luận, push
+8. 🚧 Cảnh báo ngưỡng, analytics, hạn mức miễn phí

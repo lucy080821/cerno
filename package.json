@@ -1,0 +1,17 @@
+{
+  "name": "dashboard-monorepo",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev:web": "npm run dev -w @dashboard/web",
+    "build:web": "npm run build -w @dashboard/web",
+    "test": "npm test -w @dashboard/schema && npm test -w @dashboard/chart-engine && npm test -w @dashboard/web",
+    "typecheck": "npm run typecheck -w @dashboard/schema && npm run typecheck -w @dashboard/chart-engine && npm run typecheck -w @dashboard/web",
+    "dev:mobile": "npm run start -w @dashboard/mobile",
+    "dev:mobile:tunnel": "npm run tunnel -w @dashboard/mobile",
+    "mobile:login": "npm run login -w @dashboard/mobile"
+  }
+}

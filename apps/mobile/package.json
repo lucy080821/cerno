@@ -1,0 +1,24 @@
+{
+  "name": "@dashboard/mobile",
+  "version": "0.0.1",
+  "private": true,
+  "main": "index.ts",
+  "scripts": {
+    "start": "node scripts/show-link.mjs && expo start --port 8081",
+    "tunnel": "expo start --tunnel --port 8081",
+    "login": "expo login",
+    "android": "expo start --android",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@dashboard/schema": "*",
+    "expo": "~58.0.23",
+    "expo-status-bar": "~58.0.4",
+    "react": "19.3.0",
+    "react-native": "0.88.1"
+  },
+  "devDependencies": {
+    "@types/react": "~19.3.0",
+    "typescript": "~6.0.3"
+  }
+}
