@@ -115,4 +115,12 @@ export const EN_ENGINE: Dict = {
   "Năm-tháng, ví dụ 2026-03": "Year-month, e.g. 2026-03",
   "DATE_DIFF(ngày1, ngày2)": "DATE_DIFF(date1, date2)",
   "Số ngày chênh lệch": "Number of days apart",
+  // Dự báo
+  "· dự báo": "· forecast",
+  "{0} · dự báo": "{0} · forecast",
+  "Dự báo chỉ dùng được khi chiều đầu tiên là ngày gom theo ngày, tuần, tháng, quý hoặc năm.": "Forecasting only works when the first dimension is a date grouped by day, week, month, quarter or year.",
+  "Không đọc được các mốc thời gian của biểu đồ để dự báo.": "Couldn't read the chart's time points to forecast.",
+  "Dữ liệu thiếu quá nhiều kỳ nên không dự báo được.": "Too many periods are missing from the data to forecast.",
+  "Chưa đủ dữ liệu cho dự báo theo mùa vụ (cần ít nhất hai chu kỳ).": "Not enough data for a seasonal forecast (at least two full cycles are needed).",
+  "Chưa đủ dữ liệu để dự báo (cần ít nhất {0} kỳ).": "Not enough data to forecast (at least {0} periods are needed).",
 };

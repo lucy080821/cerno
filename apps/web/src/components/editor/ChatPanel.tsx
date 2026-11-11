@@ -86,7 +86,10 @@ export function ChatPanel() {
 
   useEffect(() => { endRef.current?.scrollIntoView({ block: "end" }); }, [messages]);
 
+  const hasForecast = selected?.config.kind === "chart" && !!selected.config.format?.forecast;
   const suggestions = [
+    // Chart đang chọn có dự báo: gợi ý đầu tiên là nhờ AI diễn giải (số do thuật toán tính, AI chỉ giải thích).
+    hasForecast && selected ? `Giải thích dự báo của "${widgetLabel(selected)}" đang chọn: hướng đi, mùa vụ và độ tin cậy?` : "",
     selected ? `Phân tích "${widgetLabel(selected)}" đang chọn: xu hướng và điểm đáng chú ý?` : "Tóm tắt nhanh dashboard này.",
     "Có điểm bất thường nào trong dữ liệu không?",
     ...(canEdit
@@ -95,7 +98,7 @@ export function ChatPanel() {
           "Chỉ xem dữ liệu quý 2 (tháng 4 đến tháng 6).",
         ]
       : ["Kênh/khu vực nào đóng góp nhiều nhất?"]),
-  ];
+  ].filter(Boolean).slice(0, 4);
 
   return (
     <div className={s.chat}>

@@ -269,4 +269,7 @@ export const EN_LANDING: Dict = {
   "Đây là dashboard phân tích kênh YouTube, thiết kế bằng chính": "This is a YouTube channel analytics dashboard, designed with",
   "và lấy số liệu từ một file Google Sheets. Bạn đang xem bản chạy thật: bấm vào một cột hay một lát để lọc các biểu đồ còn lại, chuyển giữa hai trang ở thanh bên trái.": "itself, with figures taken from a Google Sheets file. You're looking at the live version: click a bar or a slice to filter the other charts, and switch between the two pages in the left bar.",
   ". Bản dùng thử, số liệu chỉ để minh hoạ.": ". This is a demo; the figures are for illustration only.",
+  "Dự báo": "Forecast",
+  "Dự báo xu hướng kèm dải tin cậy": "Trend forecast with a confidence band",
+  ": kéo dài biểu đồ đường hoặc vùng sang các kỳ tới, kèm dải tin cậy và sai số khi thử dự báo lại quá khứ.": ": extend a line or area chart into the coming periods, with a confidence band and the error measured by re-forecasting the past.",
 };

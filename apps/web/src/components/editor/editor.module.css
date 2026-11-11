@@ -3180,3 +3180,40 @@
   background: color-mix(in srgb, var(--accent) 16%, transparent);
   color: var(--text);
 }
+
+/* ---------- Huy hiệu dự báo ở góc chart ---------- */
+.fcBadge {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  z-index: 2;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  line-height: 1.5;
+  white-space: nowrap;
+  color: var(--brand-a);
+  background: color-mix(in srgb, var(--brand-a) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--brand-a) 30%, transparent);
+  cursor: help;
+}
+.fcBadgeOff {
+  color: var(--muted, #8b8fa7);
+  background: transparent;
+  border-style: dashed;
+  border-color: currentColor;
+}
+.fcSuggest {
+  font-family: inherit;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+/* Chỉ hiện khi rê chuột vào widget, để không làm rối canvas khi thiết kế. */
+*:hover > .fcSuggest,
+.fcSuggest:focus-visible {
+  opacity: 1;
+}
+.fcSuggest:hover {
+  background: color-mix(in srgb, var(--brand-a) 22%, transparent);
+}

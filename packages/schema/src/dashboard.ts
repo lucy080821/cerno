@@ -73,6 +73,19 @@ export const ChartFormat = z.object({
    * Đường xu hướng: "linear" = đường thẳng hồi quy, "movingAverage" = trung bình trượt `trendWindow` điểm (không dùng cho phân tán).
    * `showTrendInfo`: hiện phương trình và R² (chỉ phân tán với đường thẳng).
    */
+  /**
+   * Dự báo (chỉ chart đường/vùng có chiều đầu là ngày gom theo ngày/tuần/tháng/quý/năm). Có đối tượng này = đang bật.
+   * `periods`: số kỳ dự báo (mặc định 6); `method`: auto (ensemble, tự chọn mùa vụ theo backtest) | trend | seasonal;
+   * `level`: mức tin cậy của dải (0.95 mặc định); `showBand`: hiện dải tin cậy (mặc định có).
+   */
+  forecast: z
+    .object({
+      periods: z.number().int().min(1).max(24).optional(),
+      method: z.enum(["auto", "trend", "seasonal"]).optional(),
+      level: z.union([z.literal(0.8), z.literal(0.9), z.literal(0.95)]).optional(),
+      showBand: z.boolean().optional(),
+    })
+    .optional(),
   trendline: z.enum(["none", "linear", "movingAverage"]).optional(),
   trendWindow: z.number().int().min(2).max(60).optional(),
   showTrendInfo: z.boolean().optional(),

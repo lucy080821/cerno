@@ -4,6 +4,7 @@ import type { CalcSet } from "./formula";
 import { formatByKind, formatCompact, formatCompactByKind, formatDay, formatNumber, type MetricKind } from "./format";
 import { CHART_SPECS, hasEnoughFields } from "./chartTypes";
 import { linearRegression, trendOf } from "./trend";
+import { planChartForecast } from "./forecastChart";
 
 export interface ChartTheme {
   palette: string[];
@@ -170,6 +171,8 @@ export function buildChartOptionFromTable(
   table: AggregatedTable,
   theme: ChartTheme,
   highlight: string[] = [],
+  /** Ngày hôm nay (yyyy-mm-dd) để nhận ra kỳ cuối chưa trọn khi dự báo; bỏ trống = lấy từ đồng hồ. Chủ yếu để test. */
+  today?: string,
 ): EChartsOptionLike | null {
   const dim = (v: unknown) => highlight.length > 0 && !highlight.includes(String(v ?? ""));
   const DIMMED = { itemStyle: { opacity: 0.3 } };
@@ -310,15 +313,20 @@ export function buildChartOptionFromTable(
       });
     }
   }
+  // Dự báo (chart đường/vùng): kéo dài trục, thêm đường nét đứt + dải tin cậy.
+  const fc = chartType === "line" || chartType === "area" ? forecastParts(config, categories, series, colors, c, dk, today) : null;
+  const cats = fc ? fc.categories : categories;
   const titles = resolveAxisTitles(config);
   const xName = fmt.showXAxis ? titles.x : "";
   const yName = fmt.showYAxis ? titles.y : "";
   return {
     color: colors,
-    tooltip: {
-      trigger: "axis",
-      valueFormatter: (v: unknown) => formatByKind(Number(v), dk),
-    },
+    tooltip: fc
+      ? { trigger: "axis", formatter: fc.formatter }
+      : {
+          trigger: "axis",
+          valueFormatter: (v: unknown) => formatByKind(Number(v), dk),
+        },
     legend: showLegend
       ? { top: 2, left: 4, itemWidth: 12, itemHeight: 8, textStyle: legendText, data: series.map((s) => s.name) }
       : { show: false },
@@ -334,7 +342,7 @@ export function buildChartOptionFromTable(
         type: "category",
         // Cột ngang: trục nhóm nằm dọc (Y), nhóm đầu tiên ở trên cùng.
         show: horizontal ? fmt.showYAxis : fmt.showXAxis,
-        data: categories,
+        data: cats,
         inverse: horizontal,
         boundaryGap: isBar,
         axisLine: { lineStyle: { color: c.grid } },
@@ -351,8 +359,116 @@ export function buildChartOptionFromTable(
       };
       return horizontal ? { xAxis: valAxis, yAxis: catAxis } : { xAxis: catAxis, yAxis: valAxis };
     })(),
-    series: [...series, ...trendSeries],
+    series: fc ? [...fc.series, ...trendSeries, ...fc.extra] : [...series, ...trendSeries],
   };
+}
+
+/** Hậu tố tên series dự báo. Tách riêng khỏi chuỗi ghép để tooltip dịch được phần chữ ("· dự báo") độc lập với tên series. */
+const FC_WORD = "· dự báo";
+const FC_SUFFIX_RE = / · dự báo$/;
+
+/** Phần dự báo của chart cartesian. Null khi chart không bật dự báo hoặc không dự báo được. */
+function forecastParts(
+  config: ChartConfig,
+  categories: string[],
+  series: Array<{ name: string; data: unknown[] } & Record<string, unknown>>,
+  colors: string[],
+  c: ReturnType<typeof themeColors>,
+  dk: MetricKind | undefined,
+  today?: string,
+) {
+  const numeric = (data: unknown[]) =>
+    data.map((v) =>
+      typeof v === "number" ? v : v && typeof v === "object" && typeof (v as { value?: unknown }).value === "number" ? (v as { value: number }).value : null,
+    );
+  const plan = planChartForecast(config, categories, series.map((s) => ({ name: s.name, values: numeric(s.data) })), today);
+  if (!plan || plan.items.length === 0) return null;
+
+  const cats = [...categories, ...plan.extraLabels];
+  const at = new Map(cats.map((l, i) => [l, i]));
+  const blanks = () => cats.map(() => null as number | null);
+  const padded = series.map((s) => ({ ...s, data: [...s.data, ...plan.extraLabels.map(() => null)] }));
+  const showBand = config.format?.forecast?.showBand !== false;
+  const pct = Math.round(plan.options.level * 100);
+  // Tên series dự báo → (nhãn kỳ → khoảng), để tooltip hiện "dự báo (95%: lo – hi)".
+  const info = new Map<string, Map<number, { lo: number; hi: number }>>();
+  const extra: Array<Record<string, unknown>> = [];
+
+  plan.items.forEach((it, n) => {
+    const r = it.result;
+    const color = colors[it.index % colors.length] ?? c.text;
+    const anchor = at.get(r.anchorLabel);
+    if (anchor === undefined) return;
+    const actual = numeric(series[it.index].data)[categories.indexOf(r.anchorLabel)];
+    if (actual === null || actual === undefined) return;
+    const name = `${it.name} · dự báo`;
+    const line = blanks();
+    const lo = blanks();
+    const width = blanks();
+    line[anchor] = actual;
+    lo[anchor] = actual;
+    width[anchor] = 0;
+    const ranges = new Map<number, { lo: number; hi: number }>();
+    r.labels.forEach((l, j) => {
+      const i = at.get(l);
+      if (i === undefined) return;
+      line[i] = r.mean[j];
+      lo[i] = r.lo[j];
+      width[i] = Math.max(0, r.hi[j] - r.lo[j]);
+      ranges.set(i, { lo: r.lo[j], hi: r.hi[j] });
+    });
+    info.set(name, ranges);
+    const stack = `fcband${n}`;
+    if (showBand) {
+      const hidden = { opacity: 0 };
+      extra.push(
+        { name: `__lo${n}`, type: "line", data: lo, stack, symbol: "none", silent: true, z: 1, lineStyle: hidden, tooltip: { show: false } },
+        { name: `__bd${n}`, type: "line", data: width, stack, symbol: "none", silent: true, z: 1, lineStyle: hidden, areaStyle: { color, opacity: 0.16 }, tooltip: { show: false } },
+      );
+    }
+    extra.push({
+      name,
+      type: "line",
+      data: line,
+      symbol: "none",
+      smooth: true,
+      silent: true,
+      z: 4,
+      lineStyle: { type: "dashed", width: 2.5, color },
+      itemStyle: { color },
+      // Vạch đứng mờ ngăn "đã có" và "dự báo" (chỉ vẽ một lần).
+      ...(n === 0
+        ? { markLine: { silent: true, symbol: "none", label: { show: false }, lineStyle: { type: "dotted", color: c.muted, width: 1 }, data: [{ xAxis: anchor }] } }
+        : {}),
+    });
+  });
+  if (info.size === 0) return null;
+
+  // Tooltip tự viết: ẩn các series của dải, và hiện khoảng tin cậy cho điểm dự báo. Tên/giá trị đều thoát HTML.
+  const formatter = (params: unknown) => {
+    const list = (Array.isArray(params) ? params : [params]) as Array<{
+      seriesName?: string;
+      value?: unknown;
+      dataIndex?: number;
+      axisValueLabel?: string;
+      name?: string;
+      marker?: string;
+    }>;
+    if (list.length === 0) return "";
+    const rows: string[] = [`<div>${esc(list[0].axisValueLabel ?? list[0].name)}</div>`];
+    for (const p of list) {
+      const sn = String(p.seriesName ?? "");
+      if (sn.startsWith("__") || typeof p.value !== "number") continue;
+      const forecast = info.get(sn);
+      const range = forecast?.get(p.dataIndex ?? -1);
+      if (forecast && !range) continue; // điểm nối: đã có giá trị thật ở series gốc
+      const label = forecast ? `<span>${esc(sn.replace(FC_SUFFIX_RE, ""))}</span> <span>${FC_WORD}</span>` : `<span>${esc(sn)}</span>`;
+      const tail = range ? ` <span style="opacity:.7">(${pct}%: ${esc(formatByKind(range.lo, dk))} – ${esc(formatByKind(range.hi, dk))})</span>` : "";
+      rows.push(`<div>${p.marker ?? ""}${label}: <b>${esc(formatByKind(p.value, dk))}</b>${tail}</div>`);
+    }
+    return rows.join("");
+  };
+  return { categories: cats, series: padded, extra, formatter };
 }
 
 // ---------------------------------------------------------------------------------------------

@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import type { ChartConfig, ChartFormat, FieldBinding, KpiCompare, TextStyle, Widget, WidgetConfig } from "@dashboard/schema";
 import {
   AGG_LABEL, CHART_SPECS, CHART_TYPE_ORDER, chartColorKeys, chartColorKeysFromTable, chartFields, clampFields, defaultAxisTitles, resolveFormat,
-  resolveSeriesColors,
+  resolveSeriesColors, FORECAST_DEFAULTS, FORECAST_MAX_PERIODS, forecastGrainOf,
 } from "@dashboard/chart-engine";
 import { useEditor, type AlignKind } from "@/lib/editor/store";
 import { getRows } from "@/lib/editor/sample-data";
@@ -746,6 +746,36 @@ function ChartFormatSection({ cfg, onChange }: { cfg: ChartConfig; onChange: (p:
                 ? "Vẽ một đường nét đứt cho tổng của các phần chồng."
                 : "Nét đứt cùng màu với từng đường/cột, thể hiện chiều hướng chung theo thứ tự trục ngang."}
           </p>
+        </Block>
+      )}
+
+      {(cfg.chartType === "line" || cfg.chartType === "area") && (
+        <Block title="Dự báo" on={!!fmt?.forecast}
+          onToggle={(v) => onChange({ forecast: v ? {} : undefined })}>
+          <NumField label="Số kỳ dự báo" value={fmt?.forecast?.periods ?? FORECAST_DEFAULTS.periods} min={1} max={FORECAST_MAX_PERIODS}
+            onChange={(v) => onChange({ forecast: { ...fmt?.forecast, periods: Math.min(FORECAST_MAX_PERIODS, Math.max(1, Math.round(v))) } })} />
+          <SelectField label="Phương pháp" value={fmt?.forecast?.method ?? "auto"}
+            options={[
+              { value: "auto", label: "Tự động (khuyên dùng)" },
+              { value: "trend", label: "Chỉ xu hướng (đường thẳng)" },
+              { value: "seasonal", label: "Có mùa vụ" },
+            ]}
+            onChange={(v) => onChange({ forecast: { ...fmt?.forecast, method: v } })} />
+          <SelectField label="Mức tin cậy của dải" value={String(fmt?.forecast?.level ?? FORECAST_DEFAULTS.level)}
+            options={[
+              { value: "0.8", label: "80%" },
+              { value: "0.9", label: "90%" },
+              { value: "0.95", label: "95%" },
+            ]}
+            onChange={(v) => onChange({ forecast: { ...fmt?.forecast, level: Number(v) as 0.8 | 0.9 | 0.95 } })} />
+          <Toggle label="Hiện dải tin cậy" value={fmt?.forecast?.showBand !== false}
+            onChange={(v) => onChange({ forecast: { ...fmt?.forecast, showBand: v } })} />
+          <p className={s.hint}>
+            {forecastGrainOf(cfg)
+              ? "Đường nét đứt là dự báo, dải mờ là khoảng có khả năng xảy ra. Huy hiệu ở góc biểu đồ cho biết sai số khi thử dự báo lại các kỳ gần nhất."
+              : "Cần chọn \"Gom ngày theo\" Ngày, Tuần, Tháng, Quý hoặc Năm cho chiều đầu tiên (tab Dữ liệu) thì mới dự báo được."}
+          </p>
+          <p className={s.hint}>Dự báo chỉ mang tính tham khảo: tính bằng thống kê từ số liệu quá khứ, không biết trước các sự kiện mới.</p>
         </Block>
       )}
 

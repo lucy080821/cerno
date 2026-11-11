@@ -1,5 +1,8 @@
-import { getPages, pageIdOf, resolvePageId, widgetsOnPage, type Dashboard, type FieldBinding, type Widget } from "@dashboard/schema";
-import { aggregate, applyFilters, bindingLabel, formatDay, type MetricKind, type Row } from "@dashboard/chart-engine";
+import { getPages, pageIdOf, resolvePageId, widgetsOnPage, type ChartConfig, type Dashboard, type FieldBinding, type Widget } from "@dashboard/schema";
+import {
+  aggregate, applyFilters, bindingLabel, forecastFailText, formatDay, pivotSeries, planChartForecast, summarizeForecast,
+  type AggregatedTable, type MetricKind, type Row,
+} from "@dashboard/chart-engine";
 import { getRows } from "./sample-data";
 import { isRemoteSource, useData } from "./data-store";
 import { calcDefsFor, fetchQuery, specForWidget } from "./remote-query";
@@ -52,6 +55,33 @@ const round = (n: number) => (Number.isInteger(n) ? n : Math.round(n * 100) / 10
 /** Giá trị số đo cho AI: số đo là ngày (MIN/MAX của cột ngày) thì đưa chuỗi dd/mm/yyyy thay vì số ngày kể từ 1970. */
 const val = (n: number, kind?: MetricKind) => (kind === "date" ? formatDay(n) : round(n));
 
+/**
+ * Số liệu dự báo cho AI diễn giải (chỉ khi chart bật dự báo). Số do thuật toán thống kê tính sẵn: AI chỉ mô tả, không tính lại.
+ * Chỉ gửi đường đầu tiên + tối đa 12 kỳ để tiết kiệm token.
+ */
+function forecastFacts(cfg: ChartConfig, t: AggregatedTable): Record<string, unknown> | null {
+  if (!cfg.format?.forecast) return null;
+  const { categories, series } = pivotSeries(t);
+  const plan = planChartForecast(cfg, categories, series);
+  if (!plan) return null;
+  if (!plan.items.length) return { khongDuBaoDuoc: forecastFailText(plan.failures[0] ?? "too_few") };
+  const info = summarizeForecast(plan);
+  const it = plan.items[0];
+  const actual = series[it.index].values.filter((v): v is number => typeof v === "number");
+  return {
+    ghiChu: "dự báo do thuật toán thống kê tính sẵn; chỉ diễn giải, KHÔNG tự tính lại hay sửa số",
+    duong: it.name,
+    phuongPhap: plan.options.method,
+    mucTinCayPhanTram: Math.round(plan.options.level * 100),
+    saiSoKiemChungNguocPhanTram: info.wape === null ? "chưa đủ dữ liệu để kiểm chứng" : Math.round(info.wape * 1000) / 10,
+    coMuaVu: info.seasonal,
+    kyCuoiChuaTronDaBo: it.result.droppedLast,
+    ...(plan.items.length > 1 ? { soDuongDuocDuBao: plan.items.length } : {}),
+    ganDay: actual.slice(-6).map(round),
+    duBao: it.result.labels.slice(0, 12).map((ky, i) => ({ ky, giaTri: round(it.result.mean[i]), tu: round(it.result.lo[i]), den: round(it.result.hi[i]) })),
+  };
+}
+
 function widgetRows(doc: Dashboard, w: Widget, fv: Record<string, FilterValue>, cross: CrossFilter[]): Row[] {
   if (w.config.kind !== "chart" && w.config.kind !== "kpi") return [];
   const sourceId = w.config.sourceId;
@@ -102,6 +132,7 @@ async function describeRemoteWidget(
   if (result.mode !== "aggregate") return base;
   const t = result.table;
   const cut = t.rows.length > b.aggRows;
+  const fc = forecastFacts(cfg, t);
   return {
     ...base,
     loai: cfg.chartType === "table" ? "bảng" : `chart ${cfg.chartType}`,
@@ -116,6 +147,7 @@ async function describeRemoteWidget(
     donViSoDo: cfg.metrics.map((m) => `${bindingLabel(m, true)}: ${metricUnit(doc, cfg.sourceId, m) ?? "không rõ"}`),
     dong: t.rows.slice(0, b.aggRows).map((r) => [...r.keys.map(String), ...r.values.map((x, i) => val(x, t.metricKinds?.[i]))]),
     ...(cut || result.truncated ? { ghiChu: `chỉ hiện ${Math.min(t.rows.length, b.aggRows)}/${result.groups} dòng đầu` } : {}),
+    ...(fc ? { duBao: fc } : {}),
   };
 }
 
@@ -150,6 +182,7 @@ function describeWidget(doc: Dashboard, w0: Widget, selected: boolean, fv: Recor
   }
   const t = aggregate(rows, cfg.dimensions, cfg.metrics, useData.getState().calc[cfg.sourceId]);
   const cut = t.rows.length > b.aggRows;
+  const fc = forecastFacts(cfg, t);
   return {
     ...base,
     loai: cfg.chartType === "table" ? "bảng" : `chart ${cfg.chartType}`,
@@ -164,6 +197,7 @@ function describeWidget(doc: Dashboard, w0: Widget, selected: boolean, fv: Recor
     donViSoDo: cfg.metrics.map((m) => `${bindingLabel(m, true)}: ${metricUnit(doc, cfg.sourceId, m) ?? "không rõ"}`),
     dong: t.rows.slice(0, b.aggRows).map((r) => [...r.keys.map(String), ...r.values.map((x, i) => val(x, t.metricKinds?.[i]))]),
     ...(cut ? { ghiChu: `chỉ hiện ${b.aggRows}/${t.rows.length} dòng đầu` } : {}),
+    ...(fc ? { duBao: fc } : {}),
   };
 }
 

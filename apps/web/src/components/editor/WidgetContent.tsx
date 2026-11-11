@@ -12,7 +12,11 @@ import {
   applyFilters,
   buildChartOption,
   buildChartOptionFromTable,
+  chartFields,
+  chartForecastInfo,
+  forecastGrainOf,
   chartScrollSize,
+  type ForecastInfo,
   formatByKind,
   formatCompactByKind,
   themeColors,
@@ -30,6 +34,8 @@ import { getRows } from "@/lib/editor/sample-data";
 import { useData, useDataVersion, useIsRemote } from "@/lib/editor/data-store";
 import { calcDefsFor, specForWidget, useRemoteQuery } from "@/lib/editor/remote-query";
 import { Spinner } from "@/components/Spinner";
+import { useLang } from "@/lib/i18n/store";
+import { tr } from "@/lib/i18n";
 import { toRowFilters, withGrainOverride } from "@/lib/editor/filters";
 import s from "./editor.module.css";
 
@@ -393,6 +399,39 @@ function KpiView({ widget, rows, allRows, filters, theme, mobile, calc, remote, 
   );
 }
 
+/**
+ * Huy hiệu nhỏ ở góc chart đang bật dự báo: nói thẳng đây là dự báo, sai số kiểm chứng ngược (backtest) bao nhiêu,
+ * hoặc vì sao chưa dự báo được. Rê chuột để đọc giải thích đầy đủ.
+ */
+function ForecastBadge({ info }: { info: ForecastInfo }) {
+  const lang = useLang((st) => st.lang);
+  // Chuỗi trong `title` (thuộc tính) là một câu ghép nên dịch từng câu rồi mới ghép.
+  const t = (text: string) => tr(text, lang);
+  if (!info.ok) {
+    return (
+      <span className={`${s.fcBadge} ${s.fcBadgeOff}`} title={info.failText ? t(info.failText) : undefined}>
+        Chưa dự báo được
+      </span>
+    );
+  }
+  const err = info.wape === null ? null : info.wape < 0.01 ? "<1" : String(Math.round(info.wape * 100));
+  const notes = [
+    t(`Dự báo ${info.periods} kỳ tiếp theo bằng phương pháp thống kê. Dải mờ là khoảng tin cậy ${Math.round(info.level * 100)}%.`),
+    info.seasonal ? t("Đã tính đến tính mùa vụ của dữ liệu.") : "",
+    err === null
+      ? t("Chưa đủ dữ liệu để kiểm chứng độ chính xác.")
+      : t(`Kiểm chứng ngược: giấu ${info.backtestPoints} kỳ cuối rồi dự báo lại, sai số trung bình ~${err}%.`),
+    info.droppedLast ? t("Kỳ cuối chưa trọn nên không dùng để học.") : "",
+    info.skipped > 0 ? t(`Chỉ dự báo ${info.seriesCount} đường đầu tiên.`) : "",
+    t("Chỉ mang tính tham khảo, không phải cam kết."),
+  ].filter(Boolean);
+  return (
+    <span className={s.fcBadge} title={notes.join(" ")}>
+      {err === null ? "Dự báo" : `Dự báo · sai số ~${err}%`}
+    </span>
+  );
+}
+
 function WidgetContentInner({ widget, theme, mobile }: { widget: Widget; theme: ChartTheme; mobile?: MobileCtx }) {
   const cfg = widget.config;
   const sourceId = cfg.kind === "chart" || cfg.kind === "kpi" ? cfg.sourceId : "";
@@ -460,6 +499,26 @@ function WidgetContentInner({ widget, theme, mobile }: { widget: Widget; theme: 
     return buildChartOption(cfg, rows, theme, previewing ? highlight : [], calc);
   }, [cfg, rows, theme, highlight, previewing, calc, isRemote, remote.data]);
 
+  // Huy hiệu dự báo ("Dự báo · sai số ~7%"): chỉ tính khi chart bật dự báo (chạy lại thuật toán trên bảng đã gộp).
+  // Chưa bật mà chart đủ điều kiện (đường/vùng, có cấp gom ngày, đủ điểm) thì gợi ý "Thêm dự báo" (chỉ khi đang sửa).
+  const forecastState = useMemo(() => {
+    if (cfg.kind !== "chart" || (cfg.chartType !== "line" && cfg.chartType !== "area")) return null;
+    const enabled = !!cfg.format?.forecast;
+    if (!enabled && (previewing || mobile || !forecastGrainOf(cfg))) return null;
+    let table: AggregatedTable | null = null;
+    if (isRemote) table = remote.data?.mode === "aggregate" ? remote.data.table : null;
+    else {
+      const f = chartFields(cfg);
+      table = f ? aggregate(rows, f.dimensions, f.metrics, calc) : null;
+    }
+    if (!table) return null;
+    if (enabled) return { info: chartForecastInfo(cfg, table), suggest: false };
+    const probe = chartForecastInfo({ ...cfg, format: { ...cfg.format, forecast: {} } }, table);
+    return probe?.ok ? { info: null, suggest: true } : null;
+  }, [cfg, rows, calc, isRemote, remote.data, previewing, mobile]);
+  const forecastInfo = forecastState?.info ?? null;
+  const suggestForecast = !!forecastState?.suggest && !widget.locked;
+
   // Nguồn Google Sheets đang tải lần đầu (chưa có dòng nào): hiện vòng quay thay vì khung trống.
   if (isSheet && !isRemote && allRows.length === 0 && (loadStatus === undefined || loadStatus === "loading") && (cfg.kind === "chart" || cfg.kind === "kpi")) {
     return <Loading />;
@@ -503,6 +562,23 @@ function WidgetContentInner({ widget, theme, mobile }: { widget: Widget; theme: 
             )}
           </div>
           <TruncNote result={remote.data} />
+          {forecastInfo && <ForecastBadge info={forecastInfo} />}
+          {suggestForecast && (
+            <button
+              type="button"
+              className={`${s.fcBadge} ${s.fcSuggest}`}
+              title="Vẽ thêm đường dự báo và dải tin cậy cho biểu đồ này"
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation();
+                useEditor.getState().patchWidget(widget.id, (x) =>
+                  x.config.kind === "chart" ? { ...x, config: { ...x.config, format: { ...x.config.format, forecast: {} } } } : x,
+                );
+              }}
+            >
+              ✨ Thêm dự báo
+            </button>
+          )}
           {remote.loading && <span className={s.remoteBusy}><Spinner size={12} /></span>}
         </div>
       );

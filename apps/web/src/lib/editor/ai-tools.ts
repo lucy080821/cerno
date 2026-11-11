@@ -79,6 +79,11 @@ export const TOOL_DEFS = [
           gaugeMax: { type: "number", description: "chart gauge" },
           trendline: { type: "string", enum: ["none", "linear", "movingAverage"], description: "Đường xu hướng: linear = hồi quy tuyến tính; movingAverage = trung bình trượt (không dùng cho scatter)" },
           trendWindow: { type: "number", description: "Số điểm của trung bình trượt (2-60)" },
+          forecast: {
+            type: "object",
+            description: "Bật dự báo cho chart line/area (chiều đầu phải là ngày có grain day/week/month/quarter/year). {} = mặc định 6 kỳ",
+            properties: { periods: { type: "number" }, method: { type: "string", enum: ["auto", "trend", "seasonal"] }, level: { type: "number", enum: [0.8, 0.9, 0.95] }, showBand: { type: "boolean" } },
+          },
           xAxisTitle: { type: "string", description: "Tên trục ngang (X). Chuỗi rỗng = ẩn tên." },
           yAxisTitle: { type: "string", description: "Tên trục dọc (Y). Chuỗi rỗng = ẩn tên." },
           colors: {

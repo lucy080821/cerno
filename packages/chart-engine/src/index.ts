@@ -9,3 +9,5 @@ export * from "./query";
 export * from "./chartSize";
 export * from "./trend";
 export * from "./period";
+export * from "./forecast";
+export * from "./forecastChart";
