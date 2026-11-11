@@ -20,6 +20,7 @@ import {
   compileCalcFields,
   hasEnoughFields,
   inferCalcType,
+  formatDay,
   materializeRows,
   runQuery,
   type AggregatedTable,
@@ -94,7 +95,7 @@ const round = (n: number) => (Number.isInteger(n) ? n : Math.round(n * 100) / 10
 
 /** Bản rút gọn của bảng cho model đọc (để nó nhận xét): tối đa 20 dòng. */
 function tableForModel(t: AggregatedTable): string {
-  const rows = t.rows.slice(0, 20).map((r) => `${r.keys.map(String).join(" / ")}: ${r.values.map(round).join(" | ")}`);
+  const rows = t.rows.slice(0, 20).map((r) => `${r.keys.map(String).join(" / ")}: ${r.values.map((x, i) => (t.metricKinds?.[i] === "date" ? formatDay(x) : round(x))).join(" | ")}`);
   const more = t.rows.length > 20 ? `\n…(còn ${t.rows.length - 20} dòng)` : "";
   return `Cột: ${[...t.dimLabels, ...t.metricLabels].join(" | ")}\n${rows.join("\n")}${more}`;
 }

@@ -17,6 +17,7 @@
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.119.0",
     "echarts": "^5.5.1",
+    "html-to-image": "^1.11.13",
     "next": "^15.1.0",
     "nodemailer": "^10.4.0",
     "react": "19.3.0",

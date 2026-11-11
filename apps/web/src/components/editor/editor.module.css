@@ -1662,6 +1662,20 @@
   color: var(--nav-active);
 }
 
+.pageNavLogoImg {
+  width: 36px;
+  height: 36px;
+  background: transparent;
+  overflow: hidden;
+}
+
+.pageNavLogoImg img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
 .pageNavName {
   min-width: 0;
   color: var(--nav-active);
@@ -1686,7 +1700,7 @@
 
 .pageNavList {
   display: grid;
-  gap: 2px;
+  gap: 4px;
   list-style: none;
   margin: 0;
   padding: 0;
@@ -1698,7 +1712,8 @@
   align-items: center;
   gap: 10px;
   width: 100%;
-  padding: 8px 10px;
+  min-height: 44px;
+  padding: 12px 12px;
   border: 0;
   border-radius: var(--nav-radius);
   background: transparent;
@@ -3004,3 +3019,164 @@
 
 /* Trình xem đặt trong một khung của trang khác (trang giới thiệu): theo khung cha, không theo chiều cao màn hình */
 .viewRootContained { height: 100%; background: transparent; }
+
+/* ---------- Hộp thoại xuất ảnh ---------- */
+.expGroup {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  min-width: 0;
+}
+.expChoices {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.expChoice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  cursor: pointer;
+}
+.expChoice input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.expChoice:hover {
+  border-color: var(--muted);
+}
+.expChoiceOn {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+.expChoice:has(input:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.expShape {
+  flex: none;
+  width: 28px;
+  height: 18px;
+  border: 2px solid currentColor;
+  border-radius: 3px;
+}
+.expShapeP {
+  width: 18px;
+  height: 28px;
+}
+.expQuick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.expPages {
+  display: grid;
+  gap: 2px;
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.expPage {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.expPage:hover {
+  background: color-mix(in srgb, var(--text) 6%, transparent);
+}
+.expPageNum {
+  flex: none;
+  min-width: 18px;
+  color: var(--muted);
+  font-size: 12px;
+  text-align: right;
+}
+.expPageName {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.expPageTag {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 11.5px;
+}
+
+/* Chỉnh lại nhịp và cỡ chữ cho hộp thoại xuất ảnh */
+.expDialog .shareHead {
+  gap: 4px;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--line);
+}
+.expDialog .shareBody {
+  gap: 22px;
+  padding: 20px 24px 22px;
+}
+.expDialog .shareFoot {
+  padding: 14px 24px;
+}
+.expDialog .label {
+  margin: 0;
+  color: var(--text);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.expDialog .hint {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.expDialog .two {
+  column-gap: 16px;
+  align-items: start;
+}
+.expDialog .input {
+  height: 36px;
+  padding: 0 10px;
+  font-size: 13px;
+}
+.expDialog .btn {
+  height: 34px;
+  padding: 0 14px;
+}
+.expDialog .expChoice {
+  padding: 14px 16px;
+  font-weight: 600;
+  font-size: 13.5px;
+}
+.expDialog .expPages {
+  gap: 0;
+  padding: 4px 6px;
+}
+.expDialog .expPage {
+  padding: 10px 8px;
+  border-radius: 0;
+}
+.expDialog .expPage + .expPage {
+  border-top: 1px solid var(--line);
+}
+.expDialog .expPage input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--accent);
+}
+.expDialog .expPageNum {
+  min-width: 20px;
+}
+.expDialog .expPageTag {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--text);
+}

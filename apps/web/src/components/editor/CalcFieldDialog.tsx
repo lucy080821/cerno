@@ -5,7 +5,8 @@ import {
   FUNCTION_DOCS,
   MAX_EXPRESSION_LENGTH,
   compileCalcFields,
-  evalAggField,
+  aggregate,
+  formatDay,
   formatNumber,
   materializeRows,
   unknownRefs,
@@ -93,10 +94,16 @@ export function CalcFieldDialog({ sourceId, fieldId, onClose }: { sourceId: stri
     const { field, set } = result;
     if (!field) return null;
     if (field.kind === "agg" && isRemote) {
-      return remoteAgg.data?.mode === "aggregate" ? { agg: remoteAgg.data.table.rows[0]?.values[0] ?? 0 } : null;
+      return remoteAgg.data?.mode === "aggregate"
+        ? { agg: remoteAgg.data.table.rows[0]?.values[0] ?? 0, kind: remoteAgg.data.table.metricKinds?.[0] }
+        : null;
     }
     const raw = getRawRows(sourceId);
-    if (field.kind === "agg") return { agg: evalAggField(field, materializeRows(raw, set)) };
+    if (field.kind === "agg") {
+      // Qua aggregate() để biết kết quả là số hay ngày (MIN/MAX của cột ngày).
+      const t = aggregate(materializeRows(raw, set), [], [{ column: field.name }], set);
+      return { agg: t.rows[0]?.values[0] ?? 0, kind: t.metricKinds?.[0] };
+    }
     const head = materializeRows(raw.slice(0, PREVIEW_ROWS), set);
     return { rows: head.map((r) => r[field.name]) };
   }, [result, sourceId, isRemote, remoteAgg.data]);
@@ -214,7 +221,7 @@ export function CalcFieldDialog({ sourceId, fieldId, onClose }: { sourceId: stri
               <div className={s.calcPreview}>
                 <span className={s.label}>Xem thử</span>
                 {"agg" in preview ? (
-                  <div className={s.calcPreviewRow}><span>Trên toàn bộ dữ liệu</span><b>{show(preview.agg)}</b></div>
+                  <div className={s.calcPreviewRow}><span>Trên toàn bộ dữ liệu</span><b>{preview.kind === "date" ? formatDay(preview.agg) : show(preview.agg)}</b></div>
                 ) : preview.rows.length === 0 ? (
                   <p className={s.hint}>Chưa có dữ liệu để xem thử.</p>
                 ) : (

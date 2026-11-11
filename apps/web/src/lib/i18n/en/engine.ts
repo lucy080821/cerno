@@ -104,6 +104,7 @@ export const EN_ENGINE: Dict = {
   "Có chứa không (không phân biệt hoa thường)": "Contains (case-insensitive)",
   "Chuyển thành chữ": "Convert to text",
   "Chuyển chữ thành số": "Convert text to number",
+  "{0} ngày": "{0} days",
   "YEAR(ngày)": "YEAR(date)",
   "MONTH(ngày)": "MONTH(date)",
   "DAY(ngày)": "DAY(date)",

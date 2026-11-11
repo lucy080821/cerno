@@ -47,12 +47,19 @@ export function PageNav({ embedded = false, keyboardHint = true }: { embedded?: 
     <nav className={`${s.pageNav} ${embedded ? s.pageNavEmbedded : ""}`} style={vars} aria-label="Danh sách trang">
       {nav.showTitle && (
         <div className={s.pageNavHead}>
-          <span className={s.pageNavLogo} aria-hidden>
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3" y="3" width="7" height="9" rx="1.5" /><rect x="14" y="3" width="7" height="5" rx="1.5" />
-              <rect x="14" y="12" width="7" height="9" rx="1.5" /><rect x="3" y="16" width="7" height="5" rx="1.5" />
-            </svg>
-          </span>
+          {nav.logo && /^https:\/\//.test(nav.logo) ? (
+            <span className={`${s.pageNavLogo} ${s.pageNavLogoImg}`} aria-hidden>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={nav.logo} alt="" />
+            </span>
+          ) : (
+            <span className={s.pageNavLogo} aria-hidden>
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="7" height="9" rx="1.5" /><rect x="14" y="3" width="7" height="5" rx="1.5" />
+                <rect x="14" y="12" width="7" height="9" rx="1.5" /><rect x="3" y="16" width="7" height="5" rx="1.5" />
+              </svg>
+            </span>
+          )}
           <span className={s.pageNavName} title={doc.name}>{doc.name || "Dashboard"}</span>
         </div>
       )}

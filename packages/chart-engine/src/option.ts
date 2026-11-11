@@ -1,7 +1,7 @@
 import type { ChartConfig, FieldBinding, TextStyle } from "@dashboard/schema";
 import { aggregate, bindingLabel, type AggregatedTable, type Row } from "./aggregate";
 import type { CalcSet } from "./formula";
-import { formatCompact, formatNumber } from "./format";
+import { formatByKind, formatCompact, formatCompactByKind, formatDay, formatNumber, type MetricKind } from "./format";
 import { CHART_SPECS, hasEnoughFields } from "./chartTypes";
 import { linearRegression, trendOf } from "./trend";
 
@@ -179,6 +179,8 @@ export function buildChartOptionFromTable(
   const c = themeColors(theme);
 
   const fmt = resolveFormat(config);
+  // Số đo là ngày (MIN/MAX của cột ngày) thì tooltip/trục/nhãn hiện dd/mm/yyyy.
+  const dk: MetricKind | undefined = table.metricKinds?.every((k) => k === "date") ? "date" : undefined;
   const axisText = echText(config.format?.axis, theme, { color: c.muted, size: 12 });
   const legendText = echText(config.format?.legend, theme, { color: c.muted, size: 12 });
   const labelText = echText(config.format?.dataLabel, theme, { color: c.muted, size: 12 });
@@ -190,7 +192,7 @@ export function buildChartOptionFromTable(
       color: colors,
       tooltip: {
         trigger: "item",
-        valueFormatter: (v: unknown) => formatNumber(Number(v)),
+        valueFormatter: (v: unknown) => formatByKind(Number(v), dk),
       },
       legend: fmt.showLegend ? { bottom: 0, textStyle: legendText } : { show: false },
       series: [
@@ -249,7 +251,7 @@ export function buildChartOptionFromTable(
       show: fmt.showDataLabels,
       position: stacked ? "inside" : horizontal ? "right" : "top",
       ...labelText,
-      formatter: (p: { value?: unknown }) => formatCompact(Number(p.value ?? 0)),
+      formatter: (p: { value?: unknown }) => formatCompactByKind(Number(p.value ?? 0), dk),
     },
     ...(stacked ? { stack: "total" } : {}),
     ...(isBar ? { itemStyle: { borderRadius: stacked || isHist ? 0 : horizontal ? [0, 4, 4, 0] : [4, 4, 0, 0] } } : {}),
@@ -315,7 +317,7 @@ export function buildChartOptionFromTable(
     color: colors,
     tooltip: {
       trigger: "axis",
-      valueFormatter: (v: unknown) => formatNumber(Number(v)),
+      valueFormatter: (v: unknown) => formatByKind(Number(v), dk),
     },
     legend: showLegend
       ? { top: 2, left: 4, itemWidth: 12, itemHeight: 8, textStyle: legendText, data: series.map((s) => s.name) }
@@ -344,7 +346,7 @@ export function buildChartOptionFromTable(
         type: "value",
         show: horizontal ? fmt.showXAxis : fmt.showYAxis,
         splitLine: { show: fmt.showGrid, lineStyle: { color: c.grid } },
-        axisLabel: { ...axisText, formatter: (v: number) => formatCompact(v) },
+        axisLabel: { ...axisText, formatter: (v: number) => formatCompactByKind(v, dk) },
         ...(horizontal ? nameXProps(xName, axisText) : nameYProps(yName, axisText)),
       };
       return horizontal ? { xAxis: valAxis, yAxis: catAxis } : { xAxis: catAxis, yAxis: valAxis };
@@ -391,12 +393,17 @@ function buildSpecialOption(type: ChartConfig["chartType"], x: SpecialCtx): ECha
   const DIM = { opacity: 0.3 };
   const dark = theme.mode === "dark";
   const key0 = (r: { keys: unknown[] }) => String(r.keys[0] ?? "");
+  // Số đo là ngày (MIN/MAX của cột ngày) thì hiện dd/mm/yyyy [hh:mm]; `i` = vị trí số đo.
+  const kd = (i: number) => table.metricKinds?.[i];
+  const fv = (n: unknown, i = 0) => formatByKind(Number(n), kd(i));
+  const fc = (n: unknown, i = 0) => formatCompactByKind(Number(n), kd(i));
+  const allDate = !!table.metricKinds?.length && table.metricKinds.every((k) => k === "date");
 
   if (type === "funnel") {
     const inside = echText(config.format?.dataLabel, theme, { color: "#ffffff", size: 12 });
     return {
       color: colors,
-      tooltip: { trigger: "item", valueFormatter: (v: unknown) => formatNumber(Number(v)) },
+      tooltip: { trigger: "item", valueFormatter: (v: unknown) => fv(v) },
       legend: fmt.showLegend ? { bottom: 0, textStyle: legendText } : { show: false },
       series: [{
         type: "funnel",
@@ -405,7 +412,7 @@ function buildSpecialOption(type: ChartConfig["chartType"], x: SpecialCtx): ECha
         itemStyle: { borderWidth: 0 },
         label: {
           show: fmt.showDataLabels, position: "inside", ...inside,
-          formatter: (p: { name?: string; value?: unknown }) => `${p.name ?? ""} · ${formatCompact(Number(p.value ?? 0))}`,
+          formatter: (p: { name?: string; value?: unknown }) => `${p.name ?? ""} · ${fc(p.value ?? 0)}`,
         },
         data: table.rows.map((r) => ({ name: key0(r), value: r.values[0], ...(dimmed(r.keys[0]) ? { itemStyle: DIM } : {}) })),
       }],
@@ -437,7 +444,7 @@ function buildSpecialOption(type: ChartConfig["chartType"], x: SpecialCtx): ECha
       }));
     }
     return {
-      tooltip: { trigger: "item", valueFormatter: (v: unknown) => formatNumber(Number(v)) },
+      tooltip: { trigger: "item", valueFormatter: (v: unknown) => fv(v) },
       series: [{
         type: "treemap", roam: false, nodeClick: false, breadcrumb: { show: false },
         left: 4, right: 4, top: 4, bottom: 4,
@@ -486,8 +493,8 @@ function buildSpecialOption(type: ChartConfig["chartType"], x: SpecialCtx): ECha
         trigger: "item",
         formatter: (p: { name?: string; value?: unknown[] }) => {
           const v = p.value ?? [];
-          const lines = [`<b>${esc(p.name)}</b>`, `${esc(lx)}: ${formatNumber(Number(v[0]))}`, `${esc(ly)}: ${formatNumber(Number(v[1]))}`];
-          if (hasSize) lines.push(`${esc(ls)}: ${formatNumber(Number(v[2]))}`);
+          const lines = [`<b>${esc(p.name)}</b>`, `${esc(lx)}: ${fv(v[0], 0)}`, `${esc(ly)}: ${fv(v[1], 1)}`];
+          if (hasSize) lines.push(`${esc(ls)}: ${fv(v[2], 2)}`);
           return lines.join("<br/>");
         },
       },
@@ -500,13 +507,13 @@ function buildSpecialOption(type: ChartConfig["chartType"], x: SpecialCtx): ECha
         scale: true,
         splitLine: { show: fmt.showGrid, lineStyle: { color: c.grid } },
         axisLine: { lineStyle: { color: c.grid } }, axisTick: { show: false },
-        axisLabel: { ...axisText, formatter: (v: number) => formatCompact(v) },
+        axisLabel: { ...axisText, formatter: (v: number) => fc(v, 0) },
       },
       yAxis: {
         type: "value", show: fmt.showYAxis, ...nameYProps(syName, axisText),
         scale: true,
         splitLine: { show: fmt.showGrid, lineStyle: { color: c.grid } },
-        axisLabel: { ...axisText, formatter: (v: number) => formatCompact(v) },
+        axisLabel: { ...axisText, formatter: (v: number) => fc(v, 1) },
       },
       series: [{
         type: "scatter",
@@ -543,7 +550,7 @@ function buildSpecialOption(type: ChartConfig["chartType"], x: SpecialCtx): ECha
     const multi = fmt.showLegend && rows.length > 1;
     return {
       color: colors,
-      tooltip: { trigger: "item", valueFormatter: (v: unknown) => formatNumber(Number(v)) },
+      tooltip: { trigger: "item", valueFormatter: (v: unknown) => (allDate ? formatDay(Number(v)) : formatNumber(Number(v))) },
       legend: multi ? { bottom: 0, textStyle: legendText } : { show: false },
       radar: {
         indicator: table.metricLabels.map((name, i) => ({ name, max: maxes[i] })),
@@ -557,7 +564,7 @@ function buildSpecialOption(type: ChartConfig["chartType"], x: SpecialCtx): ECha
       series: [{
         type: "radar",
         symbol: "circle", symbolSize: 5,
-        label: { show: fmt.showDataLabels, ...labelText, formatter: (p: { value?: unknown }) => formatCompact(Number(p.value ?? 0)) },
+        label: { show: fmt.showDataLabels, ...labelText, formatter: (p: { value?: unknown }) => (allDate ? formatDay(Number(p.value ?? 0)) : formatCompact(Number(p.value ?? 0))) },
         data: rows.map((r, i) => ({
           name: names[i], value: r.values,
           lineStyle: { width: 2, color: colors[i % colors.length] },
@@ -584,14 +591,14 @@ function buildSpecialOption(type: ChartConfig["chartType"], x: SpecialCtx): ECha
         axisLabel: {
           show: fmt.showYAxis, distance: 20,
           ...echText(config.format?.axis, theme, { color: c.muted, size: 11 }),
-          formatter: (v: number) => formatCompact(v),
+          formatter: (v: number) => fc(v),
         },
         anchor: { show: false },
         title: { show: true, offsetCenter: [0, "-30%"], ...echText(config.format?.legend, theme, { color: c.muted, size: 12 }) },
         detail: {
           valueAnimation: false, offsetCenter: [0, "8%"], ...valueText,
           fontWeight: config.format?.dataLabel?.bold === false ? 400 : 700,
-          formatter: (v: number) => formatNumber(v),
+          formatter: (v: number) => fv(v),
         },
         data: [{ value, name: table.metricLabels[0] }],
       }],
@@ -618,7 +625,7 @@ function buildSpecialOption(type: ChartConfig["chartType"], x: SpecialCtx): ECha
         trigger: "item",
         formatter: (p: { value?: unknown[] }) => {
           const v = p.value ?? [];
-          return `${esc(xs[Number(v[0])])} · ${esc(ys[Number(v[1])])}<br/>${esc(table.metricLabels[0])}: ${formatNumber(Number(v[2]))}`;
+          return `${esc(xs[Number(v[0])])} · ${esc(ys[Number(v[1])])}<br/>${esc(table.metricLabels[0])}: ${fv(v[2])}`;
         },
       },
       grid: { left: 8, right: 16, top: 8 + (hyName ? 18 : 0), bottom: (fmt.showLegend ? 46 : 8) + (hxName ? 18 : 0), containLabel: true },
@@ -627,13 +634,13 @@ function buildSpecialOption(type: ChartConfig["chartType"], x: SpecialCtx): ECha
       visualMap: {
         show: fmt.showLegend, type: "continuous", min: lo, max: hi, calculable: false,
         orient: "horizontal", left: "center", bottom: 4, itemWidth: 12, itemHeight: 120,
-        text: [formatCompact(hi), formatCompact(lo)], textStyle: legendText,
+        text: [fc(hi), fc(lo)], textStyle: legendText,
         inRange: { color: [dark ? "#1b2233" : "#eaf0fb", c.palette[0]] },
       },
       series: [{
         type: "heatmap",
         itemStyle: { borderColor: dark ? "#0b0f1a" : "#ffffff", borderWidth: 2, borderRadius: 3 },
-        label: { show: fmt.showDataLabels, ...labelText, formatter: (p: { value?: unknown[] }) => formatCompact(Number((p.value ?? [])[2] ?? 0)) },
+        label: { show: fmt.showDataLabels, ...labelText, formatter: (p: { value?: unknown[] }) => fc((p.value ?? [])[2] ?? 0) },
         data: table.rows.map((r) => [xs.indexOf(String(r.keys[0] ?? "")), ys.indexOf(String(r.keys[1] ?? "")), r.values[0]]),
       }],
     };

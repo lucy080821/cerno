@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useDialog } from "@/components/ui/DialogProvider";
 import { LogoMark } from "@/components/Logo";
+import { ExportDialog } from "./ExportDialog";
 import { ShareDialog } from "./ShareDialog";
 import { useEditor } from "@/lib/editor/store";
 import { createBlankDashboard, createDemoDashboard } from "@/lib/editor/defaults";
@@ -84,6 +85,7 @@ export function TopBar({ onMobile, onFullscreen, notify, canShare = true }: {
   const { mutate, undo, redo, zoomAt, fit, setMode, loadDoc } = useEditor.getState();
   const fileRef = useRef<HTMLInputElement>(null);
   const [shareOpen, setShareOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
   const dashboardId = useEditor((st) => st.doc.id);
 
   const zoomBy = (f: number) => {
@@ -140,6 +142,9 @@ export function TopBar({ onMobile, onFullscreen, notify, canShare = true }: {
         <button className={s.btn} title="Xem trên điện thoại" aria-label="Mobile" onClick={onMobile}>
           <Icon name="phone" size={14} /><span className={s.lblWide}>Mobile</span>
         </button>
+        <button className={s.btn} title="Xuất ảnh (PNG, JPEG, WebP, SVG)" aria-label="Xuất ảnh" onClick={() => setExportOpen(true)}>
+          <Icon name="image" size={14} /><span className={s.lblWide}>Xuất ảnh</span>
+        </button>
         <MoreMenu items={[
           { icon: "reset", label: "Thay bằng dashboard mẫu", run: async () => {
             const ok = await dialog.confirm({
@@ -185,6 +190,7 @@ export function TopBar({ onMobile, onFullscreen, notify, canShare = true }: {
           <Icon name={mode === "edit" ? "play" : "pencil"} size={14} /> {mode === "edit" ? "Xem trước" : "Quay lại sửa"}
         </button>
       </div>
+      {exportOpen && <ExportDialog onClose={() => setExportOpen(false)} notify={notify} />}
       {shareOpen && <ShareDialog dashboardId={dashboardId} onClose={() => setShareOpen(false)} />}
     </header>
   );

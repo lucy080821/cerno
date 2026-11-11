@@ -13,8 +13,8 @@ import {
   buildChartOption,
   buildChartOptionFromTable,
   chartScrollSize,
-  formatCompact,
-  formatNumber,
+  formatByKind,
+  formatCompactByKind,
   themeColors,
   titleCss,
   computeCompare,
@@ -210,6 +210,7 @@ function TableView({ widget, rows, theme, calc, remote, useRemote, mobile }: {
           body: t.rows.map((r) => [...r.keys, ...r.values]),
           numeric: [...t.dimLabels.map(() => false), ...t.metricLabels.map(() => true)],
           cols: [...cfg.dimensions.map((d) => d.column as string | null), ...t.metricLabels.map(() => null)],
+          kinds: [...t.dimLabels.map(() => undefined), ...t.metricLabels.map((_, i) => t.metricKinds?.[i])],
         };
       }
       return null;
@@ -231,6 +232,7 @@ function TableView({ widget, rows, theme, calc, remote, useRemote, mobile }: {
       numeric: [...t.dimLabels.map(() => false), ...t.metricLabels.map(() => true)],
       // Cột chiều dữ liệu bấm được để lọc chéo; cột số liệu thì không.
       cols: [...cfg.dimensions.map((d) => d.column as string | null), ...t.metricLabels.map(() => null)],
+      kinds: [...t.dimLabels.map(() => undefined), ...t.metricLabels.map((_, i) => t.metricKinds?.[i])],
     };
   }, [cfg, rows, calc, remote, useRemote]);
 
@@ -316,7 +318,7 @@ function TableView({ widget, rows, theme, calc, remote, useRemote, mobile }: {
                       fontWeight: isPicked(view.cols[ci], cell) ? 600 : undefined,
                     }}
                   >
-                    {typeof cell === "number" ? formatNumber(cell) : String(cell ?? "")}
+                    {typeof cell === "number" ? formatByKind(cell, view.kinds?.[ci]) : String(cell ?? "")}
                   </td>
                 ))}
               </tr>
@@ -333,11 +335,11 @@ function KpiView({ widget, rows, allRows, filters, theme, mobile, calc, remote, 
 }) {
   const cfg = widget.config.kind === "kpi" ? widget.config : null;
   const c = themeColors(theme);
-  const value = useMemo(
+  const { value, kind } = useMemo(
     () => {
-      if (!cfg) return 0;
-      if (useRemote) return remote?.mode === "aggregate" ? remote.table.rows[0]?.values[0] ?? 0 : 0;
-      return aggregate(rows, [], [cfg.metric], calc).rows[0]?.values[0] ?? 0;
+      if (!cfg) return { value: 0, kind: undefined };
+      const t = useRemote ? (remote?.mode === "aggregate" ? remote.table : null) : aggregate(rows, [], [cfg.metric], calc);
+      return { value: t?.rows[0]?.values[0] ?? 0, kind: t?.metricKinds?.[0] };
     },
     [cfg, rows, calc, remote, useRemote],
   );
@@ -362,9 +364,9 @@ function KpiView({ widget, rows, allRows, filters, theme, mobile, calc, remote, 
       <div
         className={s.kpiValue}
         style={{ color: c.text, fontSize: size, ...textCss(cfg.valueStyle), ...(mobile ? { fontSize: mobileKpiValueSize(widget.h, cfg.valueStyle?.fontSize) } : {}) }}
-        title={formatNumber(value)}
+        title={formatByKind(value, kind)}
       >
-        {formatCompact(value)}
+        {formatCompactByKind(value, kind)}
       </div>
       {growth && (
         <div

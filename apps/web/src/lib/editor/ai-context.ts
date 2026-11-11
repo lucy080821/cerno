@@ -1,5 +1,5 @@
 import { getPages, pageIdOf, resolvePageId, widgetsOnPage, type Dashboard, type FieldBinding, type Widget } from "@dashboard/schema";
-import { aggregate, applyFilters, bindingLabel, type Row } from "@dashboard/chart-engine";
+import { aggregate, applyFilters, bindingLabel, formatDay, type MetricKind, type Row } from "@dashboard/chart-engine";
 import { getRows } from "./sample-data";
 import { isRemoteSource, useData } from "./data-store";
 import { calcDefsFor, fetchQuery, specForWidget } from "./remote-query";
@@ -49,6 +49,8 @@ const unitOf = (col: { name: string; unit?: string } | undefined, column: string
   col?.unit ?? guessUnit(column);
 
 const round = (n: number) => (Number.isInteger(n) ? n : Math.round(n * 100) / 100);
+/** Giá trị số đo cho AI: số đo là ngày (MIN/MAX của cột ngày) thì đưa chuỗi dd/mm/yyyy thay vì số ngày kể từ 1970. */
+const val = (n: number, kind?: MetricKind) => (kind === "date" ? formatDay(n) : round(n));
 
 function widgetRows(doc: Dashboard, w: Widget, fv: Record<string, FilterValue>, cross: CrossFilter[]): Row[] {
   if (w.config.kind !== "chart" && w.config.kind !== "kpi") return [];
@@ -90,7 +92,8 @@ async function describeRemoteWidget(
   }
   if (cfg.kind === "kpi") {
     const v = result.mode === "aggregate" ? result.table.rows[0]?.values[0] ?? 0 : 0;
-    return { ...base, loai: "KPI", tieuDe: cfg.title, soDo: bindingLabel(cfg.metric, true), donVi: metricUnit(doc, cfg.sourceId, cfg.metric), giaTri: round(v) };
+    const kind = result.mode === "aggregate" ? result.table.metricKinds?.[0] : undefined;
+    return { ...base, loai: "KPI", tieuDe: cfg.title, soDo: bindingLabel(cfg.metric, true), donVi: metricUnit(doc, cfg.sourceId, cfg.metric), giaTri: val(v, kind) };
   }
   if (result.mode === "raw") {
     const cols = result.columns.slice(0, 8);
@@ -111,7 +114,7 @@ async function describeRemoteWidget(
     },
     cot: [...t.dimLabels, ...t.metricLabels],
     donViSoDo: cfg.metrics.map((m) => `${bindingLabel(m, true)}: ${metricUnit(doc, cfg.sourceId, m) ?? "không rõ"}`),
-    dong: t.rows.slice(0, b.aggRows).map((r) => [...r.keys.map(String), ...r.values.map(round)]),
+    dong: t.rows.slice(0, b.aggRows).map((r) => [...r.keys.map(String), ...r.values.map((x, i) => val(x, t.metricKinds?.[i]))]),
     ...(cut || result.truncated ? { ghiChu: `chỉ hiện ${Math.min(t.rows.length, b.aggRows)}/${result.groups} dòng đầu` } : {}),
   };
 }
@@ -134,7 +137,7 @@ function describeWidget(doc: Dashboard, w0: Widget, selected: boolean, fv: Recor
   const rows = widgetRows(doc, w, fv, cross);
   if (cfg.kind === "kpi") {
     const t = aggregate(rows, [], [cfg.metric], useData.getState().calc[cfg.sourceId]);
-    return { ...base, loai: "KPI", tieuDe: cfg.title, soDo: bindingLabel(cfg.metric, true), donVi: metricUnit(doc, cfg.sourceId, cfg.metric), giaTri: round(t.rows[0]?.values[0] ?? 0) };
+    return { ...base, loai: "KPI", tieuDe: cfg.title, soDo: bindingLabel(cfg.metric, true), donVi: metricUnit(doc, cfg.sourceId, cfg.metric), giaTri: val(t.rows[0]?.values[0] ?? 0, t.metricKinds?.[0]) };
   }
 
   const isRawTable = cfg.chartType === "table" && cfg.dimensions.length === 0 && cfg.metrics.length === 0;
@@ -159,7 +162,7 @@ function describeWidget(doc: Dashboard, w0: Widget, selected: boolean, fv: Recor
     },
     cot: [...t.dimLabels, ...t.metricLabels],
     donViSoDo: cfg.metrics.map((m) => `${bindingLabel(m, true)}: ${metricUnit(doc, cfg.sourceId, m) ?? "không rõ"}`),
-    dong: t.rows.slice(0, b.aggRows).map((r) => [...r.keys.map(String), ...r.values.map(round)]),
+    dong: t.rows.slice(0, b.aggRows).map((r) => [...r.keys.map(String), ...r.values.map((x, i) => val(x, t.metricKinds?.[i]))]),
     ...(cut ? { ghiChu: `chỉ hiện ${b.aggRows}/${t.rows.length} dòng đầu` } : {}),
   };
 }

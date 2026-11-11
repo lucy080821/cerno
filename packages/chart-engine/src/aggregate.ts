@@ -1,6 +1,7 @@
 import type { FieldBinding } from "@dashboard/schema";
-import { hourOf, toIsoDate } from "./filter";
-import { evalAggField, type CalcSet } from "./formula";
+import { dayNumberOf, hourOf, instantDaysOf, toIsoDate } from "./filter";
+import { evalAggField, minMaxColumn, type CalcSet } from "./formula";
+import type { MetricKind } from "./format";
 import { grainLabel, grainSortKey } from "./period";
 
 export type Cell = string | number | boolean | null;
@@ -26,6 +27,8 @@ export interface AggregatedTable {
   dimLabels: string[];
   metricLabels: string[];
   rows: AggregatedRow[];
+  /** Kiểu từng số đo. Chỉ có khi có số đo là NGÀY (MIN/MAX của cột ngày, giá trị = số ngày kể từ 1970); bỏ trống = toàn số. */
+  metricKinds?: MetricKind[];
 }
 
 export function bindingLabel(b: FieldBinding, isMetric: boolean): string {
@@ -38,7 +41,14 @@ export function aggregateValues(values: Cell[], agg: AggName): number {
   if (agg === "count") return values.length;
   if (agg === "count_distinct") return new Set(values).size;
   const nums = values.filter((v): v is number => typeof v === "number" && Number.isFinite(v));
-  if (nums.length === 0) return 0;
+  if (nums.length === 0) {
+    // min/max của cột ngày: số ngày kể từ 1970 (hiển thị thành ngày nhờ `metricKinds`).
+    if (agg === "min" || agg === "max") {
+      const days = values.map(instantDaysOf).filter((x): x is number => x !== null);
+      if (days.length) return agg === "min" ? days.reduce((a, b) => (b < a ? b : a)) : days.reduce((a, b) => (b > a ? b : a));
+    }
+    return 0;
+  }
   switch (agg) {
     case "sum":
       return nums.reduce((a, b) => a + b, 0);
@@ -49,6 +59,20 @@ export function aggregateValues(values: Cell[], agg: AggName): number {
     case "max":
       return Math.max(...nums);
   }
+}
+
+/** Cột có phải cột ngày không: trong 50 ô có giá trị đầu tiên, không ô nào là số và có ít nhất một ô đọc được thành ngày. */
+function isDateColumn(rows: Row[], column: string): boolean {
+  let seen = 0;
+  let dates = 0;
+  for (const r of rows) {
+    const v = r[column];
+    if (v === null || v === undefined || v === "") continue;
+    if (typeof v === "number") return false;
+    if (dayNumberOf(v) !== null) dates++;
+    if (++seen >= 50) break;
+  }
+  return dates > 0;
 }
 
 const isBinned = (d: FieldBinding) => !!(d.bins || d.binWidth);
@@ -173,7 +197,14 @@ export function aggregate(
   }
   if (dims.length === 0 && groups.size === 0) groups.set("", { keys: [], rows: [] });
 
+  const kinds: MetricKind[] = metrics.map((m) => {
+    const f = aggField(m);
+    const col = f ? minMaxColumn(f) : m.aggregation === "min" || m.aggregation === "max" ? m.column : null;
+    return col && isDateColumn(rows, col) ? "date" : "number";
+  });
+
   return {
+    ...(kinds.includes("date") ? { metricKinds: kinds } : {}),
     dimLabels: dims.map((d) => bindingLabel(d, false)),
     metricLabels: metrics.map((m) => (aggField(m) ? m.label ?? m.column : bindingLabel(m, true))),
     rows: (dims[0]?.grain

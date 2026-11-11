@@ -160,7 +160,7 @@ describe("bộ lọc dashboard (range, targets)", () => {
   });
 });
 
-import { toIsoDate } from "./index";
+import { compileCalcFields, computeCompare, formatDay, formatGrowth, toIsoDate } from "./index";
 describe("lọc khoảng ngày", () => {
   const data = [{ d: "2025-01-10", n: 1 }, { d: "2025-02-15", n: 2 }, { d: "20/03/2025", n: 3 }, { d: "không rõ", n: 4 }];
   it("toIsoDate hiểu ISO và dd/mm/yyyy", () => {
@@ -243,5 +243,87 @@ describe("toIsoDate: nhiều định dạng", () => {
   ])("%s", (raw, iso) => expect(toIsoDate(raw)).toBe(iso));
   it("không nhận số thường và ngày không có thật", () => {
     for (const bad of ["31/2/2025", "13/13/2025", "1.234,5", "2025", "abc", "Foo 5, 2025", "12345"]) expect(toIsoDate(bad)).toBeNull();
+  });
+});
+
+describe("MIN/MAX trên cột ngày", () => {
+  const rows: Row[] = [
+    { d: "2025-03-01 10:00", v: 1 }, { d: "05/09/2025", v: 2 }, { d: "Jan 2, 2025", v: 3 }, { d: "", v: 4 },
+  ];
+  const days = (iso: string) => Math.round(Date.parse(iso) / 86_400_000);
+
+  it("số đo max/min thường trả số ngày và đánh dấu kiểu ngày", () => {
+    const mx = aggregate(rows, [], [{ column: "d", aggregation: "max" }]);
+    expect(mx.rows[0].values[0]).toBe(days("2025-09-05"));
+    expect(mx.metricKinds).toEqual(["date"]);
+    const mn = aggregate(rows, [], [{ column: "d", aggregation: "min" }]);
+    expect(mn.rows[0].values[0]).toBe(days("2025-01-02"));
+  });
+
+  it("trường tính toán MAX([d]) cũng ra ngày; MAX − MIN ra số ngày chênh (kiểu số)", () => {
+    const set = compileCalcFields([
+      { id: "1", name: "Latest", expression: "MAX([d])" },
+      { id: "2", name: "Span", expression: "MAX([d]) - MIN([d])" },
+    ]);
+    const t = aggregate(rows, [], [{ column: "Latest" }, { column: "Span" }], set);
+    expect(t.rows[0].values[0]).toBe(days("2025-09-05"));
+    expect(t.rows[0].values[1]).toBe(days("2025-09-05") - days("2025-01-02"));
+    expect(t.metricKinds).toEqual(["date", "number"]);
+  });
+
+  it("cột số không bị ảnh hưởng và không có metricKinds", () => {
+    const t = aggregate(rows, [], [{ column: "v", aggregation: "max" }]);
+    expect(t.rows[0].values[0]).toBe(4);
+    expect(t.metricKinds).toBeUndefined();
+  });
+
+  it("formatDay", () => {
+    expect(formatDay(days("2025-09-05"))).toBe("05/09/2025");
+  });
+});
+
+describe("số đo ngày: giờ phút, so sánh kỳ, chart đặc biệt", () => {
+  const days = (iso: string) => Date.parse(iso) / 86_400_000;
+
+  it("giữ giờ phút của MAX/MIN và hiện dd/mm/yyyy hh:mm", () => {
+    const rows: Row[] = [{ d: "2025-03-01 10:30" }, { d: "2025-03-01 08:00" }];
+    const t = aggregate(rows, [], [{ column: "d", aggregation: "max" }]);
+    expect(t.rows[0].values[0]).toBeCloseTo(days("2025-03-01T10:30:00Z"), 6);
+    expect(formatDay(t.rows[0].values[0])).toBe("01/03/2025 10:30");
+    expect(formatDay(days("2025-03-01"))).toBe("01/03/2025");
+  });
+
+  it("KPI so sánh kỳ: số đo ngày chỉ hiện số ngày chênh", () => {
+    const rows: Row[] = [
+      { d: "2025-03-20", t: "2025-03-20" }, { d: "2025-03-25", t: "2025-03-25" },
+      { d: "2025-02-10", t: "2025-02-10" },
+    ];
+    const cmp = { to: "prev_period" as const, dateColumn: "d", grain: "month" as const, show: "percent" as const, goodWhen: "up" as const, toDate: false };
+    const r = computeCompare(rows, [], undefined, { column: "t", aggregation: "max" }, cmp);
+    expect(r?.kind).toBe("date");
+    expect(r?.current).toBe(days("2025-03-25"));
+    expect(formatGrowth(r, cmp).text).toBe("+43 ngày");
+  });
+
+  it("gauge/heatmap/funnel/radar/scatter đọc số đo ngày không lỗi và hiện ngày", () => {
+    const rows: Row[] = [
+      { a: "x", b: "u", d: "2025-03-01", e: "2025-04-01" },
+      { a: "y", b: "v", d: "2025-05-01", e: "2025-06-01" },
+    ];
+    const base = { sourceId: "s", dimensions: [{ column: "a" }], metrics: [{ column: "d", aggregation: "max" as const }] };
+    const m = base.metrics[0];
+    const variants: Array<[string, unknown[], unknown[]]> = [
+      ["funnel", base.dimensions, base.metrics], ["treemap", base.dimensions, base.metrics],
+      ["radar", base.dimensions, [m, { column: "e", aggregation: "max" }, m]], ["gauge", [], base.metrics],
+    ];
+    for (const [chartType, dimensions, metrics] of variants) {
+      const opt = buildChartOption({ kind: "chart", chartType, sourceId: "s", dimensions, metrics } as unknown as ChartConfig, rows, { palette: DEFAULT_PALETTE, mode: "dark" });
+      expect(opt, chartType).toBeTruthy();
+    }
+    const hm = buildChartOption(
+      { kind: "chart", chartType: "heatmap", sourceId: "s", dimensions: [{ column: "a" }, { column: "b" }], metrics: base.metrics } as unknown as ChartConfig,
+      rows, { palette: DEFAULT_PALETTE, mode: "dark" },
+    ) as { tooltip: { formatter: (p: unknown) => string } };
+    expect(hm.tooltip.formatter({ value: [0, 0, days("2025-03-01")] })).toContain("01/03/2025");
   });
 });

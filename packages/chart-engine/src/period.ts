@@ -2,7 +2,7 @@ import type { FieldBinding, KpiCompare } from "@dashboard/schema";
 import { aggregate, type Row } from "./aggregate";
 import { applyFilters, filterAppliesTo, isFilterActive, toIsoDate, type RowFilter } from "./filter";
 import type { CalcSet } from "./formula";
-import { formatCompact, formatNumber } from "./format";
+import { formatCompact, formatNumber, type MetricKind } from "./format";
 
 /**
  * So sánh kỳ (kỳ trước / cùng kỳ năm ngoái) cho KPI. Hàm thuần, không phụ thuộc DOM:
@@ -135,6 +135,8 @@ export interface CompareResult {
   label: string;
   cur: DateSpan;
   prev: DateSpan;
+  /** "date" khi số đo là ngày (MIN/MAX của cột ngày): so sánh chỉ có nghĩa là chênh bao nhiêu ngày. */
+  kind?: MetricKind;
 }
 
 /**
@@ -173,13 +175,17 @@ export function computeCompare(
     if (inSpan(d, periods.cur)) curRows.push(r);
     else if (inSpan(d, periods.prev)) prevRows.push(r);
   }
-  const value = (rs: Row[]) => aggregate(rs, [], [metric], calc).rows[0]?.values[0] ?? 0;
+  const run = (rs: Row[]) => aggregate(rs, [], [metric], calc);
+  const curT = run(curRows);
+  const prevT = prevRows.length ? run(prevRows) : null;
+  const kind = curT.metricKinds?.[0] ?? prevT?.metricKinds?.[0];
   return {
-    current: value(curRows),
-    previous: prevRows.length ? value(prevRows) : null,
+    current: curT.rows[0]?.values[0] ?? 0,
+    previous: prevT ? prevT.rows[0]?.values[0] ?? 0 : null,
     label: periods.label,
     cur: periods.cur,
     prev: periods.prev,
+    ...(kind === "date" ? { kind } : {}),
   };
 }
 
@@ -197,7 +203,10 @@ export function formatGrowth(r: CompareResult | null, cmp: KpiCompare): GrowthTe
   const diff = r.current - r.previous;
   let text: string;
   let measure = diff;
-  if (cmp.show === "percent") {
+  if (r.kind === "date") {
+    // Số đo là ngày: % hay pp vô nghĩa, luôn hiện số ngày chênh lệch (làm tròn 1 số lẻ).
+    text = `${formatNumber(Math.round(Math.abs(diff) * 10) / 10)} ngày`;
+  } else if (cmp.show === "percent") {
     if (r.previous === 0) return { text: "", dir: null, tone: "neutral" }; // chia cho 0: để trống
     measure = diff / Math.abs(r.previous);
     text = `${formatNumber(Math.round(Math.abs(measure) * 1000) / 10)}%`;

@@ -1,5 +1,5 @@
 import type { Cell, Row } from "./aggregate";
-import { toIsoDate } from "./filter";
+import { dayNumberOf, instantDaysOf, toIsoDate } from "./filter";
 
 /**
  * Trường tính toán (calculated field), giống Looker Studio.
@@ -387,18 +387,18 @@ function compare(op: string, a: Cell, b: Cell): boolean {
   }
 }
 
-function dayNumber(v: Cell): number | null {
-  const iso = toIsoDate(v);
-  if (!iso) return null;
-  const t = Date.UTC(Number(iso.slice(0, 4)), Number(iso.slice(5, 7)) - 1, Number(iso.slice(8, 10)));
-  return Number.isFinite(t) ? Math.round(t / 86_400_000) : null;
-}
-
 function aggregateOf(fn: string, vals: Cell[]): number {
   if (fn === "COUNT") return vals.filter((v) => v !== null && v !== "").length;
   if (fn === "COUNT_DISTINCT") return new Set(vals.filter((v) => v !== null && v !== "")).size;
   const nums = vals.map(num).filter((x): x is number => x !== null);
-  if (nums.length === 0) return 0;
+  if (nums.length === 0) {
+    // MIN/MAX trên cột ngày: kết quả là số ngày kể từ 1970 (UI hiển thị thành ngày, trừ hai ngày ra số ngày chênh).
+    if (fn === "MIN" || fn === "MAX") {
+      const days = vals.map(instantDaysOf).filter((x): x is number => x !== null);
+      if (days.length) return days.reduce((a, b) => (fn === "MIN" ? (b < a ? b : a) : b > a ? b : a), days[0]);
+    }
+    return 0;
+  }
   switch (fn) {
     case "SUM": return nums.reduce((a, b) => a + b, 0);
     case "AVG": return nums.reduce((a, b) => a + b, 0) / nums.length;
@@ -505,7 +505,7 @@ function call(n: Extract<Node, { k: "call" }>, ctx: Ctx): Cell {
       return iso.slice(0, 7);
     }
     case "DATE_DIFF": {
-      const x = dayNumber(a[0]); const y = dayNumber(a[1]);
+      const x = dayNumberOf(a[0]); const y = dayNumberOf(a[1]);
       return x === null || y === null ? null : x - y;
     }
     default: return null;
@@ -625,6 +625,12 @@ export function materializeRows(rows: Row[], set: CalcSet): Row[] {
   });
 }
 
+/** Trường tổng hợp có dạng đúng `MIN([cột])` / `MAX([cột])`: trả tên cột (kết quả có thể là ngày nếu cột là ngày). Khác thì null. */
+export function minMaxColumn(field: CompiledField): string | null {
+  const n = field.ast;
+  return n.k === "call" && (n.fn === "MIN" || n.fn === "MAX") && n.args.length === 1 && n.args[0].k === "col" ? n.args[0].name : null;
+}
+
 /** Giá trị của trường tổng hợp trên một nhóm dòng (null/không phải số thì thành 0). */
 export function evalAggField(field: CompiledField, rows: Row[]): number {
   const v = ev(field.ast, { rows });
@@ -649,8 +655,8 @@ export const FUNCTION_DOCS: Array<{ group: string; name: string; sig: string; de
   { group: "Tổng hợp", name: "AVG", sig: "AVG(x)", desc: "Trung bình" },
   { group: "Tổng hợp", name: "COUNT", sig: "COUNT(x)", desc: "Đếm ô có giá trị" },
   { group: "Tổng hợp", name: "COUNT_DISTINCT", sig: "COUNT_DISTINCT(x)", desc: "Đếm giá trị khác nhau" },
-  { group: "Tổng hợp", name: "MIN", sig: "MIN(x)", desc: "Nhỏ nhất" },
-  { group: "Tổng hợp", name: "MAX", sig: "MAX(x)", desc: "Lớn nhất" },
+  { group: "Tổng hợp", name: "MIN", sig: "MIN(x)", desc: "Nhỏ nhất (cột ngày: ngày sớm nhất)" },
+  { group: "Tổng hợp", name: "MAX", sig: "MAX(x)", desc: "Lớn nhất (cột ngày: ngày mới nhất)" },
   { group: "Số", name: "ROUND", sig: "ROUND(x, số lẻ)", desc: "Làm tròn" },
   { group: "Số", name: "ABS", sig: "ABS(x)", desc: "Giá trị tuyệt đối" },
   { group: "Số", name: "FLOOR", sig: "FLOOR(x)", desc: "Làm tròn xuống" },

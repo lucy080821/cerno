@@ -30,6 +30,14 @@ function ymd(y: number, m: number, d: number): string | null {
  * Hiểu: ISO (có thể kèm giờ), dd/mm/yyyy (-, . cũng được; số trước là NGÀY), yyyy/mm/dd, "Sep 5, 2025", "5 Sep 2025",
  * "5 thg 9, 2025" (kèm giờ phía sau cũng được), và Date. Phần giờ bị bỏ qua.
  */
+/** Số ngày kể từ 1970-01-01 của một giá trị ngày (null nếu không đọc được). Ô kiểu số KHÔNG được coi là ngày. */
+export function dayNumberOf(v: unknown): number | null {
+  const iso = toIsoDate(v);
+  if (!iso) return null;
+  const t = Date.UTC(Number(iso.slice(0, 4)), Number(iso.slice(5, 7)) - 1, Number(iso.slice(8, 10)));
+  return Number.isFinite(t) ? Math.round(t / 86_400_000) : null;
+}
+
 export function toIsoDate(v: unknown): string | null {
   if (v instanceof Date) return Number.isNaN(v.getTime()) ? null : v.toISOString().slice(0, 10);
   if (typeof v !== "string") return null;
@@ -67,6 +75,20 @@ export function hourOf(v: unknown): number | null {
   if (pm && h < 12) h += 12;
   else if (am && h === 12) h = 0;
   return h;
+}
+
+/**
+ * Như `dayNumberOf` nhưng kèm phần giờ phút: số ngày (lẻ) kể từ 1970-01-01, coi giờ trong ô là giờ địa phương của ô.
+ * Ô không có giờ thì ra số nguyên.
+ */
+export function instantDaysOf(v: unknown): number | null {
+  const day = dayNumberOf(v);
+  if (day === null) return null;
+  const h = hourOf(v);
+  if (h === null) return day;
+  const m = /(?:^|[T\s,])\d{1,2}:(\d{2})(?::(\d{2}))?/.exec(typeof v === "string" ? v.trim() : "");
+  const minutes = h * 60 + (m ? Math.min(59, +m[1]) : 0);
+  return day + minutes / 1440;
 }
 
 export const isFilterActive = (f: RowFilter) =>

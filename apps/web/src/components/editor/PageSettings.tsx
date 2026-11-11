@@ -4,6 +4,7 @@ import { getPageIcon, PAGE_ICONS } from "@/lib/editor/page-icons";
 import { getPages, resolvePageId } from "@dashboard/schema";
 import { useEditor } from "@/lib/editor/store";
 import { ColorField, NumField, Section, SelectField, TextField, Toggle } from "./fields";
+import { ImageUpload } from "./ImageUpload";
 import { PageNav } from "./PageNav";
 import s from "./editor.module.css";
 
@@ -67,6 +68,18 @@ export function PageSettings() {
         <ColorField label="Màu nền trang đang chọn" value={nav.activeBackground} onChange={(v) => patchNav({ activeBackground: v ?? nav.activeBackground }, "nav-ab")} />
         <Toggle label="In đậm tên trang" value={nav.bold} onChange={(v) => patchNav({ bold: v })} />
         <Toggle label="Hiện tên dashboard ở đầu thanh" value={nav.showTitle} onChange={(v) => patchNav({ showTitle: v })} />
+        {nav.showTitle && (
+          <>
+            <span className={s.label}>Logo / icon cạnh tên dashboard</span>
+            <ImageUpload url={nav.logo ?? ""} onUrl={(url) => patchNav({ logo: url })} />
+            {nav.logo && (
+              <button className={s.hint} style={{ textAlign: "left", cursor: "pointer", background: "none", border: 0, padding: 0, textDecoration: "underline" }}
+                onClick={() => patchNav({ logo: undefined })}>
+                Bỏ logo, dùng icon mặc định
+              </button>
+            )}
+          </>
+        )}
         <SelectField label="Hiệu ứng chuyển trang" value={nav.transition}
           options={[
             { value: "slide", label: "Trượt ngang" },

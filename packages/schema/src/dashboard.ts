@@ -190,6 +190,8 @@ export const PageNav = z.object({
   radius: z.number().min(0).max(24).default(8),
   /** Hiện tên dashboard ở đầu thanh. */
   showTitle: z.boolean().default(true),
+  /** Logo/icon tải lên (URL https) thay cho icon mặc định cạnh tên dashboard. Bỏ trống = icon mặc định. */
+  logo: z.string().max(2000).optional(),
   transition: z.enum([
     "none", "fade", "slide", "slideUp", "zoomIn", "zoomOut", "flip", "flipX",
     "rotate", "blur", "wipe", "drop", "cube", "bounce",

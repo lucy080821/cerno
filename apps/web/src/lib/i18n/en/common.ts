@@ -197,6 +197,8 @@ export const EN_COMMON: Dict = {
   "Cột nhóm": "Group column",
   "Nhỏ nhất": "Smallest",
   "Lớn nhất": "Largest",
+  "Nhỏ nhất (cột ngày: ngày sớm nhất)": "Smallest (date column: earliest date)",
+  "Lớn nhất (cột ngày: ngày mới nhất)": "Largest (date column: latest date)",
   "Tạo bằng": "Made with",
   "Xác nhận": "Confirm",
   "Nhập thông tin": "Enter information",
