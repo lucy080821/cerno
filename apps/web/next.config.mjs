@@ -13,7 +13,10 @@ const nextConfig = {
   transpilePackages: ["@dashboard/schema", "@dashboard/chart-engine"],
   // Đặt NEXT_OUTPUT=export để build tĩnh (gói hosting không có Node.js).
   // Bản tĩnh không có API route / SSR, chỉ dùng cho trang giới thiệu (không chạy được chat AI).
-  output: process.env.NEXT_OUTPUT === "export" ? "export" : undefined,
+  // Mặc định build "standalone" (Hostinger cần .next/standalone để chạy server).
+  output: process.env.NEXT_OUTPUT === "export" ? "export" : "standalone",
+  // Monorepo: theo dõi file từ thư mục gốc để standalone gom đủ packages/schema, packages/chart-engine.
+  outputFileTracingRoot: root,
   // Chống clickjacking: không trang nào của app được nhúng vào website khác, TRỪ /embed/<mã> (middleware.ts đặt
   // CSP frame-ancestors riêng theo tên miền khách khai báo). Bản build tĩnh không hỗ trợ headers().
   ...(process.env.NEXT_OUTPUT === "export"
