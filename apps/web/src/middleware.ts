@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { frameAncestors } from "@/lib/embed/domains";
 import { TOKEN_RE } from "@/lib/embed/token";
 import { safeNext } from "@/lib/auth/next";
+import { publicOrigin } from "@/lib/auth/public-origin";
 
 /**
  * Làm mới phiên Supabase ở mỗi request và chặn trang cần đăng nhập.
@@ -51,7 +52,7 @@ export async function middleware(request: NextRequest) {
   // Chưa cấu hình Supabase: trang chủ vẫn chạy, trang cần đăng nhập thì chuyển về /login báo thiếu cấu hình.
   if (!url || !anon) {
     if (isProtected(request.nextUrl.pathname)) {
-      return NextResponse.redirect(new URL("/login?error=config", request.url));
+      return NextResponse.redirect(new URL("/login?error=config", publicOrigin(request)));
     }
     return NextResponse.next();
   }
@@ -75,13 +76,13 @@ export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
   if (!user && isProtected(path)) {
     // Nhớ trang định vào (ví dụ link người được mời) để quay lại sau khi đăng nhập.
-    const login = new URL("/login", request.url);
+    const login = new URL("/login", publicOrigin(request));
     if (safeNext(path)) login.searchParams.set("next", path);
     return NextResponse.redirect(login);
   }
   // Đã đăng nhập (phiên còn trong cookie): bỏ qua trang chủ và trang đăng nhập, vào thẳng danh sách dashboard.
   if (user && (path === "/login" || path === "/")) {
-    return NextResponse.redirect(new URL("/dashboards", request.url));
+    return NextResponse.redirect(new URL("/dashboards", publicOrigin(request)));
   }
   return response;
 }

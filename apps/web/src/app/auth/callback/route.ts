@@ -2,13 +2,15 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { saveRefreshToken } from "@/lib/google/api";
 import { NEXT_COOKIE, safeNext } from "@/lib/auth/next";
+import { publicOrigin } from "@/lib/auth/public-origin";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /** Google quay về đây với ?code=. Đổi lấy phiên, rồi lưu refresh token (mã hoá) để đồng bộ Sheets. */
 export async function GET(request: NextRequest) {
-  const { searchParams, origin } = request.nextUrl;
+  const { searchParams } = request.nextUrl;
+  const origin = publicOrigin(request);
   const code = searchParams.get("code");
   if (!code) return NextResponse.redirect(`${origin}/login?error=no_code`);
 
