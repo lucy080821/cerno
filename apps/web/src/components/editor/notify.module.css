@@ -263,3 +263,33 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ---------- Cảnh báo ---------- */
+.tagBad {
+  background: rgba(220, 38, 38, 0.18);
+  color: #ff8a8a;
+}
+
+.tagWarn {
+  background: rgba(251, 191, 36, 0.16);
+  color: #fbbf24;
+}
+
+.bad {
+  color: #ff8a8a;
+}
+
+.good {
+  color: #34d399;
+}
+
+.preview {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  font-size: 13.5px;
+  line-height: 1.5;
+}

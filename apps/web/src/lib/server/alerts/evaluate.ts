@@ -7,7 +7,7 @@ import type { InlineImage, MailMessage, SendResult } from "@/lib/server/mail";
 import { buildAlertEmail, type AlertEmailInput, type AlertEmailKind } from "@/lib/server/mail/alert-email";
 import { alertChartPng } from "./chart";
 import { computeAlert, computeSeries, summarize, verdictOf, type AlertComputation, type Executor } from "./compute";
-import { conditionSentence, metricLabel, thresholdText } from "./describe";
+import { conditionSentence, metricLabel, thresholdText } from "@/lib/alerts/describe";
 import type { ExplainInput } from "./explain";
 import { checkRule, type CalcInfo, type SourceInfo } from "./validate";
 

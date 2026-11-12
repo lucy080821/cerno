@@ -12,6 +12,8 @@ import {
 } from "@/lib/notify/format";
 import { Spinner } from "@/components/Spinner";
 import { useDialog } from "@/components/ui/DialogProvider";
+import { AlertsTab } from "./AlertsTab";
+import type { AlertPrefill } from "@/lib/notify/alert-form";
 import { Icon } from "./fields";
 import s from "./editor.module.css";
 import n from "./notify.module.css";
@@ -353,11 +355,21 @@ function ReportsTab({ dashboardId, widgets }: { dashboardId: string; widgets: Re
 
 // ---------------------------------------------------------------------------------------------
 
+export type NotifyTab = "reports" | "alerts";
+
 /**
- * Hộp thoại "Thông báo" của dashboard. Hiện có tab "Báo cáo định kỳ"; tab "Cảnh báo" sẽ thêm vào cùng khung này.
- * Mở được cả từ trình xem (/d/<id>) để người được mời tự đăng ký nhận báo cáo cho email của mình.
+ * Hộp thoại "Thông báo" của dashboard: tab "Báo cáo định kỳ" và tab "Cảnh báo". Mở được cả từ trình xem (/d/<id>) để người được mời
+ * tự đăng ký nhận báo cáo và tạo cảnh báo cho email của mình. `prefill` điền sẵn chỉ số khi tạo cảnh báo từ widget KPI.
  */
-export function NotifyDialog({ dashboardId, widgets, onClose }: { dashboardId: string; widgets: ReportableWidget[]; onClose: () => void }) {
+export function NotifyDialog({ dashboardId, widgets, onClose, initialTab = "reports", prefill = null }: {
+  dashboardId: string;
+  widgets: ReportableWidget[];
+  onClose: () => void;
+  initialTab?: NotifyTab;
+  prefill?: AlertPrefill | null;
+}) {
+  const [tab, setTab] = useState<NotifyTab>(initialTab);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     window.addEventListener("keydown", onKey);
@@ -369,13 +381,21 @@ export function NotifyDialog({ dashboardId, widgets, onClose }: { dashboardId: s
       <div className={`${s.dialog} ${s.dialogShare}`} role="dialog" aria-modal="true" aria-label="Thông báo">
         <div className={s.shareHead}>
           <div className={s.shareHeadRow}>
-            <strong>Báo cáo định kỳ qua email</strong>
+            <strong>Thông báo</strong>
             <button className={s.iconBtn} title="Đóng (Esc)" onClick={onClose}><Icon name="close" size={14} /></button>
           </div>
-          <span className={s.shareSub}>Nhận số liệu mới nhất của dashboard vào hộp thư theo lịch bạn chọn, kèm phân tích ngắn và biểu đồ.</span>
+          <span className={s.shareSub}>Nhận số liệu của dashboard qua email: báo cáo theo lịch và cảnh báo khi có bất thường.</span>
+        </div>
+        <div className={s.shareTabs} role="tablist">
+          <button role="tab" aria-selected={tab === "reports"} className={`${s.shareTab} ${tab === "reports" ? s.shareTabOn : ""}`} onClick={() => setTab("reports")}>
+            Báo cáo định kỳ
+          </button>
+          <button role="tab" aria-selected={tab === "alerts"} className={`${s.shareTab} ${tab === "alerts" ? s.shareTabOn : ""}`} onClick={() => setTab("alerts")}>
+            Cảnh báo
+          </button>
         </div>
         <div className={s.shareBody}>
-          <ReportsTab dashboardId={dashboardId} widgets={widgets} />
+          {tab === "reports" ? <ReportsTab dashboardId={dashboardId} widgets={widgets} /> : <AlertsTab dashboardId={dashboardId} prefill={prefill} />}
         </div>
         <div className={s.shareFoot}>
           <button className={s.btn} onClick={onClose}>Đóng</button>

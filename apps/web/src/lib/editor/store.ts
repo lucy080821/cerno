@@ -6,6 +6,7 @@ import {
 import { aabb, union } from "./geometry";
 import { newId } from "./defaults";
 import { applyFormat, type FormatPart } from "./widget-format";
+import type { AlertPrefill as NotifyPrefill } from "@/lib/notify/alert-form";
 
 export interface View {
   zoom: number;
@@ -54,6 +55,10 @@ interface EditorState {
   clipboard: Widget[];
   /** Widget nguồn để dán thông số (kích thước, vị trí, kiểu dáng). Khác `clipboard`: không tạo widget mới. */
   formatClips: Partial<Record<FormatPart, Widget>>;
+  /** Yêu cầu mở hộp thoại Thông báo từ nơi khác (vd menu chuột phải của KPI "Tạo cảnh báo"); không lưu vào dashboard. */
+  notifyRequest: { tab: "reports" | "alerts"; prefill?: NotifyPrefill } | null;
+  openNotify: (req: { tab: "reports" | "alerts"; prefill?: NotifyPrefill }) => void;
+  closeNotify: () => void;
 
   /** Trang đang xem/sửa (trạng thái giao diện, không lưu vào dashboard). Luôn đọc qua `resolvePageId`. */
   pageId: string;
@@ -158,6 +163,9 @@ export const useEditor = create<EditorState>((set, get) => ({
   viewport: { w: 0, h: 0 },
   clipboard: [],
   formatClips: {},
+  notifyRequest: null,
+  openNotify: (req) => set({ notifyRequest: req }),
+  closeNotify: () => set({ notifyRequest: null }),
   gestureBase: null,
   lastKey: null,
   lastTime: 0,

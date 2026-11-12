@@ -30,6 +30,7 @@ const IGNORE_FILES = [
   /lib\/site\.ts$/, // slogan/mô tả SEO
   /opengraph-image\.tsx$/,
   /\/i18n\//, // chính từ điển
+  /lib\/alerts\/describe\.ts$/, // câu mô tả điều kiện ghép động (hiện trong email và danh sách luật), không dịch bằng từ điển
   /server\/alerts\//, // nhãn khoảng thời gian trong email cảnh báo (luôn tiếng Việt)
   /server\/reports\//, // báo cáo email luôn bằng tiếng Việt (người nhận không đổi ngôn ngữ giao diện)
   /server\/mail\//, // nội dung email mời tự có hai ngôn ngữ trong bộ soạn thư (chọn theo ngôn ngữ người mời)

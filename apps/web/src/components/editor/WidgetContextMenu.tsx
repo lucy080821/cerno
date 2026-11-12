@@ -84,6 +84,26 @@ export function WidgetContextMenu({ x, y, onClose }: { x: number; y: number; onC
         Dán kiểu dáng{st.formatClips.style ? ` (từ: ${clipName("style")})` : ""}
       </Item>
       <div className={m.sep} role="separator" />
+      {sel.length === 1 && sel[0].config.kind === "kpi" && (
+        <Item
+          onClick={run(() => {
+            const w = sel[0];
+            if (w.config.kind !== "kpi") return;
+            st.openNotify({
+              tab: "alerts",
+              prefill: {
+                sourceId: w.config.sourceId,
+                column: w.config.metric.column,
+                aggregation: w.config.metric.aggregation,
+                widgetId: w.id,
+                name: w.config.title?.trim() || undefined,
+              },
+            });
+          })}
+        >
+          Tạo cảnh báo…
+        </Item>
+      )}
       <Item onClick={run(st.removeSelected)} hint="Del">Xoá</Item>
     </div>,
     document.body,

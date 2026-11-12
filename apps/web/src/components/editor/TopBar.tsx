@@ -87,7 +87,7 @@ export function TopBar({ onMobile, onFullscreen, notify, canShare = true }: {
   const { mutate, undo, redo, zoomAt, fit, setMode, loadDoc } = useEditor.getState();
   const fileRef = useRef<HTMLInputElement>(null);
   const [shareOpen, setShareOpen] = useState(false);
-  const [notifyOpen, setNotifyOpen] = useState(false);
+  const notifyRequest = useEditor((st) => st.notifyRequest);
   const [exportOpen, setExportOpen] = useState(false);
   const dashboardId = useEditor((st) => st.doc.id);
 
@@ -185,7 +185,7 @@ export function TopBar({ onMobile, onFullscreen, notify, canShare = true }: {
           }}
         />
         <span className={s.sep} />
-        <button className={s.btn} title="Báo cáo định kỳ qua email" aria-label="Thông báo" onClick={() => setNotifyOpen(true)}>
+        <button className={s.btn} title="Báo cáo định kỳ qua email" aria-label="Thông báo" onClick={() => useEditor.getState().openNotify({ tab: "reports" })}>
           <Icon name="bell" size={14} /><span className={s.lblWide}>Thông báo</span>
         </button>
         {canShare && <button className={s.btn} title="Chia sẻ và nhúng vào website" aria-label="Chia sẻ" onClick={() => setShareOpen(true)}>
@@ -198,7 +198,15 @@ export function TopBar({ onMobile, onFullscreen, notify, canShare = true }: {
       </div>
       {exportOpen && <ExportDialog onClose={() => setExportOpen(false)} notify={notify} />}
       {shareOpen && <ShareDialog dashboardId={dashboardId} onClose={() => setShareOpen(false)} />}
-      {notifyOpen && <NotifyDialog dashboardId={dashboardId} widgets={reportableWidgets(doc)} onClose={() => setNotifyOpen(false)} />}
+      {notifyRequest && (
+        <NotifyDialog
+          dashboardId={dashboardId}
+          widgets={reportableWidgets(doc)}
+          initialTab={notifyRequest.tab}
+          prefill={notifyRequest.prefill ?? null}
+          onClose={() => useEditor.getState().closeNotify()}
+        />
+      )}
     </header>
   );
 }
