@@ -5,7 +5,7 @@ import { normalizeEmail } from "@/lib/embed/email";
 import { createRateLimiter } from "@/lib/server/rate-limit";
 import { mailConfigured, sendMail } from "@/lib/server/mail";
 import { buildInviteEmail } from "@/lib/server/mail/invite-email";
-import { siteUrl } from "@/lib/seo";
+import { requestOrigin } from "@/lib/auth/public-origin";
 import { site } from "@/lib/site";
 
 export const runtime = "nodejs";
@@ -86,7 +86,7 @@ export async function POST(req: Request, ctx: Params) {
   else if (perInviter(c.userId) || perRecipient(`${c.id}:${email}`)) mail = { sent: false, reason: "rate_limited" };
   else {
     const { data: dash } = await c.supabase.from("dashboards").select("name").eq("id", c.id).maybeSingle();
-    const origin = siteUrl();
+    const origin = requestOrigin(req);
     const built = buildInviteEmail({
       inviterName: c.displayName,
       inviterEmail: c.myEmail,
