@@ -143,7 +143,7 @@ export default function PrivacyPage() {
               <tr><td>Google</td><td>Đăng nhập (OAuth), hộp chọn file (Picker), đọc Google Sheets (Sheets API)</td><td>Thông tin tài khoản; file và nội dung ô bạn chọn</td></tr>
               <tr><td>Supabase</td><td>Xác thực, cơ sở dữ liệu, kho lưu trữ ảnh</td><td>Tài khoản, dashboard, bản sao dữ liệu Sheets, token mã hóa, ảnh</td></tr>
               <tr><td>Groq</td><td>Trợ lý AI (khi bạn dùng)</td><td>Bản tóm tắt dashboard ở mục 5. Groq xử lý theo thỏa thuận dịch vụ và chính sách riêng của họ: <a href="https://groq.com/privacy-policy" target="_blank" rel="noreferrer">groq.com/privacy-policy</a></td></tr>
-              <tr><td>Google (Gmail)</td><td>Gửi email mời chia sẻ dashboard</td><td>Email người được mời; tên và email của người mời, tên dashboard, vai trò, link mở dashboard</td></tr>
+              <tr><td>Google (Gmail)</td><td>Gửi email mời chia sẻ dashboard và mã đăng nhập một lần cho người được mời</td><td>Email người được mời; tên và email của người mời, tên dashboard, vai trò, link mở dashboard</td></tr>
               <tr><td>Nhà cung cấp hosting</td><td>Chạy ứng dụng web</td><td>Dữ liệu đi qua máy chủ khi bạn dùng dịch vụ; nhật ký truy cập</td></tr>
             </tbody>
           </table>

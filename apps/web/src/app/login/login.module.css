@@ -87,3 +87,51 @@
   color: #6ee7b7;
   font-size: 0.88rem;
 }
+
+.otpForm {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.otpLabel {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.otpInput {
+  padding: 11px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.95rem;
+}
+
+.otpCode {
+  letter-spacing: 0.35em;
+  text-align: center;
+  font-size: 1.2rem;
+}
+
+.otpBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 16px;
+  border-radius: 10px;
+  border: 0;
+  background: var(--brand-gradient, var(--cyan));
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.otpBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

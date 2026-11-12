@@ -3,6 +3,7 @@ import { LangSwitch } from "@/components/i18n/LangSwitch";
 import { Brand } from "@/components/Brand";
 import { safeNext } from "@/lib/auth/next";
 import { LoginButton } from "./LoginButton";
+import { EmailLogin } from "./EmailLogin";
 import styles from "./login.module.css";
 
 const ERRORS: Record<string, string> = {
@@ -26,6 +27,10 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         {deleted && <p className={styles.notice} role="status">Đã xóa tài khoản và toàn bộ dữ liệu của bạn.</p>}
         {error && <p className={styles.error} role="alert">{ERRORS[error] ?? "Có lỗi xảy ra."}</p>}
         <LoginButton next={safeNext(next) ?? undefined} />
+        <EmailLogin next={safeNext(next) ?? undefined} />
+        <p className={styles.fine}>
+          Đăng nhập bằng email chỉ dành cho người được mời xem hoặc sửa một dashboard, không dùng để tự tạo tài khoản mới.
+        </p>
         <p className={styles.fine}>
           Chúng tôi chỉ truy cập các file bạn chọn (quyền <code>drive.file</code>), không xem được phần còn lại của Drive.
         </p>

@@ -217,7 +217,7 @@ export const EN_LEGAL: Dict = {
   ", chọn": ", choose",
   "Email của những người bạn mời xem hoặc sửa dashboard, dùng để cấp quyền và gửi email mời. Email mời nêu tên và email của bạn, tên dashboard và vai trò được cấp.": "The email addresses of people you invite to view or edit a dashboard, used to grant access and send the invitation email. The invitation names you and your email, the dashboard and the role granted.",
   "Google (Gmail)": "Google (Gmail)",
-  "Gửi email mời chia sẻ dashboard": "Sends dashboard-sharing invitation emails",
+  "Gửi email mời chia sẻ dashboard và mã đăng nhập một lần cho người được mời": "Sends dashboard-sharing invitation emails and one-time sign-in codes to invited people",
   "Email người được mời; tên và email của người mời, tên dashboard, vai trò, link mở dashboard": "The invitee's email; the inviter's name and email, the dashboard name, the role and the link to open it",
   "Điện thoại:": "Phone:",
 };
