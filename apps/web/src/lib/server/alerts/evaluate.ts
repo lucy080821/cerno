@@ -80,6 +80,8 @@ export interface AlertDeps {
   dataChangedAt(sourceId: string): Promise<string | null>;
   isOptedOut(email: string, ruleId: string): Promise<boolean>;
   send(m: MailMessage): Promise<SendResult>;
+  /** Còn được gửi thêm email hôm nay không (hạn mức email theo gói). Bỏ trống = không giới hạn. */
+  mailAllowed?(dashboardId: string): Promise<boolean>;
   log(e: AlertLog): Promise<void>;
   save(ruleId: string, patch: RulePatch): Promise<void>;
   creatorEmail(userId: string): Promise<string | null>;
@@ -149,6 +151,11 @@ async function deliver(
       const links = deps.links(rule, email);
       if (!links) {
         await deps.log({ ...base, status: "failed", error: "Chưa cấu hình UNSUBSCRIBE_SECRET", meta });
+        continue;
+      }
+      // Hạn mức email mỗi ngày của workspace (theo gói): hết thì không gửi (và không tính là đã báo, lần sau thử lại).
+      if (deps.mailAllowed && !(await deps.mailAllowed(rule.dashboard_id))) {
+        await deps.log({ ...base, status: "skipped", meta: { ...meta, reason: "daily_limit" } });
         continue;
       }
       const mail = buildAlertEmail({

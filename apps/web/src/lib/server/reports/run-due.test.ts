@@ -151,6 +151,21 @@ describe("runDueReports", () => {
     await expect(runDueReports(h.deps)).resolves.toMatchObject({ sent: 0 });
   });
 
+  it("hết hạn mức email trong ngày (theo gói): bỏ qua báo cáo kỳ này, ghi lý do, không gửi, không gọi AI", async () => {
+    const h = harness([sub("an"), sub("binh")], { mailAllowed: async (d) => d === "khac" });
+    const r = await runDueReports(h.deps);
+    expect(r).toMatchObject({ sent: 0, skipped: 2 });
+    expect(h.sent).toEqual([]);
+    expect(h.chatCalls).toBe(0);
+    expect(h.logs.map((l) => [l.status, l.meta])).toEqual([["skipped", { reason: "daily_limit" }], ["skipped", { reason: "daily_limit" }]]);
+    expect(h.finished[0][1]).toMatchObject({ last_error: expect.stringMatching(/giới hạn email trong ngày/), next_run_at: "2025-12-03T02:00:00.000Z" });
+  });
+
+  it("còn hạn mức thì gửi bình thường", async () => {
+    const h = harness([sub("an")], { mailAllowed: async () => true });
+    expect(await runDueReports(h.deps)).toMatchObject({ sent: 1 });
+  });
+
   it("chỉ nhận tối đa 20 đăng ký mỗi lượt", async () => {
     let asked = 0;
     const h = harness([], { claim: async (n) => { asked = n; return []; } });

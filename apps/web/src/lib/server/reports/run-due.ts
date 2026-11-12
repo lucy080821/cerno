@@ -51,6 +51,8 @@ export interface RunDeps {
   claim(limit: number): Promise<DueSub[]>;
   isOptedOut(email: string, subId: string): Promise<boolean>;
   send(m: MailMessage): Promise<SendResult>;
+  /** Còn được gửi thêm email hôm nay không (hạn mức email theo gói). Bỏ trống = không giới hạn. */
+  mailAllowed?(dashboardId: string): Promise<boolean>;
   log(e: LogEntry): Promise<void>;
   finish(id: string, patch: FinishPatch): Promise<void>;
   /** Link huỷ nhận cho một đăng ký, hoặc null nếu chưa cấu hình UNSUBSCRIBE_SECRET (khi đó KHÔNG được gửi). */
@@ -89,6 +91,14 @@ export async function runDueReports(deps: RunDeps, limit = MAX_PER_RUN): Promise
         await deps.log({ ...base, status: "failed", error: "Chưa cấu hình UNSUBSCRIBE_SECRET", meta: {} });
         await deps.finish(sub.id, { last_error: "Máy chủ chưa cấu hình link huỷ nhận.", next_run_at: next() });
         sum.failed++;
+        continue;
+      }
+
+      // Hạn mức email mỗi ngày của workspace (theo gói): hết thì bỏ qua báo cáo kỳ này, ghi rõ lý do.
+      if (deps.mailAllowed && !(await deps.mailAllowed(sub.dashboard_id))) {
+        await deps.log({ ...base, status: "skipped", meta: { reason: "daily_limit" } });
+        await deps.finish(sub.id, { last_error: "Đã đạt giới hạn email trong ngày của gói; báo cáo kỳ này bị bỏ qua.", next_run_at: next() });
+        sum.skipped++;
         continue;
       }
 

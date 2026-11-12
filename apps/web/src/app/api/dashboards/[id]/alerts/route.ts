@@ -3,7 +3,8 @@ import { AlertDraft, AlertRuleInput } from "@dashboard/schema";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireUser } from "@/lib/server/session-user";
-import { MAX_ALERT_RULES_PER_DASHBOARD } from "@/lib/limits";
+import { alertViolation, limitsOf, normalizePlan } from "@/lib/plan";
+import { planForDashboard } from "@/lib/server/plan";
 import { mailConfigured } from "@/lib/server/mail";
 import { unsubscribeConfigured } from "@/lib/server/notify/unsubscribe";
 import { createRateLimiter } from "@/lib/server/rate-limit";
@@ -58,13 +59,18 @@ export async function GET(_req: Request, ctx: Params) {
   if (error) return fail("Không đọc được danh sách cảnh báo", 500);
   const s = await structure(c.id);
   if ("error" in s) return s.error;
+  const plan = (await planForDashboard(c.id))?.plan ?? normalizePlan(null);
+  const lim = limitsOf(plan);
   return NextResponse.json(
     {
       rules: data ?? [],
       isOwner: c.isOwner,
       me: c.email,
       mailReady: mailConfigured() && unsubscribeConfigured(),
-      limit: MAX_ALERT_RULES_PER_DASHBOARD,
+      limit: lim.alertRules,
+      plan,
+      planLabel: lim.label,
+      limits: { types: lim.alertTypes, aiParsePerMonth: lim.aiAlertParsePerMonth },
       // Cấu trúc để dựng biểu mẫu: cột lấy từ DB (luôn mới nhất), không dựa vào bản trong doc.
       schema: s.ac
         ? { sources: s.ac.sources.map((x) => ({ id: x.id, name: x.name, columns: x.columns })), calc: s.ac.calc }
@@ -112,8 +118,10 @@ export async function POST(req: Request, ctx: Params) {
   }
 
   const admin = createAdminClient();
+  const plan = (await planForDashboard(c.id))?.plan ?? normalizePlan(null);
   const { count } = await admin.from("alert_rules").select("id", { count: "exact", head: true }).eq("dashboard_id", c.id);
-  if ((count ?? 0) >= MAX_ALERT_RULES_PER_DASHBOARD) return fail(`Mỗi dashboard chỉ có tối đa ${MAX_ALERT_RULES_PER_DASHBOARD} luật cảnh báo.`, 400);
+  const v = alertViolation(plan, input, count ?? 0, true);
+  if (v) return fail(v.message, 403, { code: v.code });
 
   const { data, error } = await c.supabase
     .from("alert_rules")
@@ -170,6 +178,9 @@ export async function PATCH(req: Request, ctx: Params) {
   if (!c.isOwner && (input.recipients.length !== 1 || input.recipients[0] !== c.email)) {
     return fail("Bạn chỉ tạo được cảnh báo gửi tới chính email của mình.", 403);
   }
+
+  const pv = alertViolation((await planForDashboard(c.id))?.plan ?? normalizePlan(null), input, 0, false);
+  if (pv) return fail(pv.message, 403, { code: pv.code });
 
   const { data: old } = await c.supabase.from("alert_rules").select("metric, condition").eq("id", ruleId).eq("dashboard_id", c.id).maybeSingle();
   if (!old) return fail("Không tìm thấy luật (hoặc bạn không có quyền sửa)", 404);

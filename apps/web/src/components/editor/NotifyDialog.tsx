@@ -10,6 +10,7 @@ import {
   FREQUENCY_LABELS, MAX_PROMPT, MAX_WIDGETS, PROMPT_SUGGESTIONS, WEEKDAY_LABELS, appendSuggestion, emptyForm, formFromRow, formToInput,
   hourLabel, scheduleParts, type ReportForm, type ReportableWidget,
 } from "@/lib/notify/format";
+import { isPlanLimit } from "@/lib/notify/plan-error";
 import { Spinner } from "@/components/Spinner";
 import { useDialog } from "@/components/ui/DialogProvider";
 import { AlertsTab } from "./AlertsTab";
@@ -56,13 +57,17 @@ function ReportsTab({ dashboardId, widgets }: { dashboardId: string; widgets: Re
   const run = async (kind: NonNullable<typeof busy>, fn: () => Promise<void>) => {
     setBusy(kind);
     setMsg(null);
+    let limit: string | null = null;
     try {
       await fn();
     } catch (e) {
-      setMsg({ kind: "err", text: e instanceof Error ? e.message : "Có lỗi xảy ra." });
+      if (isPlanLimit(e)) limit = e.message;
+      else setMsg({ kind: "err", text: e instanceof Error ? e.message : "Có lỗi xảy ra." });
     } finally {
       setBusy(null);
     }
+    // Chạm giới hạn của gói: hộp thoại riêng (hiện SAU khi lớp phủ "đang xử lý" đã tắt).
+    if (limit) await dialog.alert({ title: "Đã chạm giới hạn của gói", message: limit });
   };
 
   const openNew = () => {
@@ -188,7 +193,9 @@ function ReportsTab({ dashboardId, widgets }: { dashboardId: string; widgets: Re
           <label className={n.field}>
             Tần suất
             <select value={form.frequency} disabled={busy !== null} onChange={(e) => patch({ frequency: e.target.value as ReportForm["frequency"] })}>
-              {(Object.keys(FREQUENCY_LABELS) as ReportForm["frequency"][]).map((f) => <option key={f} value={f}>{FREQUENCY_LABELS[f]}</option>)}
+              {(Object.keys(FREQUENCY_LABELS) as ReportForm["frequency"][]).map((f) => (
+                <option key={f} value={f} disabled={!data.limits.frequencies.includes(f)}>{FREQUENCY_LABELS[f]}</option>
+              ))}
             </select>
           </label>
           {form.frequency === "weekly" && (
@@ -215,16 +222,18 @@ function ReportsTab({ dashboardId, widgets }: { dashboardId: string; widgets: Re
           </label>
         </div>
 
+        {data.limits.frequencies.length < 3 && <p className={n.sub}>Tần suất bị khoá chỉ có ở gói trả phí.</p>}
+        {!data.limits.aiReports && <p className={n.warn}>Gói của bạn gửi báo cáo gồm bảng số và biểu đồ. Phân tích do AI viết theo yêu cầu riêng chỉ có ở gói trả phí.</p>}
         <label className={n.field}>
           Yêu cầu riêng của người nhận (không bắt buộc)
-          <textarea value={form.prompt} disabled={busy !== null} maxLength={MAX_PROMPT}
+          <textarea value={form.prompt} disabled={busy !== null || !data.limits.aiReports} maxLength={MAX_PROMPT}
             placeholder="Ví dụ: Tập trung vào khu vực miền Bắc, nêu rõ 3 điểm yếu nhất, viết ngắn gọn."
             onChange={(e) => patch({ prompt: e.target.value })} />
           <span className={n.counter}>{form.prompt.length}/{MAX_PROMPT}</span>
         </label>
         <div className={n.chips}>
           {PROMPT_SUGGESTIONS.map((p) => (
-            <button key={p.label} type="button" className={n.chip} disabled={busy !== null}
+            <button key={p.label} type="button" className={n.chip} disabled={busy !== null || !data.limits.aiReports}
               onClick={() => patch({ prompt: appendSuggestion(form.prompt, p.text) })}>
               + {p.label}
             </button>
@@ -308,7 +317,8 @@ function ReportsTab({ dashboardId, widgets }: { dashboardId: string; widgets: Re
         <p>
           {data.isOwner
             ? "Gửi báo cáo số liệu của dashboard qua email theo lịch. Mỗi người nhận có thể có yêu cầu riêng."
-            : "Đăng ký nhận báo cáo của dashboard này qua email của chính bạn."}
+            : "Đăng ký nhận báo cáo của dashboard này qua email của chính bạn."}{" "}
+          <span>Gói:</span> <span className={n.tag}>{data.planLabel}</span>
         </p>
         <button className={`${s.btn} ${s.btnActive}`} onClick={openNew} disabled={full || busy !== null}>
           <Icon name="plus" size={13} /> Thêm

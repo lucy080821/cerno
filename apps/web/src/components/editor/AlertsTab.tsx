@@ -10,6 +10,7 @@ import {
   formFromRule, formToDraft, formToRuleInput, previewParts, stateKey, type AlertForm, type AlertPrefill, type Aggregation, type ConditionKind,
 } from "@/lib/notify/alert-form";
 import { conditionSentence } from "@/lib/alerts/describe";
+import { isPlanLimit } from "@/lib/notify/plan-error";
 import { Spinner } from "@/components/Spinner";
 import { useDialog } from "@/components/ui/DialogProvider";
 import { Icon } from "./fields";
@@ -101,13 +102,17 @@ export function AlertsTab({ dashboardId, prefill }: { dashboardId: string; prefi
   const run = async (kind: NonNullable<typeof busy>, fn: () => Promise<void>) => {
     setBusy(kind);
     setMsg(null);
+    let limit: string | null = null;
     try {
       await fn();
     } catch (e) {
-      setMsg({ kind: "err", text: e instanceof Error ? e.message : "Có lỗi xảy ra." });
+      if (isPlanLimit(e)) limit = e.message;
+      else setMsg({ kind: "err", text: e instanceof Error ? e.message : "Có lỗi xảy ra." });
     } finally {
       setBusy(null);
     }
+    // Chạm giới hạn của gói: hộp thoại riêng (hiện SAU khi lớp phủ "đang xử lý" đã tắt).
+    if (limit) await dialog.alert({ title: "Đã chạm giới hạn của gói", message: limit });
   };
 
   const patch = (p: Partial<AlertForm>) => {
@@ -219,6 +224,9 @@ export function AlertsTab({ dashboardId, prefill }: { dashboardId: string; prefi
     const own = !data.isOwner;
     const disabled = busy !== null;
     const risk = earlyAlarmRisk(form);
+    const types = data.limits.types;
+    const allowed = (k: ConditionKind) => types.includes(k);
+    const groupAllowed = types.includes("per_group");
     return (
       <div className={n.form}>
         <div className={n.top}><strong>{form.id ? "Sửa cảnh báo" : "Thêm cảnh báo"}</strong></div>
@@ -242,13 +250,16 @@ export function AlertsTab({ dashboardId, prefill }: { dashboardId: string; prefi
           </label>
         )}
 
+        {(!allowed("anomaly") || !allowed("stale") || !groupAllowed) && <p className={n.sub}>Các loại bị khoá và báo theo từng nhóm chỉ có ở gói trả phí.</p>}
         <label className={n.field}>
           Loại cảnh báo
           <select value={form.kind} disabled={disabled} onChange={(e) => {
             const kind = e.target.value as ConditionKind;
             patch({ kind, ...(kind === "change" || kind === "anomaly" ? { window: form.window === "all" ? "yesterday" : form.window } : {}) });
           }}>
-            {(Object.keys(KIND_NAMES) as ConditionKind[]).map((k) => <option key={k} value={k}>{KIND_NAMES[k]}</option>)}
+            {(Object.keys(KIND_NAMES) as ConditionKind[]).map((k) => (
+              <option key={k} value={k} disabled={!allowed(k)}>{KIND_NAMES[k]}</option>
+            ))}
           </select>
         </label>
 
@@ -362,7 +373,7 @@ export function AlertsTab({ dashboardId, prefill }: { dashboardId: string; prefi
         {!stale && (
           <>
             <label className={n.check}>
-              <input type="checkbox" checked={form.perGroup} disabled={disabled} onChange={(e) => patch({ perGroup: e.target.checked, groupBy: e.target.checked ? form.groupBy || ch.group[0] || "" : "" })} />
+              <input type="checkbox" checked={form.perGroup} disabled={disabled || !groupAllowed} onChange={(e) => patch({ perGroup: e.target.checked, groupBy: e.target.checked ? form.groupBy || ch.group[0] || "" : "" })} />
               <span>Báo theo từng nhóm (mỗi giá trị của một cột được kiểm riêng)</span>
             </label>
             {form.perGroup && (
@@ -452,7 +463,10 @@ export function AlertsTab({ dashboardId, prefill }: { dashboardId: string; prefi
   return (
     <div className={n.body} style={{ padding: 0 }}>
       <div className={n.top}>
-        <p>{data.isOwner ? "Nhận email khi số liệu chạm ngưỡng hoặc bất thường. Mô tả bằng lời, hệ thống dựng luật để bạn xác nhận." : "Tạo cảnh báo gửi tới email của chính bạn."}</p>
+        <p>
+          {data.isOwner ? "Nhận email khi số liệu chạm ngưỡng hoặc bất thường. Mô tả bằng lời, hệ thống dựng luật để bạn xác nhận." : "Tạo cảnh báo gửi tới email của chính bạn."}{" "}
+          <span>Gói:</span> <span className={n.tag}>{data.planLabel}</span>
+        </p>
       </div>
 
       {!data.mailReady && <p className={n.warn}>Máy chủ chưa cấu hình gửi email nên các cảnh báo chưa được gửi đi. Bạn vẫn có thể tạo và kiểm tra luật.</p>}
@@ -465,6 +479,7 @@ export function AlertsTab({ dashboardId, prefill }: { dashboardId: string; prefi
             placeholder="Ví dụ: báo khi doanh thu hôm nay dưới 10 triệu · báo khi số đơn huỷ tăng bất thường · báo khi tỉnh nào doanh thu giảm hơn 20%"
             onChange={(e) => setText(e.target.value)} />
         </label>
+        {data.limits.aiParsePerMonth !== null && <p className={n.sub}>{`Tạo cảnh báo bằng AI: tối đa ${data.limits.aiParsePerMonth} lần mỗi tháng.`}</p>}
         {question && <p className={n.warn}>{`AI hỏi: ${question}`}</p>}
         <div className={n.actions}>
           <button className={s.btn} onClick={openManual} disabled={busy !== null || full}>Tự cài</button>

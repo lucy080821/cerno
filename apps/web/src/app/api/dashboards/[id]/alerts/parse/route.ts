@@ -12,6 +12,8 @@ import {
   ASK_TOOL, MAX_REQUEST_CHARS, PARSE_SYSTEM, PROPOSE_TOOL, buildParseMessage, interpretParse, type SourceForParse,
 } from "@/lib/server/alerts/parse-ai";
 import { liveChat, liveExec } from "@/lib/server/reports/live";
+import { aiParseViolation } from "@/lib/plan";
+import { planForDashboard, releaseAiParse, reserveAiParse } from "@/lib/server/plan";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -71,6 +73,13 @@ export async function POST(req: Request, ctx: Params) {
     });
   }
 
+  // Gói miễn phí: tối đa N lần tạo cảnh báo bằng AI mỗi tháng (giữ chỗ trước, trả lại nếu AI không phản hồi).
+  const plan = (await planForDashboard(id))?.plan ?? "free";
+  if (!(await reserveAiParse(auth.user.id, plan))) {
+    const v = aiParseViolation(plan);
+    return fail(v.message, 403, { code: v.code });
+  }
+
   const chat = liveChat(ac.ownerId);
   const outcome = await chat({
     system: PARSE_SYSTEM,
@@ -78,6 +87,7 @@ export async function POST(req: Request, ctx: Params) {
     tools: [PROPOSE_TOOL, ASK_TOOL],
   });
   if (!outcome.ok) {
+    await releaseAiParse(auth.user.id, plan);
     return NextResponse.json({ ai: false, error: typeof outcome.body.error === "string" ? outcome.body.error : "AI không phản hồi." });
   }
   let result;

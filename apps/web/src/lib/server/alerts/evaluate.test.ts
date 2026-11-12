@@ -205,6 +205,21 @@ describe("tạm hoãn, người nhận, cấu hình", () => {
   });
 });
 
+describe("hạn mức email trong ngày (theo gói)", () => {
+  it("hết hạn mức: không gửi, ghi skipped daily_limit, KHÔNG tính là đã báo (khi có hạn mức lại thì gửi)", async () => {
+    let allowed = false;
+    const h = harness([rule()], LOW, vn(2025, 11, 13, 22), { mailAllowed: async () => allowed });
+    await run(h);
+    expect(h.mails).toEqual([]);
+    expect(h.logs[0]).toMatchObject({ status: "skipped", meta: { reason: "daily_limit" } });
+    expect([...h.rules.values()][0].last_triggered_at).toBeNull();
+    allowed = true;
+    h.now = vn(2025, 11, 13, 22, 30);
+    await run(h);
+    expect(h.mails).toHaveLength(1);
+  });
+});
+
 describe("AI giải thích (tuỳ chọn)", () => {
   it("chỉ chạy khi cảnh báo BẬT LÊN (fire), không chạy khi nhắc lại hay đã bình thường; câu giải thích có trong thư", async () => {
     let calls = 0;

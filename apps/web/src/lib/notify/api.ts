@@ -1,5 +1,6 @@
 import type { ReportFrequency, ReportSubscriptionInput } from "@dashboard/schema";
 import { createClient } from "@/lib/supabase/client";
+import { errorFrom } from "./plan-error";
 
 /**
  * Gọi API báo cáo định kỳ (app/api/dashboards/[id]/reports/route.ts). Phiên vừa hết hạn (401/503) thì làm mới rồi thử lại
@@ -46,6 +47,10 @@ export interface ReportList {
   /** Máy chủ đã cấu hình gửi email và link huỷ nhận. */
   mailReady: boolean;
   limit: number;
+  /** Gói của workspace và những gì gói cho phép (từ lib/limits.ts). */
+  plan: "free" | "paid";
+  planLabel: string;
+  limits: { frequencies: ReportFrequency[]; aiReports: boolean };
 }
 
 export interface PreviewResult {
@@ -61,7 +66,7 @@ async function call<T>(id: string, init?: RequestInit, query = ""): Promise<T> {
     headers: { "content-type": "application/json", ...init?.headers },
   });
   const json = (await res.json().catch(() => ({}))) as T & { error?: string };
-  if (!res.ok) throw new Error((json as { error?: string }).error ?? "Có lỗi xảy ra, thử lại sau.");
+  if (!res.ok) throw errorFrom(json as { error?: string; code?: string });
   return json;
 }
 

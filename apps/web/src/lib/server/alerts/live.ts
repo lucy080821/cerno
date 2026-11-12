@@ -4,6 +4,7 @@ import { siteUrl } from "@/lib/seo";
 import { sendMail } from "@/lib/server/mail";
 import { createNotifyToken, unsubscribeApiUrl, unsubscribeConfigured, unsubscribePageUrl } from "@/lib/server/notify/unsubscribe";
 import { liveChat, liveExec } from "@/lib/server/reports/live";
+import { mailAllowedForDashboard } from "@/lib/server/plan";
 import { loadAlertContext } from "./context";
 import { explainAlert } from "./explain";
 import type { AlertCtx, AlertDeps, RuleRow } from "./evaluate";
@@ -65,6 +66,7 @@ export function liveAlertDeps(origin: string = siteUrl()): AlertDeps {
     },
 
     send: sendMail,
+    mailAllowed: (dashboardId) => mailAllowedForDashboard(dashboardId),
 
     async log(e) {
       await admin.from("notification_log").insert({ ...e, channel: "email" });

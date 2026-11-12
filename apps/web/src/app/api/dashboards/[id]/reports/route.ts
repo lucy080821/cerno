@@ -4,7 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireUser } from "@/lib/server/session-user";
 import { requestOrigin } from "@/lib/auth/public-origin";
-import { MAX_REPORT_SUBSCRIPTIONS_PER_DASHBOARD } from "@/lib/limits";
+import { limitsOf, normalizePlan, reportViolation } from "@/lib/plan";
+import { planForDashboard } from "@/lib/server/plan";
 import { mailConfigured, sendMail } from "@/lib/server/mail";
 import { unsubscribeConfigured } from "@/lib/server/notify/unsubscribe";
 import { createRateLimiter } from "@/lib/server/rate-limit";
@@ -26,7 +27,7 @@ const testLimited = createRateLimiter(3, 10 * 60_000);
 const COLUMNS =
   "id, dashboard_id, created_by, recipient_email, recipient_name, prompt, frequency, weekday, month_day, hour_vn, widget_ids, include_images, link_mode, enabled, next_run_at, last_sent_at, last_error, created_at";
 
-const fail = (error: string, status: number) => NextResponse.json({ error }, { status });
+const fail = (error: string, status: number, extra: Record<string, unknown> = {}) => NextResponse.json({ error, ...extra }, { status });
 
 /**
  * Báo cáo định kỳ qua email của một dashboard. Quyền do RLS (migration 0012) và dashboard_role quyết định:
@@ -50,6 +51,8 @@ export async function GET(_req: Request, ctx: Params) {
   const { data, error } = await c.supabase.from("report_subscriptions").select(COLUMNS).eq("dashboard_id", c.id).order("created_at");
   if (error) return fail("Không đọc được danh sách báo cáo", 500);
   // Người không phải chủ không đọc được dashboard_links qua RLS: chỉ hỏi "có đang bật không" bằng service role (không lộ mã).
+  const plan = (await planForDashboard(c.id))?.plan ?? normalizePlan(null);
+  const lim = limitsOf(plan);
   const { data: link } = await createAdminClient().from("dashboard_links").select("dashboard_id").eq("dashboard_id", c.id).maybeSingle();
   return NextResponse.json(
     {
@@ -58,7 +61,10 @@ export async function GET(_req: Request, ctx: Params) {
       me: c.email,
       viewLinkEnabled: !!link,
       mailReady: mailConfigured() && unsubscribeConfigured(),
-      limit: MAX_REPORT_SUBSCRIPTIONS_PER_DASHBOARD,
+      limit: lim.reportSubscriptions,
+      plan,
+      planLabel: lim.label,
+      limits: { frequencies: lim.reportFrequencies, aiReports: lim.aiReports },
     },
     { headers: { "cache-control": "private, no-store" } },
   );
@@ -117,10 +123,10 @@ export async function POST(req: Request, ctx: Params) {
 
   // Tạo đăng ký thật.
   const admin = createAdminClient();
+  const plan = (await planForDashboard(c.id))?.plan ?? normalizePlan(null);
   const { count } = await admin.from("report_subscriptions").select("id", { count: "exact", head: true }).eq("dashboard_id", c.id);
-  if ((count ?? 0) >= MAX_REPORT_SUBSCRIPTIONS_PER_DASHBOARD) {
-    return fail(`Mỗi dashboard chỉ có tối đa ${MAX_REPORT_SUBSCRIPTIONS_PER_DASHBOARD} người nhận báo cáo.`, 400);
-  }
+  const v = reportViolation(plan, input, count ?? 0, true);
+  if (v) return fail(v.message, 403, { code: v.code });
   const { data, error } = await c.supabase
     .from("report_subscriptions")
     .insert({ dashboard_id: c.id, created_by: c.user.id, ...subscriptionColumns(input) })
@@ -142,6 +148,9 @@ export async function PATCH(req: Request, ctx: Params) {
   if (!parsed.success) return fail(parsed.error.issues[0]?.message ?? "Thông tin không hợp lệ", 400);
   const input = parsed.data;
   if (!c.isOwner && input.recipient_email !== c.email) return fail("Bạn chỉ đăng ký nhận báo cáo cho chính email của mình.", 403);
+
+  const v = reportViolation((await planForDashboard(c.id))?.plan ?? normalizePlan(null), input, 0, false);
+  if (v) return fail(v.message, 403, { code: v.code });
 
   const { data, error } = await c.supabase
     .from("report_subscriptions")

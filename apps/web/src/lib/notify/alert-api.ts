@@ -1,6 +1,7 @@
 import type { AlertCondition, AlertMetric, AlertRuleInput, AlertState } from "@dashboard/schema";
 import { createClient } from "@/lib/supabase/client";
 import type { AlertSchema } from "./alert-form";
+import { errorFrom } from "./plan-error";
 
 /**
  * Gọi API cảnh báo (app/api/dashboards/[id]/alerts). Phiên vừa hết hạn (401/503) thì làm mới rồi thử lại một lần.
@@ -47,6 +48,9 @@ export interface AlertList {
   mailReady: boolean;
   limit: number;
   schema: AlertSchema;
+  plan: "free" | "paid";
+  planLabel: string;
+  limits: { types: string[]; aiParsePerMonth: number | null };
 }
 
 export interface Summary {
@@ -82,7 +86,7 @@ async function call<T>(id: string, path: string, init?: RequestInit, query = "")
     headers: { "content-type": "application/json", ...init?.headers },
   });
   const json = (await res.json().catch(() => ({}))) as T & { error?: string };
-  if (!res.ok) throw new Error((json as { error?: string }).error ?? "Có lỗi xảy ra, thử lại sau.");
+  if (!res.ok) throw errorFrom(json as { error?: string; code?: string });
   return json;
 }
 
@@ -105,6 +109,10 @@ export async function parseAlertText(id: string, text: string): Promise<ParseRes
     body: JSON.stringify({ text }),
   });
   const json = (await res.json().catch(() => ({}))) as Record<string, unknown>;
-  if (!res.ok) return { ai: false, error: typeof json.error === "string" ? json.error : "AI chưa dùng được lúc này." };
+  if (!res.ok) {
+    // Hết lượt AI của gói: báo bằng hộp thoại riêng (người gọi bắt PlanLimitError).
+    if (json.code === "plan_limit") throw errorFrom(json as { error?: string; code?: string });
+    return { ai: false, error: typeof json.error === "string" ? json.error : "AI chưa dùng được lúc này." };
+  }
   return json as unknown as ParseResult;
 }

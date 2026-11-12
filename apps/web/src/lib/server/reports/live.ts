@@ -9,6 +9,7 @@ import { sendMail } from "@/lib/server/mail";
 import { createNotifyToken, unsubscribeApiUrl, unsubscribeConfigured, unsubscribePageUrl } from "@/lib/server/notify/unsubscribe";
 import { executeQuery } from "@/lib/server/query-service";
 import { getSourceMeta } from "@/lib/server/row-cache";
+import { mailAllowedForDashboard, planForDashboard } from "@/lib/server/plan";
 import type { ComposeDeps, LoadedDashboard } from "./compose";
 import type { DueSub, RunDeps } from "./run-due";
 
@@ -67,6 +68,8 @@ export function liveComposeDeps(origin: string): ComposeDeps {
     loadDashboard,
     exec: liveExec,
     chat: liveChat,
+    // AI viết báo cáo chỉ có ở gói trả phí; gói miễn phí nhận bảng số + ảnh.
+    aiAllowed: async (_ownerId, dashboardId) => (await planForDashboard(dashboardId))?.plan === "paid",
     viewToken: async (dashboardId) => {
       const { data } = await createAdminClient().from("dashboard_links").select("token").eq("dashboard_id", dashboardId).maybeSingle();
       return data?.token ?? null;
@@ -96,6 +99,7 @@ export function liveRunDeps(origin: string): RunDeps {
       return (data ?? []).length > 0;
     },
     send: sendMail,
+    mailAllowed: (dashboardId) => mailAllowedForDashboard(dashboardId),
     async log(e) {
       await admin.from("notification_log").insert({ ...e, channel: "email" });
     },
