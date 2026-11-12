@@ -42,7 +42,27 @@ function transporter(c: MailConfig): Transporter {
   return t;
 }
 
-export async function sendMail(m: { to: string; subject: string; html: string; text: string; replyTo?: string }): Promise<SendResult> {
+/** Ảnh đính kèm nội tuyến: trong HTML dùng `<img src="cid:...">`. */
+export interface InlineImage {
+  filename: string;
+  content: Buffer;
+  cid: string;
+  contentType: string;
+}
+
+export interface MailMessage {
+  to: string;
+  subject: string;
+  html: string;
+  text: string;
+  replyTo?: string;
+  /** Ảnh nội tuyến (CID), vd biểu đồ trong báo cáo. */
+  images?: InlineImage[];
+  /** Tiêu đề thư thêm, vd List-Unsubscribe. */
+  headers?: Record<string, string>;
+}
+
+export async function sendMail(m: MailMessage): Promise<SendResult> {
   const c = config();
   if (!c) return { ok: false, code: "not_configured" };
   try {
@@ -53,6 +73,14 @@ export async function sendMail(m: { to: string; subject: string; html: string; t
       subject: m.subject,
       html: m.html,
       text: m.text,
+      headers: m.headers,
+      attachments: m.images?.map((i) => ({
+        filename: i.filename,
+        content: i.content,
+        cid: i.cid,
+        contentType: i.contentType,
+        contentDisposition: "inline" as const,
+      })),
     });
     return { ok: true };
   } catch (err) {

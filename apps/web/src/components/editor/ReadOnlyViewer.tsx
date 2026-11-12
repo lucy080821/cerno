@@ -14,6 +14,9 @@ import { ViewFilters } from "./ViewFilters";
 import { LangSwitch } from "@/components/i18n/LangSwitch";
 import { CommentsPanel } from "./CommentsPanel";
 import cm from "./comments.module.css";
+import nf from "./notify.module.css";
+import { NotifyDialog } from "./NotifyDialog";
+import { reportableWidgets } from "@/lib/notify/format";
 import { Brand } from "@/components/Brand";
 import s from "./editor.module.css";
 
@@ -38,7 +41,7 @@ const rowsUrl = (a: Exclude<RowsAccess, { kind: "static" }>, sourceId: string) =
     ? `/api/embed/${encodeURIComponent(a.token)}/rows?source=${encodeURIComponent(sourceId)}`
     : `/api/sources/${encodeURIComponent(sourceId)}/rows`;
 
-export function ReadOnlyViewer({ doc, access, sourceRows, bar, brand = true, commentsFor, showLang = true, manageTitle = true, pageScroll = false, contained = false }: {
+export function ReadOnlyViewer({ doc, access, sourceRows, bar, brand = true, commentsFor, notifyFor, showLang = true, manageTitle = true, pageScroll = false, contained = false }: {
   /** Chiếm đúng khung cha thay vì cả chiều cao màn hình (khi đặt giữa một trang). */
   contained?: boolean;
   /** Hiện nút chuyển ngôn ngữ nổi ở trang không có thanh tiêu đề (trang nhúng). Tắt khi đặt trong một trang đã có nút. */
@@ -49,6 +52,8 @@ export function ReadOnlyViewer({ doc, access, sourceRows, bar, brand = true, com
   pageScroll?: boolean;
   /** Id dashboard để bật bình luận (chỉ khi người xem đã đăng nhập). Bỏ trống = không có bình luận. */
   commentsFor?: string;
+  /** Id dashboard để bật nút đăng ký nhận báo cáo qua email (chỉ khi người xem đã đăng nhập). */
+  notifyFor?: string;
   doc: Dashboard;
   /** Số dòng của từng nguồn (id → số dòng). Nguồn lớn không tải về: server gộp số liệu cho từng widget. */
   sourceRows: Record<string, number>;
@@ -63,6 +68,7 @@ export function ReadOnlyViewer({ doc, access, sourceRows, bar, brand = true, com
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
   const [commentsOpen, setCommentsOpen] = useState(false);
+  const [notifyOpen, setNotifyOpen] = useState(false);
 
   useEffect(() => {
     if (manageTitle) document.title = `${doc.name.trim() || "Dashboard"} | ${site.name}`;
@@ -163,6 +169,11 @@ export function ReadOnlyViewer({ doc, access, sourceRows, bar, brand = true, com
               <p className={s.embedError} role="alert">Không tải được một phần dữ liệu. Hãy tải lại trang.</p>
             )}
             {!bar && showLang && <LangSwitch className={s.embedLang} />}
+            {notifyFor && (
+              <button className={nf.fab} onClick={() => setNotifyOpen(true)}>
+                🔔 Báo cáo email
+              </button>
+            )}
             {commentsFor && (
               <>
                 <button className={cm.fab} onClick={() => setCommentsOpen((o) => !o)} aria-expanded={commentsOpen}>
@@ -179,6 +190,7 @@ export function ReadOnlyViewer({ doc, access, sourceRows, bar, brand = true, com
                 )}
               </>
             )}
+            {notifyFor && notifyOpen && <NotifyDialog dashboardId={notifyFor} widgets={reportableWidgets(doc)} onClose={() => setNotifyOpen(false)} />}
             {brand && <a className={s.embedBrand} href="/" target="_blank" rel="noopener">Tạo bằng <Brand size={14} gap={5} tone="inherit" /></a>}
           </div>
         </main>

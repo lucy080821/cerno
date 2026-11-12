@@ -1,0 +1,30 @@
+{
+  "id": "thuong-mai-dien-tu",
+  "version": 1,
+  "industry": "Thương mại điện tử",
+  "name": "Báo cáo sàn TMĐT",
+  "description": "Doanh thu, tỉ lệ đơn hủy, phí sàn và lợi nhuận theo sản phẩm, gian hàng và trạng thái đơn (Shopee, TikTok Shop, Lazada).",
+  "columns": {},
+  "slots": [
+    { "key": "ngay", "label": "Ngày đặt hàng", "type": "date", "required": true,
+      "synonyms": ["ngày tạo đơn", "ngày đặt", "thời gian đặt hàng", "ngày tạo", "order date", "order creation date", "created time"] },
+    { "key": "ma_don", "label": "Mã đơn hàng", "type": "string", "required": true,
+      "synonyms": ["mã đơn", "số đơn", "order id", "order sn", "order number"] },
+    { "key": "trang_thai", "label": "Trạng thái đơn", "type": "string", "required": true,
+      "synonyms": ["trạng thái", "tình trạng đơn", "tình trạng", "order status", "status"] },
+    { "key": "doanh_thu", "label": "Doanh thu", "type": "number", "required": true,
+      "synonyms": ["tổng giá trị đơn hàng", "tổng tiền", "tổng thanh toán", "giá bán", "thành tiền", "order amount", "total amount"] },
+    { "key": "san_pham", "label": "Sản phẩm", "type": "string", "required": false,
+      "synonyms": ["tên sản phẩm", "tên hàng", "product name", "sku", "mặt hàng"] },
+    { "key": "so_luong", "label": "Số lượng", "type": "number", "required": false,
+      "synonyms": ["số lượng bán", "sl", "quantity"] },
+    { "key": "phi_san", "label": "Phí sàn", "type": "number", "required": false,
+      "synonyms": ["phí giao dịch", "phí hoa hồng", "phí dịch vụ", "phí cố định", "commission fee", "transaction fee"] },
+    { "key": "gia_von", "label": "Giá vốn", "type": "number", "required": false,
+      "synonyms": ["tổng giá vốn", "giá nhập", "chi phí hàng bán", "cost"] },
+    { "key": "gian_hang", "label": "Gian hàng", "type": "string", "required": false,
+      "synonyms": ["tên shop", "shop", "cửa hàng", "kênh bán", "sàn", "sàn thương mại"] },
+    { "key": "tinh_thanh", "label": "Tỉnh/Thành phố", "type": "string", "required": false,
+      "synonyms": ["tỉnh", "tỉnh thành", "khu vực giao hàng", "province"] }
+  ]
+}

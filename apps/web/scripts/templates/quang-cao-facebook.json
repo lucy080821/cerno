@@ -1,0 +1,28 @@
+{
+  "id": "quang-cao-facebook",
+  "version": 1,
+  "industry": "Quảng cáo",
+  "name": "Báo cáo quảng cáo Facebook",
+  "description": "Chi phí, hiển thị, nhấp chuột, chuyển đổi, CPC, CPA và ROAS theo chiến dịch và theo ngày.",
+  "columns": {},
+  "slots": [
+    { "key": "ngay", "label": "Ngày", "type": "date", "required": true,
+      "synonyms": ["ngày báo cáo", "bắt đầu báo cáo", "ngày bắt đầu báo cáo", "reporting starts", "day", "date"] },
+    { "key": "chien_dich", "label": "Chiến dịch", "type": "string", "required": true,
+      "synonyms": ["tên chiến dịch", "campaign", "campaign name"] },
+    { "key": "chi_phi", "label": "Chi phí quảng cáo", "type": "number", "required": true,
+      "synonyms": ["số tiền đã chi tiêu", "số tiền đã chi", "chi tiêu", "chi phí", "ngân sách đã dùng", "amount spent", "spend", "cost"] },
+    { "key": "hien_thi", "label": "Lượt hiển thị", "type": "number", "required": false,
+      "synonyms": ["hiển thị", "impressions", "lượt xem quảng cáo"] },
+    { "key": "nhap_chuot", "label": "Lượt nhấp", "type": "number", "required": false,
+      "synonyms": ["lượt click", "nhấp vào liên kết", "lượt nhấp vào liên kết", "clicks", "link clicks"] },
+    { "key": "chuyen_doi", "label": "Lượt chuyển đổi", "type": "number", "required": false,
+      "synonyms": ["kết quả", "lượt mua", "đơn hàng", "chuyển đổi", "results", "purchases", "conversions"] },
+    { "key": "doanh_thu_qc", "label": "Doanh thu từ quảng cáo", "type": "number", "required": false,
+      "synonyms": ["giá trị chuyển đổi mua hàng", "giá trị chuyển đổi", "doanh thu", "purchase conversion value", "conversion value", "revenue"] },
+    { "key": "nhom_quang_cao", "label": "Nhóm quảng cáo", "type": "string", "required": false,
+      "synonyms": ["tên nhóm quảng cáo", "ad set", "ad set name", "adset"] },
+    { "key": "quang_cao", "label": "Quảng cáo", "type": "string", "required": false,
+      "synonyms": ["tên quảng cáo", "mẫu quảng cáo", "ad", "ad name"] }
+  ]
+}

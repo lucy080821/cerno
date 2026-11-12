@@ -324,6 +324,13 @@ export const Dashboard = z.object({
   /** Danh sách trang theo thứ tự hiển thị. Rỗng = một trang mặc định. */
   pages: z.array(Page).max(20).default([]),
   nav: PageNav.default({}),
+  /** Dashboard được tạo từ mẫu nào (xem template.ts / apply-template.ts). Tuỳ chọn, không đổi SCHEMA_VERSION. */
+  meta: z
+    .object({
+      templateId: z.string().max(80),
+      templateVersion: z.number().int().optional(),
+    })
+    .optional(),
   widgets: z.array(Widget).default([]),
 });
 

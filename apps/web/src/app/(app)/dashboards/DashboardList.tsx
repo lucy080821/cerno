@@ -15,9 +15,20 @@ import { useDialog } from "@/components/ui/DialogProvider";
 import { createBlankDashboard, createDemoDashboard } from "@/lib/editor/defaults";
 import { clearDraft, loadDraft } from "@/lib/editor/io";
 import { Spinner } from "@/components/Spinner";
+import { TEMPLATES, type TemplateEntry } from "@/content/templates";
+import type { TemplateSource } from "@/lib/templates/source";
+import { TemplateGallery } from "./TemplateGallery";
+import { TemplateMapDialog } from "./TemplateMapDialog";
 import styles from "./dashboards.module.css";
 
-export function DashboardList({ dashboards }: { dashboards: DashboardRow[] }) {
+interface Props {
+  dashboards: DashboardRow[];
+  sources: TemplateSource[];
+  apiKey: string;
+  appId: string;
+}
+
+export function DashboardList({ dashboards, sources, apiKey, appId }: Props) {
   const dialog = useDialog();
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -25,6 +36,9 @@ export function DashboardList({ dashboards }: { dashboards: DashboardRow[] }) {
   const [hasDraft, setHasDraft] = useState(false);
   // Đã tạo xong, đang chuyển sang editor: giữ vòng quay đến khi trang mới hiện (busy đã tắt ở finally).
   const [opening, setOpening] = useState(false);
+  // Thư viện mẫu: tự mở khi chưa có dashboard nào, còn lại mở bằng nút.
+  const [showGallery, setShowGallery] = useState(false);
+  const [picked, setPicked] = useState<TemplateEntry | null>(null);
 
   // Bản nháp cũ trong trình duyệt (từ lúc editor chỉ lưu cục bộ): đề nghị chuyển lên tài khoản.
   useEffect(() => setHasDraft(loadDraft() !== null), []);
@@ -103,6 +117,7 @@ export function DashboardList({ dashboards }: { dashboards: DashboardRow[] }) {
         desc="Các trang báo cáo bạn thiết kế. Mọi thay đổi trong editor tự lưu lên tài khoản, mở lại ở trình duyệt nào cũng thấy."
         actions={
           <>
+            <button className={styles.ghost} disabled={busy} onClick={() => setShowGallery((v) => !v)}>Từ mẫu theo ngành</button>
             <button className={styles.ghost} disabled={busy} onClick={() => create("demo")}>Từ dashboard mẫu</button>
             <button className={styles.primary} disabled={busy} onClick={() => create("blank")}>+ Dashboard trống</button>
           </>
@@ -117,8 +132,14 @@ export function DashboardList({ dashboards }: { dashboards: DashboardRow[] }) {
       )}
       {msg && <p className={styles.warn} role="alert">{msg}</p>}
 
+      {(showGallery || dashboards.length === 0) && <TemplateGallery entries={TEMPLATES} onPick={setPicked} />}
+
+      {picked && (
+        <TemplateMapDialog entry={picked} sources={sources} apiKey={apiKey} appId={appId} onClose={() => setPicked(null)} />
+      )}
+
       {dashboards.length === 0 ? (
-        <p className={styles.empty}>Chưa có dashboard nào. Tạo một dashboard để bắt đầu.</p>
+        <p className={styles.empty}>Chưa có dashboard nào. Chọn một mẫu ở trên hoặc tạo dashboard trống để bắt đầu.</p>
       ) : (
         <ul className={styles.list}>
           {dashboards.map((d) => (

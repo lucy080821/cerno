@@ -1,0 +1,22 @@
+{
+  "id": "thu-chi",
+  "version": 1,
+  "industry": "Tài chính",
+  "name": "Báo cáo thu chi",
+  "description": "Tổng thu, tổng chi và dòng tiền ròng theo tháng, theo danh mục và theo tài khoản.",
+  "columns": {},
+  "slots": [
+    { "key": "ngay", "label": "Ngày giao dịch", "type": "date", "required": true,
+      "synonyms": ["ngày", "ngày thu chi", "ngày chứng từ", "thời gian", "date"] },
+    { "key": "so_tien", "label": "Số tiền", "type": "number", "required": true,
+      "synonyms": ["giá trị", "thành tiền", "tiền", "số tiền giao dịch", "amount"] },
+    { "key": "loai", "label": "Loại thu/chi", "type": "string", "required": true,
+      "synonyms": ["thu chi", "thu/chi", "phân loại thu chi", "loại giao dịch", "loại phiếu", "type"] },
+    { "key": "danh_muc", "label": "Danh mục", "type": "string", "required": false,
+      "synonyms": ["hạng mục", "khoản mục", "nhóm chi phí", "loại chi phí", "nội dung", "category"] },
+    { "key": "tai_khoan", "label": "Tài khoản", "type": "string", "required": false,
+      "synonyms": ["quỹ", "nguồn tiền", "ví", "tài khoản ngân hàng", "phương thức thanh toán", "account"] },
+    { "key": "doi_tuong", "label": "Đối tượng", "type": "string", "required": false,
+      "synonyms": ["người nhận", "nhà cung cấp", "khách hàng", "đối tác", "bên liên quan"] }
+  ]
+}

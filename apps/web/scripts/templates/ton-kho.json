@@ -1,0 +1,32 @@
+{
+  "id": "ton-kho",
+  "version": 1,
+  "industry": "Kho vận",
+  "name": "Báo cáo tồn kho",
+  "description": "Tồn kho, giá trị tồn, nhập xuất và hàng sắp hết theo sản phẩm, nhóm hàng và kho.",
+  "columns": {},
+  "slots": [
+    { "key": "san_pham", "label": "Sản phẩm", "type": "string", "required": true,
+      "synonyms": ["tên sản phẩm", "tên hàng", "mặt hàng", "hàng hóa", "tên vật tư", "item", "product"] },
+    { "key": "ton_cuoi", "label": "Tồn kho", "type": "number", "required": true,
+      "synonyms": ["tồn cuối kỳ", "tồn cuối", "số lượng tồn", "tồn", "stock", "inventory", "on hand"] },
+    { "key": "ma_hang", "label": "Mã hàng", "type": "string", "required": false,
+      "synonyms": ["mã sản phẩm", "mã sku", "sku", "mã vật tư", "mã"] },
+    { "key": "nhom_hang", "label": "Nhóm hàng", "type": "string", "required": false,
+      "synonyms": ["danh mục", "loại hàng", "ngành hàng", "category", "nhóm"] },
+    { "key": "kho", "label": "Kho", "type": "string", "required": false,
+      "synonyms": ["kho hàng", "tên kho", "địa điểm kho", "chi nhánh", "warehouse"] },
+    { "key": "ton_toi_thieu", "label": "Tồn tối thiểu", "type": "number", "required": false,
+      "synonyms": ["mức tồn tối thiểu", "định mức tồn", "tồn an toàn", "min stock", "reorder point"] },
+    { "key": "nhap", "label": "Số lượng nhập", "type": "number", "required": false,
+      "synonyms": ["nhập kho", "tổng nhập", "nhập trong kỳ", "sl nhập"] },
+    { "key": "xuat", "label": "Số lượng xuất", "type": "number", "required": false,
+      "synonyms": ["xuất kho", "tổng xuất", "xuất trong kỳ", "sl xuất"] },
+    { "key": "don_gia", "label": "Đơn giá vốn", "type": "number", "required": false,
+      "synonyms": ["giá vốn", "giá nhập", "đơn giá", "giá trị đơn vị", "unit cost"] },
+    { "key": "gia_tri_ton", "label": "Giá trị tồn", "type": "number", "required": false,
+      "synonyms": ["giá trị tồn kho", "thành tiền tồn", "tổng giá trị", "inventory value"] },
+    { "key": "ngay", "label": "Ngày chốt tồn", "type": "date", "required": false,
+      "synonyms": ["ngày chốt", "ngày cập nhật", "ngày nhập xuất", "ngày tồn", "ngày"] }
+  ]
+}

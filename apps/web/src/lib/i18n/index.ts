@@ -4,9 +4,11 @@ import { EN_EDITOR } from "./en/editor";
 import { EN_LANDING } from "./en/landing";
 import { EN_LEGAL } from "./en/legal";
 import { EN_ENGINE } from "./en/engine";
+import { EN_TEMPLATES } from "./en/templates";
+import { EN_NOTIFY } from "./en/notify";
 
 /** Toàn bộ từ điển Việt → Anh. Thêm chữ mới ở giao diện thì thêm vào một trong các file `en/*`. */
-export const EN_DICT: Dict = { ...EN_COMMON, ...EN_EDITOR, ...EN_LANDING, ...EN_LEGAL, ...EN_ENGINE };
+export const EN_DICT: Dict = { ...EN_COMMON, ...EN_EDITOR, ...EN_LANDING, ...EN_LEGAL, ...EN_ENGINE, ...EN_TEMPLATES, ...EN_NOTIFY };
 
 export const translateToEnglish = makeTranslator(EN_DICT);
 

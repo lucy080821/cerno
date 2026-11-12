@@ -15,6 +15,13 @@ const nextConfig = {
   // Bản tĩnh không có API route / SSR, chỉ dùng cho trang giới thiệu (không chạy được chat AI).
   // Mặc định build "standalone" (Hostinger cần .next/standalone để chạy server).
   output: process.env.NEXT_OUTPUT === "export" ? "export" : "standalone",
+  // resvg là thư viện nhị phân (.node) theo nền tảng: không được đóng gói vào bundle, để Node nạp trực tiếp (vẽ ảnh báo cáo email).
+  serverExternalPackages: ["@resvg/resvg-js"],
+  // Gói nhị phân theo nền tảng của resvg được nạp động nên có thể bị bỏ sót khi gom bản standalone: ép mang theo cho các route vẽ ảnh.
+  outputFileTracingIncludes: {
+    "/api/cron/reports": ["../../node_modules/@resvg/**/*"],
+    "/api/dashboards/[id]/reports": ["../../node_modules/@resvg/**/*"],
+  },
   // Monorepo: theo dõi file từ thư mục gốc để standalone gom đủ packages/schema, packages/chart-engine.
   outputFileTracingRoot: root,
   // Chống clickjacking: không trang nào của app được nhúng vào website khác, TRỪ /embed/<mã> (middleware.ts đặt

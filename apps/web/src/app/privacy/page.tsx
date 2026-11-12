@@ -60,6 +60,7 @@ export default function PrivacyPage() {
         <ul>
           <li>Các dashboard của bạn (vị trí, loại biểu đồ, cột dữ liệu được dùng, bộ lọc, màu sắc, tên trang...).</li>
           <li>Email của những người bạn mời xem hoặc sửa dashboard, dùng để cấp quyền và gửi email mời. Email mời nêu tên và email của bạn, tên dashboard và vai trò được cấp.</li>
+          <li>Email, tên và yêu cầu riêng của người nhận báo cáo định kỳ (do bạn hoặc chủ dashboard đăng ký), dùng để gửi báo cáo theo lịch. Mỗi email có link huỷ nhận. Chúng tôi lưu nhật ký gửi (thời điểm, trạng thái, không lưu nội dung báo cáo) và danh sách người đã huỷ nhận để không gửi lại.</li>
           <li>
             Ảnh bạn tải lên (vd logo). Ảnh được lưu ở kho ảnh <strong>công khai theo đường dẫn</strong>: ai có đúng đường dẫn
             đều xem được ảnh đó. Vì vậy đừng tải lên ảnh nhạy cảm.
@@ -130,6 +131,9 @@ export default function PrivacyPage() {
           tôi không lưu nội dung hội thoại với AI trên máy chủ của mình (lịch sử chỉ nằm trong trình duyệt của bạn cho tới khi bạn
           đóng hoặc xóa).
         </p>
+        <p>
+          Báo cáo định kỳ qua email: khi bạn bật, máy chủ tính số liệu của dashboard rồi gửi tới nhà cung cấp AI một bản tóm tắt gồm tên chỉ số, tên nhóm (ví dụ tên tỉnh, tên sản phẩm), số liệu đã gộp của kỳ báo cáo và kỳ trước, cùng yêu cầu riêng của người nhận (nếu có) để AI viết phần phân tích. Chúng tôi không gửi toàn bộ bảng dữ liệu hay dòng dữ liệu thô, và ảnh biểu đồ trong email do chúng tôi tự tạo, không gửi cho AI. Email báo cáo gửi qua Gmail tới địa chỉ người nhận.
+        </p>
       </Section>
 
       <Section id="chia-se" title="6. Chia sẻ dữ liệu và bên xử lý">
@@ -143,7 +147,8 @@ export default function PrivacyPage() {
               <tr><td>Google</td><td>Đăng nhập (OAuth), hộp chọn file (Picker), đọc Google Sheets (Sheets API)</td><td>Thông tin tài khoản; file và nội dung ô bạn chọn</td></tr>
               <tr><td>Supabase</td><td>Xác thực, cơ sở dữ liệu, kho lưu trữ ảnh</td><td>Tài khoản, dashboard, bản sao dữ liệu Sheets, token mã hóa, ảnh</td></tr>
               <tr><td>Groq</td><td>Trợ lý AI (khi bạn dùng)</td><td>Bản tóm tắt dashboard ở mục 5. Groq xử lý theo thỏa thuận dịch vụ và chính sách riêng của họ: <a href="https://groq.com/privacy-policy" target="_blank" rel="noreferrer">groq.com/privacy-policy</a></td></tr>
-              <tr><td>Google (Gmail)</td><td>Gửi email mời chia sẻ dashboard và mã đăng nhập một lần cho người được mời</td><td>Email người được mời; tên và email của người mời, tên dashboard, vai trò, link mở dashboard</td></tr>
+              <tr><td>Anthropic</td><td>Trợ lý AI và AI viết báo cáo, chỉ dùng khi dịch vụ AI miễn phí hết hạn mức (dự phòng, trả phí)</td><td>Bản tóm tắt như mục 5. Anthropic xử lý theo chính sách riêng của họ: <a href="https://www.anthropic.com/legal/privacy" target="_blank" rel="noreferrer">anthropic.com/legal/privacy</a></td></tr>
+              <tr><td>Google (Gmail)</td><td>Gửi email mời chia sẻ dashboard, mã đăng nhập một lần cho người được mời, và báo cáo định kỳ cho người nhận</td><td>Email người nhận; tên và email của người mời, tên dashboard, vai trò, link mở dashboard; nội dung báo cáo (số liệu, phân tích, ảnh biểu đồ)</td></tr>
               <tr><td>Nhà cung cấp hosting</td><td>Chạy ứng dụng web</td><td>Dữ liệu đi qua máy chủ khi bạn dùng dịch vụ; nhật ký truy cập</td></tr>
             </tbody>
           </table>

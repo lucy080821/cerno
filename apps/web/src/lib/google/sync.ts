@@ -107,6 +107,19 @@ export async function syncSource(sourceId: string, userId: string, accessToken?:
       .eq("id", sourceId);
     // Dữ liệu đổi: bản sao trong bộ nhớ của server (nếu có) không còn đúng.
     invalidateSourceCache(sourceId);
+    // Mốc "dữ liệu thật sự đổi" (khác last_synced_at) cho luật cảnh báo "không có dữ liệu mới". Ghi riêng và bỏ qua lỗi:
+    // nếu migration 0013 chưa chạy thì đồng bộ vẫn hoạt động bình thường.
+    await db.from("data_sources").update({ data_changed_at: syncedAt }).eq("id", sourceId);
+    // Chạy các luật cảnh báo của nguồn. Lỗi cảnh báo KHÔNG được làm hỏng đồng bộ (bên trong đã bắt lỗi, ở đây bắt thêm cho chắc).
+    try {
+      const [{ evaluateAlertsForSource }, { liveAlertDeps }] = await Promise.all([
+        import("@/lib/server/alerts/evaluate"),
+        import("@/lib/server/alerts/live"),
+      ]);
+      await evaluateAlertsForSource(sourceId, liveAlertDeps());
+    } catch (e) {
+      console.error("[sync] alert evaluation failed:", e instanceof Error ? e.message : e);
+    }
     return { columns, rowCount: rows.length, truncated, changed: true, syncedAt };
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Lỗi không xác định";

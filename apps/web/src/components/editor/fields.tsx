@@ -26,6 +26,7 @@ const ICONS: Record<string, string> = {
   file: "M6 3h8l4 4v14H6zM14 3v4h4",
   close: "M6 6l12 12M18 6L6 18",
   more: "M5 12h.01M12 12h.01M19 12h.01",
+  bell: "M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0",
   share: "M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7M16 6l-4-4-4 4M12 2v13",
   // Biểu tượng của các mục trong bảng thuộc tính
   grid: "M3 3h8v8H3zM13 3h8v5h-8zM13 10h8v11h-8zM3 13h8v8H3z",

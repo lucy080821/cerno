@@ -56,7 +56,12 @@ export default async function DashboardsPage() {
         </div>
       </header>
 
-      <DashboardList dashboards={dashboards} />
+      <DashboardList
+        dashboards={dashboards}
+        sources={sources}
+        apiKey={process.env.NEXT_PUBLIC_GOOGLE_API_KEY ?? ""}
+        appId={process.env.NEXT_PUBLIC_GOOGLE_APP_ID ?? ""}
+      />
 
       {shared.length > 0 && (
         <section className={sectionClass("shared")}>

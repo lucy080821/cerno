@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { CalculatedField, Widget } from "@dashboard/schema";
-import { chartFields, type CalcFieldDef, type QueryResult, type QuerySpec, type RowFilter } from "@dashboard/chart-engine";
+import type { QueryResult, QuerySpec } from "@dashboard/chart-engine";
 import { useData } from "./data-store";
 
 /**
@@ -81,32 +80,5 @@ export function useRemoteQuery(sourceId: string, spec: QuerySpec | null, debounc
   return state;
 }
 
-/** Trường tính toán của một nguồn, ở dạng gửi lên server. */
-export function calcDefsFor(fields: CalculatedField[], sourceId: string): CalcFieldDef[] {
-  return fields.filter((f) => f.sourceId === sourceId).map((f) => ({ id: f.id, name: f.name, expression: f.expression }));
-}
-
-/** Truy vấn gộp mà widget này cần, hoặc null nếu widget không có số liệu từ nguồn (chưa chọn đủ trường, văn bản, ảnh). */
-export function specForWidget(
-  widget: Widget,
-  filters: RowFilter[],
-  calc: CalcFieldDef[],
-): { sourceId: string; spec: QuerySpec } | null {
-  const cfg = widget.config;
-  if (cfg.kind === "kpi") {
-    return {
-      sourceId: cfg.sourceId,
-      spec: { mode: "aggregate", dims: [], metrics: [cfg.metric], filters, selfId: widget.id, calc, ...(cfg.compare ? { compare: cfg.compare } : {}) },
-    };
-  }
-  if (cfg.kind !== "chart") return null;
-  if (cfg.chartType === "table") {
-    if (cfg.dimensions.length === 0 && cfg.metrics.length === 0) {
-      return { sourceId: cfg.sourceId, spec: { mode: "raw", limit: 100, filters, selfId: widget.id, calc } };
-    }
-    return { sourceId: cfg.sourceId, spec: { mode: "aggregate", dims: cfg.dimensions, metrics: cfg.metrics, filters, selfId: widget.id, calc } };
-  }
-  const f = chartFields(cfg);
-  if (!f) return null;
-  return { sourceId: cfg.sourceId, spec: { mode: "aggregate", dims: f.dimensions, metrics: f.metrics, filters, selfId: widget.id, calc } };
-}
+// Phần thuần nằm ở chart-engine (widget-spec.ts) để server (báo cáo, cảnh báo) dùng lại; giữ re-export cho editor.
+export { calcDefsFor, specForWidget } from "@dashboard/chart-engine";

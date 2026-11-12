@@ -22,11 +22,16 @@ const IGNORE_FILES = [
   /ai-tools\.ts$/, // mô tả công cụ gửi cho AI
   /ai-context\.ts$/, // ngữ cảnh gửi cho AI
   /ai-intent\.ts$/, // từ khoá nhận ý định
+  /templates\/ai-match\.ts$/, // lời nhắc + mô tả công cụ gửi cho AI
+  /api\/templates\/match\/route\.ts$/, // lỗi server, giao diện không hiển thị
+  /content\/templates\/[^/]*\.ts$/, // dữ liệu mẫu + từ đồng nghĩa để khớp cột; chữ hiển thị của mẫu dịch ở en/templates.ts
   /app\/layout\.tsx$/, // metadata SEO tiếng Việt
   /lib\/seo\.ts$/,
   /lib\/site\.ts$/, // slogan/mô tả SEO
   /opengraph-image\.tsx$/,
   /\/i18n\//, // chính từ điển
+  /server\/alerts\//, // nhãn khoảng thời gian trong email cảnh báo (luôn tiếng Việt)
+  /server\/reports\//, // báo cáo email luôn bằng tiếng Việt (người nhận không đổi ngôn ngữ giao diện)
   /server\/mail\//, // nội dung email mời tự có hai ngôn ngữ trong bộ soạn thư (chọn theo ngôn ngữ người mời)
 ];
 

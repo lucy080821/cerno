@@ -1,0 +1,27 @@
+{
+  "id": "ban-hang",
+  "version": 1,
+  "industry": "Bán hàng",
+  "name": "Báo cáo bán hàng",
+  "description": "Doanh thu, số đơn, lợi nhuận gộp theo thời gian, sản phẩm, khu vực và nhân viên.",
+  "columns": {},
+  "slots": [
+    { "key": "ngay", "label": "Ngày bán", "type": "date", "required": true,
+      "synonyms": ["ngày hóa đơn", "ngày đặt hàng", "ngày chứng từ", "ngày giao dịch", "thời gian"] },
+    { "key": "doanh_thu", "label": "Doanh thu", "type": "number", "required": true,
+      "synonyms": ["doanh thu sau chiết khấu", "thành tiền", "tổng tiền", "tiền hàng", "doanh số", "giá trị đơn hàng"] },
+    { "key": "san_pham", "label": "Sản phẩm", "type": "string", "required": true,
+      "synonyms": ["tên sản phẩm", "tên hàng", "mặt hàng", "hàng hóa"] },
+    { "key": "so_luong", "label": "Số lượng", "type": "number", "required": false, "synonyms": ["số lượng bán", "sl bán"] },
+    { "key": "gia_von", "label": "Giá vốn", "type": "number", "required": false,
+      "synonyms": ["tổng giá vốn", "chi phí hàng bán", "giá nhập"] },
+    { "key": "ma_don", "label": "Mã đơn hàng", "type": "string", "required": false,
+      "synonyms": ["số hóa đơn", "mã hóa đơn", "số đơn", "mã đơn"] },
+    { "key": "tinh_thanh", "label": "Tỉnh/Thành phố", "type": "string", "required": false,
+      "synonyms": ["tỉnh", "tỉnh thành", "khu vực", "miền"] },
+    { "key": "nhan_vien", "label": "Nhân viên", "type": "string", "required": false,
+      "synonyms": ["tên nhân viên", "nhân viên bán hàng", "người bán", "sale"] },
+    { "key": "khach_hang", "label": "Khách hàng", "type": "string", "required": false,
+      "synonyms": ["tên khách hàng", "tên khách", "người mua"] }
+  ]
+}

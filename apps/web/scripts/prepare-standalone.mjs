@@ -27,5 +27,7 @@ copy(path.join(standalone, "node_modules"), path.join(app, "node_modules"), {
 });
 copy(path.join(web, ".next", "static"), path.join(app, ".next", "static"));
 copy(path.join(web, "public"), path.join(app, "public"));
+// Font Noto Sans cho ảnh biểu đồ trong email báo cáo (render-chart.ts đọc assets/fonts theo thư mục chạy).
+copy(path.join(web, "assets"), path.join(app, "assets"));
 
-console.log("[prepare-standalone] đã gộp node_modules, static, public vào", path.relative(web, app));
+console.log("[prepare-standalone] đã gộp node_modules, static, public, assets vào", path.relative(web, app));
