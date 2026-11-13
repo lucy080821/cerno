@@ -1,5 +1,9 @@
 import { Template, z } from "@dashboard/schema";
 import { BAN_HANG } from "./ban-hang";
+import { QUANG_CAO_FACEBOOK } from "./quang-cao-facebook";
+import { THU_CHI } from "./thu-chi";
+import { THUONG_MAI_DIEN_TU } from "./thuong-mai-dien-tu";
+import { TON_KHO } from "./ton-kho";
 import { GENERATED_TEMPLATES } from "./generated";
 
 /** Một mẫu trong thư viện kèm thông tin chỉ dùng cho giao diện (không thuộc schema của mẫu). */
@@ -19,7 +23,7 @@ export const TemplateFile = z.object({
 });
 
 /** Mẫu viết tay, chỉ dùng khi chưa có bản xuất từ editor cùng id. */
-const HANDWRITTEN: TemplateEntry[] = [{ template: BAN_HANG }];
+const HANDWRITTEN: TemplateEntry[] = [BAN_HANG, THUONG_MAI_DIEN_TU, QUANG_CAO_FACEBOOK, TON_KHO, THU_CHI].map((template) => ({ template }));
 
 const exported: TemplateEntry[] = GENERATED_TEMPLATES.map((raw) => TemplateFile.parse(raw));
 const exportedIds = new Set(exported.map((e) => e.template.id));

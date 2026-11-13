@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { applyTemplate, Dashboard, matchColumns, validateTemplate, type DataSource } from "@dashboard/schema";
+import { calcDefsFor, runQuery, specForWidget, type Row } from "@dashboard/chart-engine";
 import { TEMPLATES, templateIndustries } from "./index";
 
 describe("thư viện mẫu", () => {
@@ -44,7 +45,41 @@ describe("thư viện mẫu", () => {
         }
       });
 
-      it("tự khớp được cột thường gặp của Sheet Việt Nam", () => {
+      it("tự khớp được cột đặt tên theo nhãn hoặc từ đồng nghĩa đầu tiên của từng vai", () => {
+        for (const pick of ["label", "synonym"] as const) {
+          const columns = t.slots.map((s) => ({ name: pick === "label" ? s.label : (s.synonyms[0] ?? s.label), type: s.type }));
+          const r = matchColumns(t.slots, columns);
+          expect(r.mapping, pick).toEqual(Object.fromEntries(t.slots.map((s, i) => [s.key, columns[i].name])));
+        }
+      });
+
+      it("mọi widget có số liệu thật trên dữ liệu mẫu (không trống, không NaN)", () => {
+        const names = Object.fromEntries(t.slots.map((s) => [s.key, s.key]));
+        const source: DataSource = {
+          id: "s1", type: "google_sheets", spreadsheetId: "x", sheetName: "Data",
+          columns: t.slots.map((s) => ({ name: s.key, type: s.type })),
+        };
+        const { doc } = applyTemplate(t, names, source);
+        const calc = calcDefsFor(doc.calculatedFields, "s1");
+        const rows = t.sampleRows as Row[];
+        let checked = 0;
+        for (const w of doc.widgets) {
+          const q = specForWidget(w, [], calc);
+          if (!q) continue;
+          const res = runQuery(rows, q.spec);
+          expect(res.mode, w.id).toBe("aggregate");
+          if (res.mode !== "aggregate") continue;
+          expect(res.table.rows.length, `${w.id}: không có nhóm nào`).toBeGreaterThan(0);
+          const values = res.table.rows.flatMap((r) => r.values);
+          expect(values.every((v) => v === null || Number.isFinite(v)), `${w.id}: có NaN/Infinity`).toBe(true);
+          expect(values.some((v) => v !== null && v !== 0), `${w.id}: toàn số 0 hoặc trống`).toBe(true);
+          checked++;
+        }
+        expect(checked).toBeGreaterThanOrEqual(8);
+      });
+
+      it("ban-hang vẫn khớp được cột viết tắt thường gặp", () => {
+        if (t.id !== "ban-hang") return;
         const r = matchColumns(t.slots, [
           { name: "Ngày HĐ", type: "date" },
           { name: "DT sau CK", type: "number" },
