@@ -83,6 +83,74 @@ function kpiTable(f: ReportFacts): string {
   );
 }
 
+// ---- Bố cục cho báo cáo CÓ phần AI (gói trả phí): thẻ chỉ số, khung tóm tắt, thẻ nổi bật/lưu ý, đề xuất đánh số ----
+
+/** Thẻ chỉ số: số lớn, chip thay đổi, kỳ trước. Hai thẻ mỗi hàng (bảng lồng bảng để Gmail/Outlook hiển thị đúng). */
+function kpiCards(f: ReportFacts): string {
+  if (!f.kpis.length) return "";
+  const card = (k: KpiFact): string => {
+    const color = COLOR[k.tone];
+    const change = k.growthText
+      ? `<span style="color:${color};font-weight:700">${k.dir ? ARROW[k.dir] + " " : ""}${e(k.growthText)}</span>`
+      : `<span style="color:#9ca3af">–</span>`;
+    return (
+      `<td width="50%" valign="top" style="padding:0 4px 8px">` +
+      `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border:1px solid #e5e7eb;border-left:4px solid ${k.growthText ? color : "#d1d5db"};border-radius:10px;background:#ffffff">` +
+      `<tr><td style="padding:12px 14px 2px;${FONT}font-size:12px;line-height:1.3;font-weight:700;color:#6b7280;text-transform:uppercase">${e(k.title)}</td></tr>` +
+      `<tr><td style="padding:0 14px;${FONT}font-size:24px;line-height:1.3;font-weight:700;color:#14162b">${k.value ? e(k.value.text) : "—"}</td></tr>` +
+      `<tr><td style="padding:4px 14px 12px;${FONT}font-size:13px;line-height:1.4;color:#6b7280">${change}` +
+      (k.prev ? ` <span style="color:#9ca3af">so với ${e(k.prev.text)}</span>` : "") +
+      `</td></tr></table></td>`
+    );
+  };
+  const rows: string[] = [];
+  for (let i = 0; i < f.kpis.length; i += 2) {
+    const pair = f.kpis.slice(i, i + 2).map(card);
+    if (pair.length === 1) pair.push(`<td width="50%" style="padding:0 4px 8px">&nbsp;</td>`);
+    rows.push(`<tr>${pair.join("")}</tr>`);
+  }
+  return (
+    h2("Chỉ số chính") +
+    `<div style="margin:0 0 6px;${FONT}font-size:12px;color:#6b7280">${e(f.period.label)} so với ${e(f.prevPeriod.label)}</div>` +
+    `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" >${rows.join("")}</table>`
+  );
+}
+
+/** Khung có vạch màu bên trái. */
+function callout(html: string, accent: string, bg: string): string {
+  return (
+    `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 6px;border-collapse:separate"><tr>` +
+    `<td style="padding:14px 16px;background:${bg};border-left:4px solid ${accent};border-radius:8px;${FONT}font-size:14px;line-height:1.65;color:#1f2937">${html}</td>` +
+    `</tr></table>`
+  );
+}
+
+/** Danh sách có ký hiệu đầu dòng riêng (✓, !) trong khung màu. */
+function markedList(items: string[], mark: string, markColor: string, accent: string, bg: string): string {
+  if (!items.length) return "";
+  const rows = items
+    .map(
+      (t) =>
+        `<tr><td valign="top" width="22" style="padding:3px 0;${FONT}font-size:14px;line-height:1.6;font-weight:700;color:${markColor}">${mark}</td>` +
+        `<td style="padding:3px 0;${FONT}font-size:14px;line-height:1.6;color:#1f2937">${para(t)}</td></tr>`,
+    )
+    .join("");
+  return callout(`<table role="presentation" width="100%" cellspacing="0" cellpadding="0">${rows}</table>`, accent, bg);
+}
+
+/** Đề xuất hành động đánh số 1, 2, 3. */
+function numberedActions(items: string[]): string {
+  if (!items.length) return "";
+  return items
+    .map(
+      (t, i) =>
+        `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 8px;border:1px solid #e5e7eb;border-radius:8px"><tr>` +
+        `<td valign="top" width="40" style="padding:10px 0 10px 12px;${FONT}font-size:16px;line-height:1.4;font-weight:700;color:#6d5efc">${i + 1}.</td>` +
+        `<td style="padding:10px 14px 10px 0;${FONT}font-size:14px;line-height:1.6;color:#1f2937">${para(t)}</td></tr></table>`,
+    )
+    .join("");
+}
+
 function moversBlock(f: ReportFacts): string {
   if (!f.movers.length) return "";
   const side = (label: string, color: string, items: MoverFact["up"]) =>
@@ -127,17 +195,20 @@ export function buildReportEmail(i: ReportEmailInput): BuiltEmail {
     ? p(para(body.executiveSummary))
     : p(`Dưới đây là số liệu của dashboard “${e(dash)}” trong ${e(f.period.label)} so với ${e(f.prevPeriod.label)}.`);
 
-  const sections: string[] = [
-    p(`<strong>${e(greeting)}</strong>`),
-    body ? h2("Tóm tắt điều hành") + intro : intro,
-    kpiTable(f),
-    body && body.highlights.length ? h2("Điểm nổi bật") + list(body.highlights) : "",
-    body && body.concerns.length ? h2("Điểm cần lưu ý") + list(body.concerns) : "",
-    moversBlock(f),
-    i.images.length ? h2("Biểu đồ") + imagesBlock(i.images, i.dashboardUrl) : "",
-    body && body.analysis ? h2("Phân tích theo yêu cầu") + p(para(body.analysis)) : "",
-    body && body.actions.length ? h2("Đề xuất hành động") + list(body.actions) : "",
-  ];
+  // Có phần AI (gói trả phí) thì dùng bố cục đầy đủ; không có thì giữ bản gọn (bảng số + ảnh).
+  const sections: string[] = body
+    ? [
+        p(`<strong>${e(greeting)}</strong>`),
+        h2("Tóm tắt điều hành") + callout(para(body.executiveSummary), "#6d5efc", "#f4f3ff"),
+        kpiCards(f),
+        body.highlights.length ? h2("Điểm nổi bật") + markedList(body.highlights, "✓", "#16a34a", "#16a34a", "#f0fdf4") : "",
+        body.concerns.length ? h2("Điểm cần lưu ý") + markedList(body.concerns, "!", "#b45309", "#f59e0b", "#fffbeb") : "",
+        moversBlock(f),
+        i.images.length ? h2("Biểu đồ") + imagesBlock(i.images, i.dashboardUrl) : "",
+        body.analysis ? h2("Phân tích theo yêu cầu") + p(para(body.analysis)) : "",
+        body.actions.length ? h2("Đề xuất hành động") + numberedActions(body.actions) : "",
+      ]
+    : [p(`<strong>${e(greeting)}</strong>`), intro, kpiTable(f), moversBlock(f), i.images.length ? h2("Biểu đồ") + imagesBlock(i.images, i.dashboardUrl) : ""];
   const notes = [...f.notes, ...(i.notes ?? [])];
 
   const html =
