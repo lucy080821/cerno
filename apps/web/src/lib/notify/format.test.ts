@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { Dashboard, ReportSubscriptionInput } from "@dashboard/schema";
 import {
-  MAX_PROMPT, MAX_WIDGETS, PROMPT_SUGGESTIONS, appendSuggestion, emptyForm, formFromRow, formToInput, hourLabel, reportableWidgets, scheduleLabel,
+  MAX_PROMPT, MAX_WIDGETS, PROMPT_SUGGESTIONS, appendSuggestion, emptyForm, formFromRow, formToInput, hourLabel, parseRecipients, reportableWidgets, scheduleLabel,
 } from "./format";
 
 describe("scheduleLabel", () => {
@@ -75,5 +75,17 @@ describe("reportableWidgets", () => {
       { id: "k", kind: "kpi", label: "KPI DT" },
       { id: "b", kind: "chart", label: "Cột" },
     ]);
+  });
+});
+
+describe("parseRecipients", () => {
+  it("tách nhiều email theo dấu phẩy, chấm phẩy, khoảng trắng, xuống dòng; viết thường và bỏ trùng", () => {
+    expect(parseRecipients("An@Cty.com, binh@cty.com;\nchi@cty.com  an@cty.com").emails).toEqual(["an@cty.com", "binh@cty.com", "chi@cty.com"]);
+  });
+  it("chuỗi không phải email nằm ở invalid", () => {
+    expect(parseRecipients("an@cty.com, abc, x@y")).toEqual({ emails: ["an@cty.com"], invalid: ["abc", "x@y"] });
+  });
+  it("rỗng thì không có email", () => {
+    expect(parseRecipients("  ,; ")).toEqual({ emails: [], invalid: [] });
   });
 });

@@ -35,6 +35,22 @@ export interface ReportForm {
 }
 
 /** Biểu mẫu mới: người không phải chủ chỉ đăng ký cho email của chính mình. */
+/**
+ * Tách ô "Email người nhận" thành nhiều email (ngăn bằng dấu phẩy, chấm phẩy, khoảng trắng hoặc xuống dòng).
+ * Email viết thường, bỏ trùng; chuỗi không phải email nằm ở `invalid`.
+ */
+export function parseRecipients(text: string): { emails: string[]; invalid: string[] } {
+  const emails: string[] = [];
+  const invalid: string[] = [];
+  for (const raw of text.split(/[\s,;]+/)) {
+    const t = raw.trim().toLowerCase();
+    if (!t) continue;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(t) || t.length > 254) invalid.push(raw.trim());
+    else if (!emails.includes(t)) emails.push(t);
+  }
+  return { emails, invalid };
+}
+
 export function emptyForm(me: string): ReportForm {
   return {
     recipient_email: me, recipient_name: "", frequency: "weekly", weekday: 1, month_day: 1, hour_vn: 8,

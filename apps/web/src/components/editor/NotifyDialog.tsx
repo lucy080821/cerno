@@ -8,7 +8,7 @@ import {
 } from "@/lib/notify/api";
 import {
   FREQUENCY_LABELS, MAX_PROMPT, MAX_WIDGETS, PROMPT_SUGGESTIONS, WEEKDAY_LABELS, appendSuggestion, emptyForm, formFromRow, formToInput,
-  hourLabel, scheduleParts, type ReportForm, type ReportableWidget,
+  hourLabel, parseRecipients, scheduleParts, type ReportForm, type ReportableWidget,
 } from "@/lib/notify/format";
 import { isPlanLimit } from "@/lib/notify/plan-error";
 import { Spinner } from "@/components/Spinner";
@@ -109,7 +109,19 @@ function ReportsTab({ dashboardId, widgets }: { dashboardId: string; widgets: Re
     }
   };
 
-  const validate = (f: ReportForm): string | null => (/^\S+@\S+\.\S+$/.test(f.recipient_email.trim()) ? null : "Hãy nhập email người nhận hợp lệ.");
+  /** Gói trả phí, chủ dashboard, đang thêm mới: một ô nhận được nhiều email cùng lúc. */
+  const multi = !!data && data.plan === "paid" && data.isOwner && !!form && !form.id;
+
+  const validate = (f: ReportForm): string | null => {
+    const { emails, invalid } = parseRecipients(f.recipient_email);
+    if (emails.length === 0 || invalid.length > 0 || (!multi && emails.length > 1)) {
+      return invalid.length > 0 ? `Email không hợp lệ: ${invalid.join(", ")}` : "Hãy nhập email người nhận hợp lệ.";
+    }
+    return null;
+  };
+
+  /** Biểu mẫu gửi API cho MỘT người nhận (xem trước/gửi thử luôn dùng email đầu tiên). */
+  const inputFor = (f: ReportForm, email: string) => formToInput({ ...f, recipient_email: email });
 
   const save = async () => {
     if (!form) return;
@@ -117,9 +129,26 @@ function ReportsTab({ dashboardId, widgets }: { dashboardId: string; widgets: Re
     if (bad) return setMsg({ kind: "err", text: bad });
     if (!(await ensureViewLink(form))) return;
     await run("save", async () => {
-      const input = formToInput(form);
-      if (form.id) await updateReport(dashboardId, form.id, input);
-      else await createReport(dashboardId, input);
+      const { emails } = parseRecipients(form.recipient_email);
+      if (form.id) await updateReport(dashboardId, form.id, inputFor(form, emails[0]));
+      else {
+        // Mỗi người nhận một đăng ký riêng (cùng cấu hình). Dừng ở lỗi đầu tiên và nói rõ đã tạo được mấy người.
+        let done = 0;
+        try {
+          for (const email of emails) {
+            await createReport(dashboardId, inputFor(emails.length > 1 ? { ...form, recipient_name: "" } : form, email));
+            done++;
+          }
+        } catch (e) {
+          if (done > 0) {
+            await load();
+            const text = e instanceof Error ? e.message : "Có lỗi xảy ra.";
+            setMsg({ kind: "err", text: `Đã thêm ${done}/${emails.length} người nhận. Dừng ở ${emails[done]}: ${text}` });
+            return;
+          }
+          throw e;
+        }
+      }
       setForm(null);
       setPreview(null);
       await load();
@@ -131,7 +160,7 @@ function ReportsTab({ dashboardId, widgets }: { dashboardId: string; widgets: Re
     if (!form) return;
     const bad = validate(form);
     if (bad) return setMsg({ kind: "err", text: bad });
-    await run("preview", async () => setPreview(await previewReport(dashboardId, formToInput(form))));
+    await run("preview", async () => setPreview(await previewReport(dashboardId, inputFor(form, parseRecipients(form.recipient_email).emails[0]))));
   };
 
   const doTest = async () => {
@@ -139,7 +168,7 @@ function ReportsTab({ dashboardId, widgets }: { dashboardId: string; widgets: Re
     const bad = validate(form);
     if (bad) return setMsg({ kind: "err", text: bad });
     await run("test", async () => {
-      const r = await sendTestReport(dashboardId, formToInput(form));
+      const r = await sendTestReport(dashboardId, inputFor(form, parseRecipients(form.recipient_email).emails[0]));
       setMsg({ kind: "ok", text: `Đã gửi thư thử tới ${r.to}. Hãy kiểm tra hộp thư (kể cả thư rác).` });
     });
   };
@@ -178,14 +207,24 @@ function ReportsTab({ dashboardId, widgets }: { dashboardId: string; widgets: Re
 
         <div className={n.grid2}>
           <label className={n.field}>
-            Email người nhận
-            <input type="email" value={form.recipient_email} disabled={own || busy !== null} maxLength={254}
-              onChange={(e) => patch({ recipient_email: e.target.value })} />
+            {multi ? "Email người nhận (nhiều người: ngăn bằng dấu phẩy hoặc xuống dòng)" : "Email người nhận"}
+            {multi ? (
+              <textarea rows={2} value={form.recipient_email} disabled={busy !== null} maxLength={2000} placeholder="an@congty.com, binh@congty.com"
+                onChange={(e) => patch({ recipient_email: e.target.value })} />
+            ) : (
+              <input type="email" value={form.recipient_email} disabled={own || busy !== null} maxLength={254}
+                onChange={(e) => patch({ recipient_email: e.target.value })} />
+            )}
+            {multi && (
+              <span className={n.counter}>{`Đã nhận diện ${parseRecipients(form.recipient_email).emails.length} người nhận`}</span>
+            )}
           </label>
           <label className={n.field}>
             Tên người nhận (dùng trong lời chào)
-            <input value={form.recipient_name} disabled={busy !== null} maxLength={80} placeholder="Nguyễn Văn An"
+            <input value={multi && parseRecipients(form.recipient_email).emails.length > 1 ? "" : form.recipient_name}
+              disabled={busy !== null || (multi && parseRecipients(form.recipient_email).emails.length > 1)} maxLength={80} placeholder="Nguyễn Văn An"
               onChange={(e) => patch({ recipient_name: e.target.value })} />
+            {multi && parseRecipients(form.recipient_email).emails.length > 1 && <span className={n.counter}>Nhiều người nhận: lời chào không kèm tên</span>}
           </label>
         </div>
 
