@@ -219,3 +219,41 @@ describe("kích thước gói", () => {
     expect(a).toEqual(b);
   });
 });
+
+describe("buildReportFacts: chế độ tổng quan", () => {
+  const doc = makeDoc([
+    kpi("k1", 0, sum("Doanh thu"), { title: "Doanh thu" }),
+    chart("c1", 100, "bar", [{ column: "Tỉnh" }], [sum("Doanh thu")], "Doanh thu theo tỉnh"),
+  ]);
+
+  it("KPI chỉ giữ giá trị kỳ hiện tại: không kỳ trước, không tăng giảm", async () => {
+    const f = await buildReportFacts({ doc, periods, exec, mode: "overview" });
+    const k = f.kpis[0];
+    expect(f.mode).toBe("overview");
+    expect(k.value?.value).toBe(700);
+    expect([k.prev, k.diff, k.growthPct, k.dir]).toEqual([null, null, null, null]);
+    expect([k.growthText, k.tone]).toEqual(["", "neutral"]);
+  });
+
+  it("không có movers; có nhóm dẫn đầu theo giá trị kỳ hiện tại (giảm dần), chỉ tính trong kỳ", async () => {
+    const f = await buildReportFacts({ doc, periods, exec, mode: "overview" });
+    expect(f.movers).toEqual([]);
+    // Tháng 10: Hà Nội 400, Huế 200, Đà Nẵng 100 (không lẫn tháng 9 hay ngoài kỳ)
+    expect(f.tops?.[0].items.map((x) => [x.name, x.value.value])).toEqual([["Hà Nội", 400], ["Huế", 200], ["Đà Nẵng", 100]]);
+    expect(f.tops?.[0].chart).toBe("Doanh thu theo tỉnh");
+  });
+
+  it("chế độ so sánh (mặc định) không đổi: có movers, không có tops/mode", async () => {
+    const f = await buildReportFacts({ doc, periods, exec });
+    expect(f.mode).toBeUndefined();
+    expect(f.tops).toBeUndefined();
+    expect(f.movers.length).toBe(1);
+    expect(f.kpis[0].prev?.value).toBe(450);
+  });
+
+  it("tối đa 5 nhóm dẫn đầu", async () => {
+    const many: Row[] = Array.from({ length: 9 }, (_, i) => ({ Ngày: "2025-10-05", Tỉnh: `T${i}`, "Doanh thu": 10 * (i + 1), Đơn: 1 }));
+    const f = await buildReportFacts({ doc, periods, exec: async (_i, spec) => runQuery(many, spec), mode: "overview" });
+    expect(f.tops?.[0].items.map((x) => x.name)).toEqual(["T8", "T7", "T6", "T5", "T4"]);
+  });
+});

@@ -185,3 +185,17 @@ describe("createReportCache", () => {
     expect(keys.size).toBe(5);
   });
 });
+
+describe("chế độ báo cáo trong lời nhắc", () => {
+  it("lời nhắc mô tả hai chế độ; chế độ tổng quan cấm so sánh kỳ trước", async () => {
+    const { REPORT_SYSTEM } = await import("./write-report");
+    expect(REPORT_SYSTEM).toContain('"overview"');
+    expect(REPORT_SYSTEM).toContain("không so sánh với kỳ trước");
+  });
+  it("khoá bộ nhớ AI tách theo chế độ (so sánh và tổng quan không dùng chung một bài)", async () => {
+    const { createReportCache } = await import("./write-report");
+    const c = createReportCache();
+    const base = { period: { from: "2025-10-01", to: "2025-10-31", label: "T10" }, prevPeriod: { from: "2025-09-01", to: "2025-09-30", label: "T9" }, updatedAt: null, kpis: [], movers: [], notes: [] };
+    expect(c.key("d", base, "monthly", "")).not.toBe(c.key("d", { ...base, mode: "overview" }, "monthly", ""));
+  });
+});

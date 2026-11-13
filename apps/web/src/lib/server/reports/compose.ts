@@ -1,4 +1,4 @@
-import { Dashboard, type ReportFrequency } from "@dashboard/schema";
+import { Dashboard, type ReportFrequency, type ReportType } from "@dashboard/schema";
 import { buildReportEmail } from "@/lib/server/mail/report-email";
 import type { BuiltEmail } from "@/lib/server/mail/invite-email";
 import type { InlineImage } from "@/lib/server/mail";
@@ -43,6 +43,8 @@ export interface ReportConfig {
   widget_ids: string[];
   include_images: boolean;
   link_mode: "view_link" | "login";
+  /** compare (mặc định) hoặc overview. Thiếu = compare (đăng ký tạo trước migration 0016). */
+  report_type?: ReportType;
 }
 
 export interface ComposeCaches {
@@ -91,10 +93,11 @@ export async function composeReport(
   const doc = parsed.data;
 
   const periods = reportPeriods(cfg.frequency, now);
-  const factsKey = `${dashboardId}|${cfg.frequency}|${periods.cur.from}`;
+  const mode: ReportType = cfg.report_type === "overview" ? "overview" : "compare";
+  const factsKey = `${dashboardId}|${cfg.frequency}|${mode}|${periods.cur.from}`;
   const f = await memo(caches.facts, factsKey, async () => ({
     periods,
-    facts: await buildReportFacts({ doc, periods, exec: deps.exec, updatedAt: loaded.updatedAt }),
+    facts: await buildReportFacts({ doc, periods, exec: deps.exec, updatedAt: loaded.updatedAt, mode }),
   }));
 
   // Phần AI: lỗi không làm hỏng báo cáo, chỉ thiếu phần AI.

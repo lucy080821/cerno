@@ -31,6 +31,7 @@ export interface ReportForm {
   widget_ids: string[];
   include_images: boolean;
   link_mode: "view_link" | "login";
+  report_type: "compare" | "overview";
   enabled: boolean;
 }
 
@@ -54,19 +55,19 @@ export function parseRecipients(text: string): { emails: string[]; invalid: stri
 export function emptyForm(me: string): ReportForm {
   return {
     recipient_email: me, recipient_name: "", frequency: "weekly", weekday: 1, month_day: 1, hour_vn: 8,
-    prompt: "", widget_ids: [], include_images: true, link_mode: "view_link", enabled: true,
+    prompt: "", widget_ids: [], include_images: true, link_mode: "view_link", report_type: "compare", enabled: true,
   };
 }
 
 /** Dòng đã lưu (từ API) thành biểu mẫu để sửa. */
 export function formFromRow(r: {
   id: string; recipient_email: string; recipient_name: string; frequency: ReportFrequency; weekday: number | null; month_day: number | null;
-  hour_vn: number; prompt: string; widget_ids: string[]; include_images: boolean; link_mode: "view_link" | "login"; enabled: boolean;
+  hour_vn: number; prompt: string; widget_ids: string[]; include_images: boolean; link_mode: "view_link" | "login"; report_type?: "compare" | "overview"; enabled: boolean;
 }): ReportForm {
   return {
     id: r.id, recipient_email: r.recipient_email, recipient_name: r.recipient_name, frequency: r.frequency,
     weekday: r.weekday ?? 1, month_day: r.month_day ?? 1, hour_vn: r.hour_vn, prompt: r.prompt, widget_ids: r.widget_ids,
-    include_images: r.include_images, link_mode: r.link_mode, enabled: r.enabled,
+    include_images: r.include_images, link_mode: r.link_mode, report_type: r.report_type ?? "compare", enabled: r.enabled,
   };
 }
 
@@ -83,6 +84,7 @@ export function formToInput(f: ReportForm): ReportSubscriptionInput {
     widget_ids: f.widget_ids.slice(0, MAX_WIDGETS),
     include_images: f.include_images,
     link_mode: f.link_mode,
+    report_type: f.report_type,
     enabled: f.enabled,
   };
 }

@@ -53,6 +53,15 @@ export const EN_NOTIFY: Dict = {
   "Kèm ảnh biểu đồ trong email": "Include chart images in the email",
   "Chọn tối đa {0} biểu đồ hoặc thẻ KPI (không chọn gì = tự chọn các biểu đồ)": "Pick up to {0} charts or KPI cards (none = charts are picked automatically)",
   "Thẻ KPI": "KPI card",
+  // Loại báo cáo (so sánh / tổng quan)
+  "Loại báo cáo": "Report type",
+  "Báo cáo so sánh:": "Comparison report:",
+  "đối chiếu kỳ này với kỳ trước, nêu mức tăng giảm và nhóm thay đổi nhiều nhất": "compares this period with the previous one, noting increases, decreases and the groups that changed most",
+  "Báo cáo tổng quan:": "Overview report:",
+  "chỉ mô tả kỳ hiện tại (giá trị các chỉ số và nhóm dẫn đầu), không so sánh với kỳ trước": "describes only the current period (metric values and top groups), with no comparison to the previous period",
+  "Tổng quan": "Overview",
+  "So sánh": "Comparison",
+  "Cần chạy migration 0016 (loại báo cáo) trên cơ sở dữ liệu trước khi dùng báo cáo tổng quan.": "Run migration 0016 (report type) on the database before using overview reports.",
   // Ghi chú trong email báo cáo song ngữ (server/reports)
   "\"{0}\" không có cột ngày nên được tính trên toàn bộ dữ liệu, không theo kỳ.": "\"{0}\" has no date column, so it is calculated over all the data, not per period.",
   "Một phần số liệu đã được rút gọn cho vừa độ dài báo cáo.": "Some of the figures were shortened to fit the report length.",

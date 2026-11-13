@@ -27,7 +27,7 @@ describe("subscriptionColumns", () => {
     expect(subscriptionColumns(parse({ frequency: "weekly", weekday: 3, month_day: 15 }))).toMatchObject({ weekday: 3, month_day: null });
     expect(subscriptionColumns(parse({ frequency: "monthly", weekday: 3, month_day: 15 }))).toMatchObject({ weekday: null, month_day: 15 });
     expect(Object.keys(d).sort()).toEqual([
-      "enabled", "frequency", "hour_vn", "include_images", "link_mode", "month_day", "prompt", "recipient_email", "recipient_name", "weekday", "widget_ids",
+      "enabled", "frequency", "hour_vn", "include_images", "link_mode", "month_day", "prompt", "recipient_email", "recipient_name", "report_type", "weekday", "widget_ids",
     ]);
   });
 });

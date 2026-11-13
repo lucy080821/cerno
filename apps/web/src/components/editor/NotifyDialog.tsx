@@ -230,6 +230,18 @@ function ReportsTab({ dashboardId, widgets }: { dashboardId: string; widgets: Re
           </label>
         </div>
 
+        <div className={n.radios} role="radiogroup" aria-label="Loại báo cáo">
+          <span className={n.legend}>Loại báo cáo</span>
+          <label className={n.check}>
+            <input type="radio" name="reporttype" checked={form.report_type === "compare"} disabled={busy !== null} onChange={() => patch({ report_type: "compare" })} />
+            <span><strong>Báo cáo so sánh:</strong> đối chiếu kỳ này với kỳ trước, nêu mức tăng giảm và nhóm thay đổi nhiều nhất</span>
+          </label>
+          <label className={n.check}>
+            <input type="radio" name="reporttype" checked={form.report_type === "overview"} disabled={busy !== null} onChange={() => patch({ report_type: "overview" })} />
+            <span><strong>Báo cáo tổng quan:</strong> chỉ mô tả kỳ hiện tại (giá trị các chỉ số và nhóm dẫn đầu), không so sánh với kỳ trước</span>
+          </label>
+        </div>
+
         <div className={n.grid3}>
           <label className={n.field}>
             Tần suất
@@ -388,7 +400,7 @@ function ReportsTab({ dashboardId, widgets }: { dashboardId: string; widgets: Re
               <div className={n.itemHead}>
                 <div className={n.itemMain}>
                   <strong>{r.recipient_name ? `${r.recipient_name} · ${r.recipient_email}` : r.recipient_email}</strong>
-                  <span className={n.sub}>{scheduleParts(r).map((part, i) => <span key={i}>{i > 0 ? " · " : ""}{part}</span>)}</span>
+                  <span className={n.sub}>{scheduleParts(r).map((part, i) => <span key={i}>{i > 0 ? " · " : ""}{part}</span>)}{" · "}{r.report_type === "overview" ? "Tổng quan" : "So sánh"}</span>
                   <span className={n.sub}>
                     {r.enabled ? `Gửi tiếp: ${when(r.next_run_at)}` : "Đang tắt"}
                     {r.last_sent_at ? ` · Đã gửi gần nhất: ${when(r.last_sent_at)}` : ""}

@@ -66,6 +66,10 @@ Nguồn số liệu duy nhất là khối <report_facts> (JSON). Quy tắc bắt
 - Không viết lời chào, lời kết hay chữ ký (hệ thống sẽ tự thêm).
 - Không dùng định dạng Markdown, không dùng ký tự đặc biệt để trang trí.
 
+Chế độ báo cáo (trường "mode" trong <report_facts>; không có = "compare"):
+- "compare": báo cáo SO SÁNH kỳ này với kỳ trước: nêu thay đổi, nhóm tăng/giảm nhiều nhất.
+- "overview": báo cáo TỔNG QUAN chỉ mô tả kỳ hiện tại: giá trị các chỉ số và các nhóm dẫn đầu ("tops"). TUYỆT ĐỐI không so sánh với kỳ trước, không nói tăng/giảm/cải thiện/xấu đi vì không có số kỳ trước; điểm cần lưu ý chỉ nêu những gì thấy rõ trong số liệu kỳ này (vd một nhóm chiếm phần lớn, thiếu dữ liệu).
+
 Bố cục (điền vào các trường của công cụ write_report):
 - executiveSummary: tóm tắt điều hành 2–3 câu: kỳ này so với kỳ trước ra sao, điều quan trọng nhất.
 - highlights: các điểm nổi bật (tăng tốt, nhóm dẫn đầu), tối đa 4, mỗi ý một câu.
@@ -182,7 +186,7 @@ export function createReportCache() {
   return {
     /** Khoá gồm dashboard, kỳ, tần suất và yêu cầu đã chuẩn hoá khoảng trắng/hoa thường. */
     key(dashboardId: string, facts: ReportFacts, frequency: string, prompt: string): string {
-      return [dashboardId, frequency, facts.period.from, facts.period.to, prompt.trim().replace(/\s+/g, " ").toLowerCase()].join("|");
+      return [dashboardId, frequency, facts.mode ?? "compare", facts.period.from, facts.period.to, prompt.trim().replace(/\s+/g, " ").toLowerCase()].join("|");
     },
     run(key: string, job: () => Promise<WriteResult>): Promise<WriteResult> {
       let p = jobs.get(key);

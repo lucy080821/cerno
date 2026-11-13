@@ -59,13 +59,25 @@ export interface MoverFact {
   down: MoverItem[];
 }
 
+/** Nhóm dẫn đầu của một biểu đồ trong kỳ hiện tại (báo cáo tổng quan). */
+export interface TopFact {
+  chart: string;
+  dimension: string;
+  metric: string;
+  items: { name: string; value: FactNumber }[];
+}
+
 export interface ReportFacts {
+  /** compare (mặc định) = so với kỳ trước; overview = tổng quan chỉ có kỳ hiện tại (không prev/tăng giảm, có `tops`). */
+  mode?: "compare" | "overview";
   period: ReportSpan;
   prevPeriod: ReportSpan;
   /** Lần đồng bộ dữ liệu gần nhất (ISO), null nếu không biết. */
   updatedAt: string | null;
   kpis: KpiFact[];
   movers: MoverFact[];
+  /** Chỉ có ở mode = overview. */
+  tops?: TopFact[];
   notes: string[];
 }
 
@@ -218,6 +230,37 @@ async function moverFact(w: Widget, doc: Dashboard, periods: ReportPeriods, exec
   };
 }
 
+const MAX_TOP_ITEMS = 5;
+
+/** Nhóm dẫn đầu (theo giá trị ở kỳ hiện tại) của một biểu đồ có chiều dạng chữ. Chỉ chạy truy vấn cho kỳ hiện tại. */
+async function topFact(w: Widget, doc: Dashboard, periods: ReportPeriods, exec: Executor): Promise<TopFact | null> {
+  const c = w.config;
+  if (c.kind !== "chart" || !MOVER_TYPES.has(c.chartType)) return null;
+  const f = chartFields(c);
+  if (!f || !f.dimensions[0] || !f.metrics[0]) return null;
+  const dim: FieldBinding = f.dimensions[0];
+  const metric: FieldBinding = f.metrics[0];
+  const src = doc.sources.find((s) => s.id === c.sourceId);
+  if (src?.columns.find((x) => x.name === dim.column)?.type === "date" || dim.grain) return null;
+  const dateCol = dateColumnFor(w, doc);
+  if (!dateCol) return null;
+  const calc = calcDefsFor(doc.calculatedFields, c.sourceId);
+  const r = await exec(c.sourceId, { mode: "aggregate", dims: [dim], metrics: [metric], filters: [periodFilter(dateCol, periods.cur)], selfId: w.id, calc });
+  if (r.mode !== "aggregate" || r.truncated) return null;
+  if ((r.table.metricKinds?.[0] ?? "number") === "date") return null;
+  const items = r.table.rows
+    .map((row) => ({ name: String(row.keys[0] ?? "(trống)").slice(0, 60), v: row.values[0] ?? 0 }))
+    .filter((x) => x.v !== 0)
+    .sort((a, b) => b.v - a.v || a.name.localeCompare(b.name))
+    .slice(0, MAX_TOP_ITEMS)
+    .map((x) => ({ name: x.name, value: num(x.v) }));
+  if (!items.length) return null;
+  return { chart: c.title?.trim() || `${bindingLabel(metric, true)} theo ${bindingLabel(dim, false)}`, dimension: bindingLabel(dim, false), metric: bindingLabel(metric, true), items };
+}
+
+/** KPI ở chế độ tổng quan: chỉ giữ giá trị kỳ hiện tại, bỏ kỳ trước và mọi so sánh. */
+const overviewKpi = (k: KpiFact): KpiFact => ({ ...k, prev: null, diff: null, growthPct: null, growthText: "", dir: null, tone: "neutral" });
+
 /** Rút gọn gói số liệu cho vừa `maxBytes`: bớt dòng movers, rồi bớt chart, rồi bớt KPI. Ghi chú lại nếu có cắt. */
 export function fitFactsSize(facts: ReportFacts, maxBytes = MAX_FACTS_BYTES): ReportFacts {
   const size = (f: ReportFacts) => new TextEncoder().encode(JSON.stringify(f)).length;
@@ -233,6 +276,10 @@ export function fitFactsSize(facts: ReportFacts, maxBytes = MAX_FACTS_BYTES): Re
     for (const m of f.movers) { m.up = m.up.slice(0, per); m.down = m.down.slice(0, per); }
   }
   while (size(f) > maxBytes && f.movers.length) f.movers.pop();
+  if (f.tops) {
+    for (const t of f.tops) t.items = t.items.slice(0, 3);
+    while (size(f) > maxBytes && f.tops.length) f.tops.pop();
+  }
   while (size(f) > maxBytes && f.kpis.length > 1) f.kpis.pop();
   while (size(f) > maxBytes && f.notes.length > 1) f.notes.splice(f.notes.length - 2, 1);
   return f;
@@ -249,8 +296,11 @@ export async function buildReportFacts(p: {
   periods: ReportPeriods;
   exec: Executor;
   updatedAt?: string | null;
+  /** Mặc định compare. */
+  mode?: "compare" | "overview";
 }): Promise<ReportFacts> {
   const { doc, periods, exec } = p;
+  const overview = p.mode === "overview";
   const notes: string[] = [];
   const visible = doc.widgets.filter((w) => !w.hidden).sort(readingOrder);
 
@@ -261,20 +311,29 @@ export async function buildReportFacts(p: {
     if (k) kpis.push(k);
   }
   const movers: MoverFact[] = [];
+  const tops: TopFact[] = [];
   for (const w of visible) {
-    if (movers.length >= MAX_MOVER_CHARTS) break;
-    const m = await moverFact(w, doc, periods, exec);
-    if (m) movers.push(m);
+    if (overview) {
+      if (tops.length >= MAX_MOVER_CHARTS) break;
+      const t = await topFact(w, doc, periods, exec);
+      if (t) tops.push(t);
+    } else {
+      if (movers.length >= MAX_MOVER_CHARTS) break;
+      const m = await moverFact(w, doc, periods, exec);
+      if (m) movers.push(m);
+    }
   }
   if (kpis.length > 0 && kpis.every((k) => k.value === null)) notes.push("Không có dữ liệu nào trong kỳ báo cáo.");
-  if (kpis.length === 0 && movers.length === 0) notes.push("Dashboard chưa có KPI hoặc biểu đồ nào để tổng hợp số liệu.");
+  if (kpis.length === 0 && movers.length === 0 && tops.length === 0) notes.push("Dashboard chưa có KPI hoặc biểu đồ nào để tổng hợp số liệu.");
 
   return fitFactsSize({
+    ...(overview ? { mode: "overview" as const } : {}),
     period: periods.cur,
     prevPeriod: periods.prev,
     updatedAt: p.updatedAt ?? null,
-    kpis,
+    kpis: overview ? kpis.map(overviewKpi) : kpis,
     movers,
+    ...(overview ? { tops } : {}),
     notes,
   });
 }

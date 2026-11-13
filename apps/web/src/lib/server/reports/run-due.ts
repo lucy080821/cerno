@@ -26,6 +26,8 @@ export interface DueSub {
   widget_ids: string[];
   include_images: boolean;
   link_mode: "view_link" | "login";
+  /** Thiếu ở dữ liệu cũ (trước migration 0016) = compare. */
+  report_type?: "compare" | "overview";
   last_error: string | null;
 }
 

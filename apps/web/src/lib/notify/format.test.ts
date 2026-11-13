@@ -36,10 +36,10 @@ describe("biểu mẫu → dữ liệu gửi API", () => {
   it("formFromRow rồi formToInput giữ nguyên cấu hình", () => {
     const row = {
       id: "i", recipient_email: "a@x.com", recipient_name: "An", frequency: "weekly" as const, weekday: 5, month_day: null, hour_vn: 18,
-      prompt: "Ngắn", widget_ids: ["w1"], include_images: false, link_mode: "login" as const, enabled: false,
+      prompt: "Ngắn", widget_ids: ["w1"], include_images: false, link_mode: "login" as const, report_type: "overview" as const, enabled: false,
     };
     const back = formToInput(formFromRow(row));
-    expect(back).toMatchObject({ recipient_email: "a@x.com", weekday: 5, hour_vn: 18, prompt: "Ngắn", widget_ids: ["w1"], include_images: false, link_mode: "login", enabled: false });
+    expect(back).toMatchObject({ recipient_email: "a@x.com", weekday: 5, hour_vn: 18, prompt: "Ngắn", widget_ids: ["w1"], include_images: false, link_mode: "login", report_type: "overview", enabled: false });
     expect(formFromRow(row).id).toBe("i");
   });
 });
@@ -87,5 +87,13 @@ describe("parseRecipients", () => {
   });
   it("rỗng thì không có email", () => {
     expect(parseRecipients("  ,; ")).toEqual({ emails: [], invalid: [] });
+  });
+});
+
+describe("loại báo cáo", () => {
+  it("mặc định là so sánh; dữ liệu cũ thiếu cột thì coi là so sánh", () => {
+    expect(emptyForm("a@x.com").report_type).toBe("compare");
+    const old = { id: "i", recipient_email: "a@x.com", recipient_name: "", frequency: "weekly" as const, weekday: 1, month_day: null, hour_vn: 8, prompt: "", widget_ids: [], include_images: true, link_mode: "view_link" as const, enabled: true };
+    expect(formFromRow(old).report_type).toBe("compare");
   });
 });

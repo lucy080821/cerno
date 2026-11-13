@@ -116,7 +116,7 @@ export function allowedMagnitudes(facts: ReportFacts): number[] {
     else if (v && typeof v === "object") for (const [k, x] of Object.entries(v)) if (k !== "widgetId") visit(x);
   };
   // Kỳ báo cáo và thời điểm cập nhật chỉ là ngày tháng: không đưa vào danh sách số liệu cho phép.
-  visit({ kpis: facts.kpis, movers: facts.movers, notes: facts.notes });
+  visit({ kpis: facts.kpis, movers: facts.movers, tops: facts.tops, notes: facts.notes });
   return [...set];
 }
 

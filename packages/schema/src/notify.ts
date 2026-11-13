@@ -14,6 +14,8 @@ const email = z.string().trim().toLowerCase().email().max(254);
 
 export const ReportFrequency = z.enum(["daily", "weekly", "monthly"]);
 export const LinkMode = z.enum(["view_link", "login"]);
+/** compare = so sánh kỳ này với kỳ trước; overview = tổng quan chỉ mô tả kỳ hiện tại. */
+export const ReportType = z.enum(["compare", "overview"]);
 
 /** Lịch gửi. Giờ theo múi giờ Việt Nam. `weekday` 1 = thứ Hai … 7 = Chủ nhật; `month_day` 31 = ngày cuối tháng nếu tháng ngắn hơn. */
 export const ReportSchedule = z.object({
@@ -33,6 +35,7 @@ export const ReportSubscriptionInput = ReportSchedule.extend({
   widget_ids: z.array(z.string().max(80)).max(6).default([]),
   include_images: z.boolean().default(true),
   link_mode: LinkMode.default("view_link"),
+  report_type: ReportType.default("compare"),
   enabled: z.boolean().default(true),
 }).superRefine((v, ctx) => {
   if (v.frequency === "weekly" && v.weekday == null) ctx.addIssue({ code: "custom", path: ["weekday"], message: "Báo cáo hằng tuần cần chọn thứ." });
@@ -53,6 +56,7 @@ export const ReportSubscription = ReportSubscriptionInput.and(
 
 export type ReportFrequency = z.infer<typeof ReportFrequency>;
 export type LinkMode = z.infer<typeof LinkMode>;
+export type ReportType = z.infer<typeof ReportType>;
 export type ReportSchedule = z.infer<typeof ReportSchedule>;
 export type ReportSubscriptionInput = z.infer<typeof ReportSubscriptionInput>;
 export type ReportSubscription = z.infer<typeof ReportSubscription>;

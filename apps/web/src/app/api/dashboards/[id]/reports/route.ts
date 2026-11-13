@@ -24,8 +24,19 @@ type Params = { params: Promise<{ id: string }> };
 const previewLimited = createRateLimiter(6, 60_000);
 const testLimited = createRateLimiter(3, 10 * 60_000);
 
-const COLUMNS =
+const COLUMNS_OLD =
   "id, dashboard_id, created_by, recipient_email, recipient_name, prompt, frequency, weekday, month_day, hour_vn, widget_ids, include_images, link_mode, enabled, next_run_at, last_sent_at, last_error, created_at";
+const COLUMNS = COLUMNS_OLD.replace("link_mode,", "link_mode, report_type,");
+
+/** Cơ sở dữ liệu đã có cột report_type (migration 0016) chưa. Chỉ nhớ kết quả "có"; chưa có thì hỏi lại ở lần sau. */
+let typeColumnKnown = false;
+async function hasTypeColumn(): Promise<boolean> {
+  if (typeColumnKnown) return true;
+  const { error } = await createAdminClient().from("report_subscriptions").select("report_type").limit(1);
+  typeColumnKnown = !error;
+  return typeColumnKnown;
+}
+const NEEDS_MIGRATION = "Cần chạy migration 0016 (loại báo cáo) trên cơ sở dữ liệu trước khi dùng báo cáo tổng quan.";
 
 const fail = (error: string, status: number, extra: Record<string, unknown> = {}) => NextResponse.json({ error, ...extra }, { status });
 
@@ -48,7 +59,8 @@ async function context(ctx: Params) {
 export async function GET(_req: Request, ctx: Params) {
   const c = await context(ctx);
   if ("error" in c) return c.error;
-  const { data, error } = await c.supabase.from("report_subscriptions").select(COLUMNS).eq("dashboard_id", c.id).order("created_at");
+  const cols = (await hasTypeColumn()) ? COLUMNS : COLUMNS_OLD;
+  const { data, error } = await c.supabase.from("report_subscriptions").select(cols).eq("dashboard_id", c.id).order("created_at");
   if (error) return fail("Không đọc được danh sách báo cáo", 500);
   // Người không phải chủ không đọc được dashboard_links qua RLS: chỉ hỏi "có đang bật không" bằng service role (không lộ mã).
   const plan = (await planForDashboard(c.id))?.plan ?? normalizePlan(null);
@@ -122,6 +134,9 @@ export async function POST(req: Request, ctx: Params) {
   }
 
   // Tạo đăng ký thật.
+  const typed = await hasTypeColumn();
+  if (!typed && input.report_type === "overview") return fail(NEEDS_MIGRATION, 409);
+  const cols = typed ? COLUMNS : COLUMNS_OLD;
   const admin = createAdminClient();
   const plan = (await planForDashboard(c.id))?.plan ?? normalizePlan(null);
   const { count } = await admin.from("report_subscriptions").select("id", { count: "exact", head: true }).eq("dashboard_id", c.id);
@@ -129,12 +144,12 @@ export async function POST(req: Request, ctx: Params) {
   if (v) return fail(v.message, 403, { code: v.code });
   const { data, error } = await c.supabase
     .from("report_subscriptions")
-    .insert({ dashboard_id: c.id, created_by: c.user.id, ...subscriptionColumns(input) })
-    .select(COLUMNS)
+    .insert({ dashboard_id: c.id, created_by: c.user.id, ...subscriptionColumns(input, typed) })
+    .select(cols)
     .single();
   if (error || !data) return fail("Không tạo được đăng ký báo cáo", 500);
   // Lịch chạy chỉ service role được ghi (column grant): đặt ngay sau khi RLS đã cho phép tạo.
-  const { data: scheduled } = await admin.from("report_subscriptions").update(scheduleFor(input, new Date())).eq("id", data.id).select(COLUMNS).single();
+  const { data: scheduled } = await admin.from("report_subscriptions").update(scheduleFor(input, new Date())).eq("id", (data as unknown as { id: string }).id).select(cols).single();
   return NextResponse.json({ subscription: scheduled ?? data }, { status: 201 });
 }
 
@@ -151,17 +166,20 @@ export async function PATCH(req: Request, ctx: Params) {
 
   const v = reportViolation((await planForDashboard(c.id))?.plan ?? normalizePlan(null), input, 0, false);
   if (v) return fail(v.message, 403, { code: v.code });
+  const typed = await hasTypeColumn();
+  if (!typed && input.report_type === "overview") return fail(NEEDS_MIGRATION, 409);
+  const cols = typed ? COLUMNS : COLUMNS_OLD;
 
   const { data, error } = await c.supabase
     .from("report_subscriptions")
-    .update(subscriptionColumns(input))
+    .update(subscriptionColumns(input, typed))
     .eq("id", subId)
     .eq("dashboard_id", c.id)
-    .select(COLUMNS)
+    .select(cols)
     .maybeSingle();
   if (error) return fail("Không lưu được thay đổi", 500);
   if (!data) return fail("Không tìm thấy đăng ký (hoặc bạn không có quyền sửa)", 404);
-  const { data: scheduled } = await createAdminClient().from("report_subscriptions").update(scheduleFor(input, new Date())).eq("id", subId).select(COLUMNS).single();
+  const { data: scheduled } = await createAdminClient().from("report_subscriptions").update(scheduleFor(input, new Date())).eq("id", subId).select(cols).single();
   return NextResponse.json({ subscription: scheduled ?? data });
 }
 

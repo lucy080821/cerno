@@ -46,6 +46,8 @@ const L = {
     charts: "Biểu đồ", analysis: "Phân tích theo yêu cầu", actions: "Đề xuất hành động",
     intro: (dash: string, cur: string, prev: string) => `Dưới đây là số liệu của dashboard “${dash}” trong ${cur} so với ${prev}.`,
     chartsAbove: "",
+    overviewIntro: (dash: string, cur: string) => `Dưới đây là tổng quan số liệu của dashboard “${dash}” trong ${cur}.`,
+    tops: "Nhóm dẫn đầu",
     open: "Mở dashboard", regards: "Trân trọng,", updated: (t: string) => `Số liệu cập nhật lúc ${t} (giờ Việt Nam).`,
     why: "Bạn nhận email này vì được đăng ký nhận báo cáo định kỳ của dashboard này.", unsub: "Huỷ nhận email này",
     noData: "không có dữ liệu", prevWord: "kỳ trước", chartsInMail: (n: number) => `(Email có ${n} biểu đồ dạng ảnh; xem trong dashboard nếu không hiển thị.)`,
@@ -58,6 +60,8 @@ const L = {
     charts: "Charts", analysis: "Analysis on request", actions: "Recommended actions",
     intro: (dash: string, cur: string, prev: string) => `Here are the figures for the dashboard “${dash}” for ${cur} compared with ${prev}.`,
     chartsAbove: "The charts are shown in the Vietnamese section above.",
+    overviewIntro: (dash: string, cur: string) => `Here is an overview of the figures for the dashboard “${dash}” for ${cur}.`,
+    tops: "Top groups",
     open: "Open dashboard", regards: "Best regards,", updated: (t: string) => `Data updated at ${t} (Vietnam time).`,
     why: "You are receiving this email because you were subscribed to this dashboard's scheduled reports.", unsub: "Unsubscribe from this email",
     noData: "no data", prevWord: "previous period", chartsInMail: (n: number) => `(This email has ${n} charts as images; see the dashboard if they don't display.)`,
@@ -93,7 +97,7 @@ const list = (items: string[]) =>
 const growthOf = (k: KpiFact, lang: Lang) => (lang === "en" ? growthEn(k.growthText) : k.growthText);
 const labelOf = (s: { label: string; labelEn?: string }, lang: Lang) => (lang === "en" ? s.labelEn ?? toEn(s.label) : s.label);
 
-function kpiRow(k: KpiFact, lang: Lang): string {
+function kpiRow(k: KpiFact, lang: Lang, overview = false): string {
   const color = COLOR[k.tone];
   const change = k.growthText
     ? `<span style="color:${color};font-weight:700">${k.dir ? ARROW[k.dir] + " " : ""}${e(growthOf(k, lang))}</span>`
@@ -102,8 +106,8 @@ function kpiRow(k: KpiFact, lang: Lang): string {
   return (
     `<tr><td style="${cell}color:#374151">${e(k.title)}</td>` +
     `<td style="${cell}text-align:right;font-weight:700;color:#14162b">${k.value ? e(k.value.text) : "—"}</td>` +
-    `<td style="${cell}text-align:right;color:#6b7280">${k.prev ? e(k.prev.text) : "—"}</td>` +
-    `<td style="${cell}text-align:right">${change}</td></tr>`
+    (overview ? "" : `<td style="${cell}text-align:right;color:#6b7280">${k.prev ? e(k.prev.text) : "—"}</td><td style="${cell}text-align:right">${change}</td>`) +
+    `</tr>`
   );
 }
 
@@ -111,12 +115,13 @@ function kpiTable(f: ReportFacts, lang: Lang): string {
   if (!f.kpis.length) return "";
   const t = L[lang];
   const th = `padding:8px;border-bottom:2px solid #14162b;${FONT}font-size:12px;line-height:1.3;font-weight:700;color:#6b7280;text-transform:uppercase;`;
+  const overview = f.mode === "overview";
   return (
     h2(t.keyMetrics) +
     `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse">` +
     `<tr><th align="left" style="${th}">${t.metric}</th><th align="right" style="${th}">${e(labelOf(f.period, lang))}</th>` +
-    `<th align="right" style="${th}">${e(labelOf(f.prevPeriod, lang))}</th><th align="right" style="${th}">${t.change}</th></tr>` +
-    f.kpis.map((k) => kpiRow(k, lang)).join("") +
+    (overview ? "" : `<th align="right" style="${th}">${e(labelOf(f.prevPeriod, lang))}</th><th align="right" style="${th}">${t.change}</th>`) + `</tr>` +
+    f.kpis.map((k) => kpiRow(k, lang, overview)).join("") +
     `</table>`
   );
 }
@@ -127,6 +132,7 @@ function kpiTable(f: ReportFacts, lang: Lang): string {
 function kpiCards(f: ReportFacts, lang: Lang): string {
   if (!f.kpis.length) return "";
   const t = L[lang];
+  const overview = f.mode === "overview";
   const card = (k: KpiFact): string => {
     const color = COLOR[k.tone];
     const change = k.growthText
@@ -134,12 +140,14 @@ function kpiCards(f: ReportFacts, lang: Lang): string {
       : `<span style="color:#9ca3af">–</span>`;
     return (
       `<td width="50%" valign="top" style="padding:0 4px 8px">` +
-      `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border:1px solid #e5e7eb;border-left:4px solid ${k.growthText ? color : "#d1d5db"};border-radius:10px;background:#ffffff">` +
+      `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border:1px solid #e5e7eb;border-left:4px solid ${k.growthText && !overview ? color : "#d1d5db"};border-radius:10px;background:#ffffff">` +
       `<tr><td style="padding:12px 14px 2px;${FONT}font-size:12px;line-height:1.3;font-weight:700;color:#6b7280;text-transform:uppercase">${e(k.title)}</td></tr>` +
       `<tr><td style="padding:0 14px;${FONT}font-size:24px;line-height:1.3;font-weight:700;color:#14162b">${k.value ? e(k.value.text) : "—"}</td></tr>` +
-      `<tr><td style="padding:4px 14px 12px;${FONT}font-size:13px;line-height:1.4;color:#6b7280">${change}` +
-      (k.prev ? ` <span style="color:#9ca3af">${t.vs} ${e(k.prev.text)}</span>` : "") +
-      `</td></tr></table></td>`
+      (overview
+        ? `<tr><td style="padding:0 14px 12px"></td></tr></table></td>`
+        : `<tr><td style="padding:4px 14px 12px;${FONT}font-size:13px;line-height:1.4;color:#6b7280">${change}` +
+          (k.prev ? ` <span style="color:#9ca3af">${t.vs} ${e(k.prev.text)}</span>` : "") +
+          `</td></tr></table></td>`)
     );
   };
   const rows: string[] = [];
@@ -150,7 +158,7 @@ function kpiCards(f: ReportFacts, lang: Lang): string {
   }
   return (
     h2(t.keyMetrics) +
-    `<div style="margin:0 0 6px;${FONT}font-size:12px;color:#6b7280">${e(labelOf(f.period, lang))} ${t.vs} ${e(labelOf(f.prevPeriod, lang))}</div>` +
+    `<div style="margin:0 0 6px;${FONT}font-size:12px;color:#6b7280">${e(labelOf(f.period, lang))}${overview ? "" : ` ${t.vs} ${e(labelOf(f.prevPeriod, lang))}`}</div>` +
     `<table role="presentation" width="100%" cellspacing="0" cellpadding="0">${rows.join("")}</table>`
   );
 }
@@ -211,6 +219,22 @@ function moversBlock(f: ReportFacts, lang: Lang): string {
   );
 }
 
+/** Nhóm dẫn đầu (báo cáo tổng quan). */
+function topsBlock(f: ReportFacts, lang: Lang): string {
+  if (!f.tops?.length) return "";
+  const t = L[lang];
+  return (
+    h2(t.tops) +
+    f.tops
+      .map(
+        (x) =>
+          `<div style="margin:0 0 12px"><div style="${FONT}font-size:13px;line-height:1.4;font-weight:700;color:#14162b">${e(x.chart)}</div>` +
+          `<div style="margin:2px 0;${FONT}font-size:13px;line-height:1.5;color:#374151">${x.items.map((i) => `${e(i.name)} (${e(i.value.text)})`).join("; ")}</div></div>`,
+      )
+      .join("")
+  );
+}
+
 function imagesBlock(images: ReportEmailImage[], url: string): string {
   return images
     .map(
@@ -226,12 +250,14 @@ function sectionsFor(lang: Lang, i: ReportEmailInput, dash: string, name: string
   const t = L[lang];
   const f = i.facts;
   const fancy = !!text; // có phần AI thì dùng bố cục đầy đủ (thẻ chỉ số, khung màu)
-  const intro = t.intro(e(dash), e(labelOf(f.period, lang)), e(labelOf(f.prevPeriod, lang)));
+  const overview = f.mode === "overview";
+  const intro = overview ? t.overviewIntro(e(dash), e(labelOf(f.period, lang))) : t.intro(e(dash), e(labelOf(f.period, lang)), e(labelOf(f.prevPeriod, lang)));
+  const groupsBlock = overview ? topsBlock(f, lang) : moversBlock(f, lang);
   const images = lang === "vi" && i.images.length ? h2(t.charts) + imagesBlock(i.images, i.dashboardUrl) : "";
   const imagesNote = lang === "en" && i.images.length ? p(`<span style="color:#6b7280">${e(t.chartsAbove)}</span>`) : "";
   const head = p(`<strong>${e(t.greeting(name))}</strong>`);
   if (!text) {
-    return [head, p(intro), kpiTable(f, lang), moversBlock(f, lang), images, imagesNote];
+    return [head, p(intro), kpiTable(f, lang), groupsBlock, images, imagesNote];
   }
   return [
     head,
@@ -239,7 +265,7 @@ function sectionsFor(lang: Lang, i: ReportEmailInput, dash: string, name: string
     fancy ? kpiCards(f, lang) : kpiTable(f, lang),
     text.highlights.length ? h2(t.highlights) + markedList(text.highlights, "✓", "#16a34a", "#16a34a", "#f0fdf4") : "",
     text.concerns.length ? h2(t.concerns) + markedList(text.concerns, "!", "#b45309", "#f59e0b", "#fffbeb") : "",
-    moversBlock(f, lang),
+    groupsBlock,
     images,
     imagesNote,
     text.analysis ? h2(t.analysis) + p(para(text.analysis)) : "",
@@ -253,11 +279,11 @@ function textFor(lang: Lang, i: ReportEmailInput, dash: string, name: string, te
   const f = i.facts;
   const out: string[] = [t.greeting(name), ""];
   if (text) out.push(t.summary.toUpperCase(), text.executiveSummary, "");
-  else out.push(t.intro(dash, labelOf(f.period, lang), labelOf(f.prevPeriod, lang)).replace(/[“”]/g, '"'), "");
+  else out.push((f.mode === "overview" ? t.overviewIntro(dash, labelOf(f.period, lang)) : t.intro(dash, labelOf(f.period, lang), labelOf(f.prevPeriod, lang))).replace(/[“”]/g, '"'), "");
   if (f.kpis.length) {
     out.push(t.keyMetrics.toUpperCase());
     for (const k of f.kpis) {
-      const g = growthOf(k, lang);
+      const g = f.mode === "overview" ? "" : growthOf(k, lang);
       out.push(`- ${k.title}: ${k.value ? k.value.text : t.noData}${k.prev ? ` (${t.prevWord} ${k.prev.text})` : ""}${g ? `, ${g}` : ""}`);
     }
     out.push("");
@@ -271,6 +297,11 @@ function textFor(lang: Lang, i: ReportEmailInput, dash: string, name: string, te
       if (m.up.length) out.push(`  ${t.up}: ${m.up.map((x) => `${x.name} (+${x.delta.text})`).join("; ")}`);
       if (m.down.length) out.push(`  ${t.down}: ${m.down.map((x) => `${x.name} (${x.delta.text})`).join("; ")}`);
     }
+    out.push("");
+  }
+  if (f.tops?.length) {
+    out.push(t.tops.toUpperCase());
+    for (const x of f.tops) out.push(x.chart, `  ${x.items.map((i) => `${i.name} (${i.value.text})`).join("; ")}`);
     out.push("");
   }
   if (lang === "vi" && i.images.length) out.push(t.chartsInMail(i.images.length), "");

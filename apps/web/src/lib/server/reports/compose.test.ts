@@ -28,6 +28,9 @@ const GOOD = {
   highlights: ["Hà Nội dẫn đầu."], concerns: [], analysis: "", actions: ["Duy trì đà tăng."],
 };
 
+// Bài hợp lệ cho CẢ hai chế độ (chỉ nêu số kỳ hiện tại).
+const NEUTRAL = { executiveSummary: "Doanh thu đạt 700 trong kỳ.", highlights: [], concerns: [], analysis: "", actions: [] };
+
 function streamOutcome(body: unknown): ProviderOutcome {
   const line = JSON.stringify({ t: "tool", id: "c", name: "write_report", args: JSON.stringify(body) }) + "\n";
   return { ok: true, provider: "groq", stream: new ReadableStream({ start(c) { c.enqueue(new TextEncoder().encode(line)); c.close(); } }) };
@@ -54,6 +57,24 @@ const cfg: ReportConfig = { frequency: "monthly", recipient_name: "An", prompt: 
 const opts = () => ({ now: NOW, caches: createComposeCaches(), unsubscribeUrl: "https://cerno.cloud/unsubscribe?t=abc" });
 
 describe("composeReport", () => {
+  it("báo cáo TỔNG QUAN: không so sánh kỳ trước trong thư và gửi chế độ overview cho AI", async () => {
+    let sent = "";
+    const h = harness({ chat: () => async (req) => { sent = JSON.stringify(req.messages); return streamOutcome(NEUTRAL); } });
+    const r = await composeReport(h.deps, "dash", { ...cfg, report_type: "overview" }, opts());
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(sent).toContain('\\"mode\\":\\"overview\\"');
+    expect(r.email.html).toContain("700");
+    expect(r.email.html).not.toMatch(/[▲▼]/);
+    expect(r.email.html).not.toContain("Thay đổi");
+  });
+  it("tổng quan và so sánh không dùng chung bài AI trong cùng lượt chạy", async () => {
+    const h = harness({}, NEUTRAL);
+    const caches = createComposeCaches();
+    await composeReport(h.deps, "dash", cfg, { now: NOW, caches, unsubscribeUrl: "u" });
+    await composeReport(h.deps, "dash", { ...cfg, report_type: "overview" }, { now: NOW, caches, unsubscribeUrl: "u" });
+    expect(h.chatCalls).toBe(2);
+  });
   it("ráp báo cáo đầy đủ: số liệu, bài AI đã qua kiểm số, ảnh, link xem, link huỷ nhận", async () => {
     const h = harness();
     const r = await composeReport(h.deps, "dash", cfg, opts());

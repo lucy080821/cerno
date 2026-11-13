@@ -11,8 +11,10 @@ export function inlineCidImages(html: string, images: InlineImage[]): string {
 }
 
 /** Cột người dùng được ghi vào report_subscriptions (khớp column grant ở migration 0012). */
-export function subscriptionColumns(i: ReportSubscriptionInput) {
+/** `withType` = false khi cơ sở dữ liệu chưa chạy migration 0016 (chưa có cột report_type). */
+export function subscriptionColumns(i: ReportSubscriptionInput, withType = true) {
   return {
+    ...(withType ? { report_type: i.report_type } : {}),
     recipient_email: i.recipient_email,
     recipient_name: i.recipient_name,
     prompt: i.prompt,

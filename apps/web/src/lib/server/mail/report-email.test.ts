@@ -217,3 +217,42 @@ describe("ghi chú song ngữ", () => {
     expect(m.html).toContain("has no date column, so it is calculated over all the data");
   });
 });
+
+describe("buildReportEmail: báo cáo tổng quan", () => {
+  const overviewFacts: ReportFacts = {
+    ...facts,
+    mode: "overview",
+    kpis: facts.kpis.map((k) => ({ ...k, prev: null, diff: null, growthPct: null, growthText: "", dir: null, tone: "neutral" as const })),
+    movers: [],
+    tops: [{ chart: "Doanh thu theo tỉnh", dimension: "Tỉnh", metric: "Doanh thu", items: [{ name: "Hà Nội", value: n(60, "60", "60") }, { name: "Đà Nẵng", value: n(10, "10", "10") }] }],
+  };
+  const ov = buildReportEmail({ ...base, body: null, facts: overviewFacts });
+
+  it("chỉ có giá trị kỳ hiện tại: không cột kỳ trước/thay đổi, không ▲▼, không nhóm tăng giảm", () => {
+    expect(ov.html).toContain("tổng quan số liệu của dashboard");
+    expect(ov.html).toContain("overview of the figures");
+    expect(ov.html).toContain("125.430.000");
+    expect(ov.html).not.toContain("Thay đổi");
+    expect(ov.html).not.toContain("Tháng 09/2025");
+    expect(ov.html).not.toMatch(/[▲▼]/);
+    expect(ov.html).not.toContain("Nhóm tăng, giảm nhiều nhất");
+  });
+  it("có nhóm dẫn đầu (cả hai thứ tiếng)", () => {
+    expect(ov.html).toContain("Nhóm dẫn đầu");
+    expect(ov.html).toContain("Top groups");
+    expect(ov.html).toContain("Hà Nội (60)");
+    expect(ov.text).toContain("NHÓM DẪN ĐẦU");
+    expect(ov.text).not.toContain("kỳ trước");
+  });
+  it("có phần AI vẫn dùng thẻ chỉ số nhưng không có chip so sánh", () => {
+    const r = buildReportEmail({ ...base, facts: overviewFacts });
+    expect(r.html).toContain("Tóm tắt điều hành");
+    expect(r.html).not.toMatch(/[▲▼]/);
+    expect(r.html).not.toContain(" so với 100.000.000");
+  });
+  it("báo cáo so sánh (mặc định) không đổi: vẫn có cột kỳ trước và thay đổi", () => {
+    const cmp = buildReportEmail({ ...base, body: null });
+    expect(cmp.html).toContain("Thay đổi");
+    expect(cmp.html).toContain("Tháng 09/2025");
+  });
+});
