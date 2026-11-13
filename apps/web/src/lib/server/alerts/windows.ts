@@ -101,14 +101,15 @@ export function historySpans(w: AlertWindow, span: Span, lookback: number): Span
 export const spanDays = (s: Span): number => Math.round((Date.parse(s.to) - Date.parse(s.from)) / 86_400_000) + 1;
 
 /** Nhãn dễ đọc cho email và giao diện, ví dụ "hôm nay (03/11/2025)", "7 ngày qua (27/10 – 02/11/2025)". */
-export function spanLabel(w: AlertWindow, span: Span | null): string {
-  if (!span) return "toàn bộ dữ liệu";
+export function spanLabel(w: AlertWindow, span: Span | null, lang: "vi" | "en" = "vi"): string {
+  if (!span) return lang === "en" ? "all data" : "toàn bộ dữ liệu";
   const dmy = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
   const dm = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
   const range = span.from === span.to ? dmy(span.from) : `${dm(span.from)} – ${dmy(span.to)}`;
-  const name: Record<AlertWindow, string> = {
-    all: "toàn bộ", today: "hôm nay", yesterday: "hôm qua", this_week: "tuần này", this_month: "tháng này", last_7d: "7 ngày qua",
+  const names: Record<"vi" | "en", Record<AlertWindow, string>> = {
+    vi: { all: "toàn bộ", today: "hôm nay", yesterday: "hôm qua", this_week: "tuần này", this_month: "tháng này", last_7d: "7 ngày qua" },
+    en: { all: "all data", today: "today", yesterday: "yesterday", this_week: "this week", this_month: "this month", last_7d: "the last 7 days" },
   };
-  return `${name[w]} (${range})`;
+  return `${names[lang][w]} (${range})`;
 }
 

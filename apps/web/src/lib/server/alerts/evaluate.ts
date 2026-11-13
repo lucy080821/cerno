@@ -8,7 +8,8 @@ import { buildAlertEmail, type AlertEmailInput, type AlertEmailKind } from "@/li
 import { alertChartPng } from "./chart";
 import { computeAlert, computeSeries, summarize, verdictOf, type AlertComputation, type Executor } from "./compute";
 import { conditionSentence, metricLabel, thresholdText } from "@/lib/alerts/describe";
-import type { ExplainInput } from "./explain";
+import type { ExplainInput, ExplainResult } from "./explain";
+import { spanLabel } from "./windows";
 import { checkRule, type CalcInfo, type SourceInfo } from "./validate";
 
 /**
@@ -88,7 +89,7 @@ export interface AlertDeps {
   viewToken(dashboardId: string): Promise<string | null>;
   /** null = chưa cấu hình khoá link (KHÔNG được gửi: luôn phải có link huỷ nhận). */
   links(rule: RuleRow, email: string): AlertLinks | null;
-  explain?(i: ExplainInput, ownerId: string): Promise<string | null>;
+  explain?(i: ExplainInput, ownerId: string): Promise<string | ExplainResult | null>;
   origin: string;
   appName?: string;
 }
@@ -213,7 +214,7 @@ async function markError(rule: RuleRow, ctx: AlertCtx | null, message: string, d
 async function notifyCreatorOfErrorCount(rule: RuleRow, ctx: AlertCtx, message: string, deps: AlertDeps): Promise<number> {
   const email = await deps.creatorEmail(rule.created_by);
   if (!email) return 0;
-  return deliver(rule, ctx, "error", { sentence: `Luật “${rule.name}” không chạy được`, summary: null, thresholdText: null, errorText: message }, [email], deps, null, { notify: "error" });
+  return deliver(rule, ctx, "error", { sentence: `Luật “${rule.name}” không chạy được`, summary: null, thresholdText: null, errorText: message, en: { sentence: `The rule “${rule.name}” could not run`, thresholdText: null } }, [email], deps, null, { notify: "error" });
 }
 
 /** Đánh giá và (nếu cần) gửi cảnh báo cho MỘT luật không phải `stale`. */
@@ -277,7 +278,17 @@ export async function processRule(rule: RuleRow, deps: AlertDeps, ctxCache: Map<
   if (notify) {
     const summary = summarize(comp);
     const sentence = conditionSentence(draft.condition, draft.metric, comp.info.label, { calcNames: ctx.calc.map((c) => c.name), prevLabel: comp.info.prevLabel });
-    const parts: EmailParts = { sentence, summary, thresholdText: thresholdText(draft.condition) };
+    // Phần tiếng Anh của các chữ động (email song ngữ).
+    const win = draft.metric.window;
+    const labelEn = spanLabel(win, comp.info.span, "en");
+    const prevLabelEn = comp.info.prevSpan ? spanLabel(win, comp.info.prevSpan, "en") : undefined;
+    const en: NonNullable<EmailParts["en"]> = {
+      sentence: conditionSentence(draft.condition, draft.metric, labelEn, { calcNames: ctx.calc.map((c) => c.name), prevLabel: prevLabelEn, lang: "en" }),
+      thresholdText: thresholdText(draft.condition, "en"),
+      label: labelEn,
+      ...(prevLabelEn ? { prevLabel: prevLabelEn } : {}),
+    };
+    const parts: EmailParts = { sentence, summary, thresholdText: thresholdText(draft.condition), en };
     if (comp.kind === "groups") {
       const items = comp.violating.filter((v) => groupsToList.includes(v.group)).map((v) => ({
         name: v.group,
@@ -294,7 +305,12 @@ export async function processRule(rule: RuleRow, deps: AlertDeps, ctxCache: Map<
       }
     }
     if (notify === "fire" && deps.explain) {
-      parts.explain = await deps.explain({ ruleName: rule.name, sentence, summary, condition: draft.condition }, ctx.ownerId).catch(() => null);
+      const ex = await deps.explain({ ruleName: rule.name, sentence, summary, condition: draft.condition }, ctx.ownerId).catch(() => null);
+      if (typeof ex === "string") parts.explain = ex;
+      else if (ex) {
+        parts.explain = ex.vi;
+        en.explain = ex.en;
+      }
     }
     const kind: AlertEmailKind = notify === "recover" ? "recover" : notify === "remind" ? "remind" : "fire";
     sent = await deliver(rule, ctx, kind, parts, rule.recipients, deps, image, {
@@ -358,7 +374,7 @@ async function processStale(rule: RuleRow, deps: AlertDeps, ctxCache: Map<string
     const kind: AlertEmailKind = res.notify === "recover" ? "recover" : res.notify === "remind" ? "remind" : "fire";
     sent = await deliver(
       rule, ctx, kind,
-      { sentence: conditionSentence(cond, draft.metric, "", {}), summary: null, thresholdText: null, stale: { hoursAgo: hoursAgo ?? 0, sinceText: changedAt ? dmyHm(changedAt) : null } },
+      { sentence: conditionSentence(cond, draft.metric, "", {}), summary: null, thresholdText: null, en: { sentence: conditionSentence(cond, draft.metric, "", { lang: "en" }), thresholdText: null }, stale: { hoursAgo: hoursAgo ?? 0, sinceText: changedAt ? dmyHm(changedAt) : null } },
       rule.recipients, deps, null, { notify: res.notify, verdict, hoursAgo: hoursAgo === null ? null : Math.round(hoursAgo * 10) / 10 },
     );
     if ((res.notify === "fire" || res.notify === "remind") && sent === 0 && rule.recipients.length > 0) {

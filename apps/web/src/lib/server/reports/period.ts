@@ -6,6 +6,8 @@ export interface ReportSpan {
   from: string;
   to: string;
   label: string;
+  /** Nhãn tiếng Anh cho phần tiếng Anh của email song ngữ. */
+  labelEn?: string;
 }
 
 export interface ReportPeriods {
@@ -24,16 +26,16 @@ export function todayVn(now: Date): string {
 }
 
 function day(iso: string): ReportSpan {
-  return { from: iso, to: iso, label: `Ngày ${dmy(iso)}` };
+  return { from: iso, to: iso, label: `Ngày ${dmy(iso)}`, labelEn: `Day ${dmy(iso)}` };
 }
 
 function week(monday: string): ReportSpan {
   const sunday = addDays(monday, 6);
-  return { from: monday, to: sunday, label: `Tuần ${dm(monday)} – ${dmy(sunday)}` };
+  return { from: monday, to: sunday, label: `Tuần ${dm(monday)} – ${dmy(sunday)}`, labelEn: `Week ${dm(monday)} – ${dmy(sunday)}` };
 }
 
 function month(y: number, m: number): ReportSpan {
-  return { from: `${y}-${pad(m)}-01`, to: `${y}-${pad(m)}-${pad(lastDayOf(y, m))}`, label: `Tháng ${pad(m)}/${y}` };
+  return { from: `${y}-${pad(m)}-01`, to: `${y}-${pad(m)}-${pad(lastDayOf(y, m))}`, label: `Tháng ${pad(m)}/${y}`, labelEn: `Month ${pad(m)}/${y}` };
 }
 
 /**

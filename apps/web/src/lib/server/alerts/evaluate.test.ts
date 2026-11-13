@@ -77,7 +77,7 @@ describe("luật ngưỡng: gửi, thời gian chờ, nhắc lại", () => {
     expect(h.mails).toHaveLength(1);
     const m = h.mails[0];
     expect(m.to).toBe("an@example.com");
-    expect(m.subject).toBe("[Cảnh báo] Doanh thu thấp");
+    expect(m.subject).toBe("[Cảnh báo · Alert] Doanh thu thấp");
     expect(m.html).toContain("Tổng DT hôm nay (13/11/2025) thấp hơn 10.000.000");
     expect(m.html).toContain("7.000.000");
     expect(m.html).toContain('href="https://cerno.cloud/view/TOKEN"');
@@ -107,7 +107,7 @@ describe("luật ngưỡng: gửi, thời gian chờ, nhắc lại", () => {
     h.now = vn(2025, 11, 13, 16, 1);
     await run(h);
     expect(h.mails).toHaveLength(2);
-    expect(h.mails[1].subject).toBe("[Cảnh báo] Doanh thu thấp (nhắc lại)");
+    expect(h.mails[1].subject).toBe("[Cảnh báo · Alert] Doanh thu thấp (nhắc lại · reminder)");
   });
 
   it("trở lại bình thường: không gửi nếu tắt notify_recover; gửi 'Đã bình thường' nếu bật", async () => {
@@ -125,7 +125,7 @@ describe("luật ngưỡng: gửi, thời gian chờ, nhắc lại", () => {
     on.now = vn(2025, 11, 13, 23);
     await run(on);
     expect(on.mails).toHaveLength(2);
-    expect(on.mails[1].subject).toBe("[Đã bình thường] Doanh thu thấp");
+    expect(on.mails[1].subject).toBe("[Đã bình thường · Back to normal] Doanh thu thấp");
     expect(on.mails[1].images).toBeUndefined(); // thư "đã bình thường" không kèm ảnh
   });
 
@@ -235,6 +235,18 @@ describe("AI giải thích (tuỳ chọn)", () => {
     expect(h.mails).toHaveLength(3);
     expect(calls).toBe(1);
   });
+  it("thư song ngữ: câu điều kiện, nhãn khoảng đo và nhận định có bản tiếng Anh", async () => {
+    const h = harness([rule()], LOW, vn(2025, 11, 13, 10), {
+      explain: async () => ({ vi: "Doanh thu hôm nay mới đạt 7.000.000.", en: "Revenue today is only 7.000.000." }),
+    });
+    await run(h);
+    const html = h.mails[0].html;
+    expect(html).toContain("ENGLISH VERSION");
+    expect(html).toContain("Nhận định:</strong> Doanh thu hôm nay mới đạt 7.000.000.");
+    expect(html).toContain("Insight:</strong> Revenue today is only 7.000.000.");
+    expect(html).toMatch(/Total .* today \(13\/11\/2025\) is below/);
+    expect(html).toContain("Measured period");
+  });
   it("AI lỗi (ném lỗi) thì bỏ qua, thư vẫn gửi đủ nội dung", async () => {
     const h = harness([rule()], LOW, vn(2025, 11, 13, 22), { explain: async () => { throw new Error("AI chết"); } });
     await run(h);
@@ -250,7 +262,7 @@ describe("lỗi cấu hình luật", () => {
     await run(h);
     expect(h.mails).toHaveLength(1);
     expect(h.mails[0].to).toBe("chu@example.com");
-    expect(h.mails[0].subject).toBe("[Lỗi cảnh báo] Doanh thu thấp");
+    expect(h.mails[0].subject).toBe("[Lỗi cảnh báo · Alert error] Doanh thu thấp");
     expect(h.mails[0].html).toContain("DT");
     expect([...h.rules.values()][0]).toMatchObject({ last_state: "error" });
     expect([...h.rules.values()][0].last_error).toContain('Cột "DT"');
@@ -262,7 +274,7 @@ describe("lỗi cấu hình luật", () => {
     h.now = vn(2025, 11, 13, 23, 30);
     await run(h);
     expect(h.mails).toHaveLength(2);
-    expect(h.mails[1].subject).toBe("[Cảnh báo] Doanh thu thấp");
+    expect(h.mails[1].subject).toBe("[Cảnh báo · Alert] Doanh thu thấp");
     expect([...h.rules.values()][0].last_state).toBe("firing");
   });
 
@@ -359,7 +371,7 @@ describe("luật 'không có dữ liệu mới trong X giờ' (cron)", () => {
     h.changedAt = new Date(NOW.getTime() - 30 * 3_600_000).toISOString();
     const s = await evaluateStaleRules(h.deps);
     expect(s).toMatchObject({ evaluated: 1, notified: 1 });
-    expect(h.mails[0].subject).toBe("[Cảnh báo] Dữ liệu ngừng cập nhật");
+    expect(h.mails[0].subject).toBe("[Cảnh báo · Alert] Dữ liệu ngừng cập nhật");
     expect(h.mails[0].html).toContain("Không có dữ liệu mới trong 24 giờ");
     expect(h.mails[0].html).toContain("30 giờ");
     expect(h.mails[0].images).toBeUndefined();
@@ -381,7 +393,7 @@ describe("luật 'không có dữ liệu mới trong X giờ' (cron)", () => {
     h.now = new Date(NOW.getTime() + 1_200_000);
     await evaluateStaleRules(h.deps);
     expect(h.mails).toHaveLength(2);
-    expect(h.mails[1].subject).toBe("[Đã bình thường] Dữ liệu ngừng cập nhật");
+    expect(h.mails[1].subject).toBe("[Đã bình thường · Back to normal] Dữ liệu ngừng cập nhật");
   });
 
   it("chưa biết lúc dữ liệu đổi: chưa đủ dữ liệu, không gửi", async () => {
@@ -398,10 +410,10 @@ describe("luật 'không có dữ liệu mới trong X giờ' (cron)", () => {
     const h = harness([st, th], LOW, NOW);
     h.changedAt = new Date(NOW.getTime() - 100 * 3_600_000).toISOString();
     await evaluateAlertsForSource("s", h.deps);
-    expect(h.mails.map((m) => m.subject)).toEqual(["[Cảnh báo] Doanh thu thấp"]);
+    expect(h.mails.map((m) => m.subject)).toEqual(["[Cảnh báo · Alert] Doanh thu thấp"]);
     h.now = new Date(NOW.getTime() + 60_000);
     await evaluateStaleRules(h.deps);
-    expect(h.mails.map((m) => m.subject)).toEqual(["[Cảnh báo] Doanh thu thấp", "[Cảnh báo] Dữ liệu ngừng cập nhật"]);
+    expect(h.mails.map((m) => m.subject)).toEqual(["[Cảnh báo · Alert] Doanh thu thấp", "[Cảnh báo · Alert] Dữ liệu ngừng cập nhật"]);
   });
 
   it("nguồn của luật stale không thuộc dashboard → lỗi", async () => {

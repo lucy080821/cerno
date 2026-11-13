@@ -61,10 +61,10 @@ describe("runDueReports", () => {
     expect(r).toEqual({ claimed: 2, sent: 2, failed: 0, skipped: 0 });
     expect(h.order).toEqual(["an@example.com", "binh@example.com"]);
     const m = h.sent[0];
-    expect(m.subject).toBe("[Cerno] Doanh số · Tháng 10/2025");
+    expect(m.subject).toBe("[Cerno] Doanh số · Tháng 10/2025 / Month 10/2025");
     expect(m.html).toContain("Kính gửi anh/chị AN,");
     expect(m.html).toContain("https://cerno.cloud/unsubscribe?t=an");
-    expect(m.text).toContain("Huỷ nhận email này: https://cerno.cloud/unsubscribe?t=an");
+    expect(m.text).toContain("Huỷ nhận email này / Unsubscribe from this email: https://cerno.cloud/unsubscribe?t=an");
     expect(m.headers).toEqual({
       "List-Unsubscribe": "<https://cerno.cloud/api/unsubscribe?t=an>",
       "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",

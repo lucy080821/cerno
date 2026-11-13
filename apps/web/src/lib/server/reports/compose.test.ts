@@ -59,7 +59,7 @@ describe("composeReport", () => {
     const r = await composeReport(h.deps, "dash", cfg, opts());
     expect(r.ok).toBe(true);
     if (!r.ok) return;
-    expect(r.email.subject).toBe("[Cerno] Doanh số tháng · Tháng 10/2025");
+    expect(r.email.subject).toBe("[Cerno] Doanh số tháng · Tháng 10/2025 / Month 10/2025");
     expect(r.email.html).toContain("Kính gửi anh/chị An,");
     expect(r.email.html).toContain("Doanh thu đạt 700, tăng 55,6%");
     expect(r.email.html).toContain("▲ +55,6%");

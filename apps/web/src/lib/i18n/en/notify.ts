@@ -53,6 +53,17 @@ export const EN_NOTIFY: Dict = {
   "Kèm ảnh biểu đồ trong email": "Include chart images in the email",
   "Chọn tối đa {0} biểu đồ hoặc thẻ KPI (không chọn gì = tự chọn các biểu đồ)": "Pick up to {0} charts or KPI cards (none = charts are picked automatically)",
   "Thẻ KPI": "KPI card",
+  // Ghi chú trong email báo cáo song ngữ (server/reports)
+  "\"{0}\" không có cột ngày nên được tính trên toàn bộ dữ liệu, không theo kỳ.": "\"{0}\" has no date column, so it is calculated over all the data, not per period.",
+  "Một phần số liệu đã được rút gọn cho vừa độ dài báo cáo.": "Some of the figures were shortened to fit the report length.",
+  "Không có dữ liệu nào trong kỳ báo cáo.": "There is no data in the report period.",
+  "Dashboard chưa có KPI hoặc biểu đồ nào để tổng hợp số liệu.": "The dashboard has no KPIs or charts to summarize.",
+  "Phần phân tích bằng AI không có trong báo cáo này.": "The AI analysis is not included in this report.",
+  "Dashboard chưa bật link xem, nên bạn cần được mời và đăng nhập để mở dashboard.": "The dashboard's view link isn't turned on, so you need to be invited and sign in to open it.",
+  "Thẻ KPI \"{0}\" chưa có số liệu để vẽ ảnh.": "The KPI card \"{0}\" has no data to draw an image.",
+  "Biểu đồ \"{0}\" không có dữ liệu trong kỳ nên không có ảnh.": "The chart \"{0}\" has no data in the period, so it has no image.",
+  "Không vẽ được ảnh cho widget {0}.": "Couldn't draw an image for widget {0}.",
+  "Đã bỏ {0} ảnh để email không quá nặng.": "Dropped {0} images to keep the email light.",
   "Chỉ có ở gói trả phí": "Paid plan only",
   // Nâng cấp
   "Nâng cấp": "Upgrade",

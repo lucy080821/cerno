@@ -5,8 +5,8 @@ import { buildReportEmail, formatVnTime, type ReportEmailInput } from "./report-
 
 const n = (value: number, text: string, short: string): FactNumber => ({ value, text, short });
 const facts: ReportFacts = {
-  period: { from: "2025-10-01", to: "2025-10-31", label: "Tháng 10/2025" },
-  prevPeriod: { from: "2025-09-01", to: "2025-09-30", label: "Tháng 09/2025" },
+  period: { from: "2025-10-01", to: "2025-10-31", label: "Tháng 10/2025", labelEn: "Month 10/2025" },
+  prevPeriod: { from: "2025-09-01", to: "2025-09-30", label: "Tháng 09/2025", labelEn: "Month 09/2025" },
   updatedAt: "2025-11-03T02:30:00Z",
   kpis: [
     { widgetId: "a", title: "Doanh thu", value: n(125_430_000, "125.430.000", "125,4 triệu"), prev: n(100_000_000, "100.000.000", "100 triệu"),
@@ -50,7 +50,7 @@ describe("buildReportEmail: có phần AI", () => {
   const m = buildReportEmail(base);
 
   it("tiêu đề gọn có tên dashboard và kỳ", () => {
-    expect(m.subject).toBe("[Cerno] Báo cáo bán hàng · Tháng 10/2025");
+    expect(m.subject).toBe("[Cerno] Báo cáo bán hàng · Tháng 10/2025 / Month 10/2025");
   });
 
   it("đủ các phần theo đúng thứ tự bố cục", () => {
@@ -100,8 +100,8 @@ describe("buildReportEmail: có phần AI", () => {
     expect(m.text).toContain("TÓM TẮT ĐIỀU HÀNH");
     expect(m.text).toContain("- Doanh thu: 125.430.000 (kỳ trước 100.000.000), +25,4%");
     expect(m.text).toContain("- Biên: không có dữ liệu");
-    expect(m.text).toContain("Mở dashboard: https://cerno.cloud/view/abc");
-    expect(m.text).toContain("Huỷ nhận email này: https://cerno.cloud/unsubscribe?t=xyz");
+    expect(m.text).toContain("Mở dashboard / Open dashboard: https://cerno.cloud/view/abc");
+    expect(m.text).toContain("Huỷ nhận email này / Unsubscribe from this email: https://cerno.cloud/unsubscribe?t=xyz");
     expect(m.text).not.toMatch(/<[a-z]/i);
   });
 });
@@ -154,5 +154,66 @@ describe("buildReportEmail: an toàn", () => {
   });
   it("không có tên người nhận thì chào chung", () => {
     expect(buildReportEmail({ ...base, recipientName: "  " }).html).toContain("Kính gửi anh/chị,");
+  });
+});
+
+describe("buildReportEmail: song ngữ", () => {
+  const en = { executiveSummary: "Revenue reached 125.430.000, up +25,4%.", highlights: ["Hà Nội grew the most."], concerns: ["Orders fell −17,7%."], analysis: "Focus on the North: Hà Nội leads.", actions: ["Push Hà Nội."] };
+  const m = buildReportEmail({ ...base, body: { ...body, en } });
+
+  it("có phần tiếng Việt rồi tới phần tiếng Anh, ngăn bằng dải ENGLISH VERSION", () => {
+    const vi = m.html.indexOf("Tóm tắt điều hành");
+    const band = m.html.indexOf("ENGLISH VERSION");
+    const eng = m.html.indexOf("Executive summary");
+    expect(vi).toBeGreaterThan(-1);
+    expect(band).toBeGreaterThan(vi);
+    expect(eng).toBeGreaterThan(band);
+    expect(m.html).toContain("English version below");
+  });
+
+  it("phần tiếng Anh dùng bài AI tiếng Anh và nhãn tiếng Anh", () => {
+    for (const s of ["Dear Nguyễn Văn An,", "Key metrics", "Highlights", "Points to watch", "Recommended actions", "Hà Nội grew the most.", "Month 10/2025", "Open dashboard"]) {
+      expect(m.html, s).toContain(s);
+    }
+  });
+
+  it("ảnh chỉ đặt một lần (phần tiếng Việt); phần tiếng Anh trỏ lên trên", () => {
+    expect(m.html.match(/cid:chart-1@cerno\.report/g)).toHaveLength(1);
+    expect(m.html).toContain("shown in the Vietnamese section above");
+  });
+
+  it("đơn vị 'ngày' của KPI ngày được đổi thành 'days' ở phần tiếng Anh", () => {
+    const k = { ...facts.kpis[0], growthText: "+6 ngày" };
+    const r = buildReportEmail({ ...base, body: { ...body, en }, facts: { ...facts, kpis: [k] } });
+    expect(r.html).toContain("+6 ngày");
+    expect(r.html).toContain("+6 days");
+  });
+
+  it("thiếu bản AI tiếng Anh: phần tiếng Anh vẫn có số liệu nhưng không có mục do AI viết", () => {
+    const r = buildReportEmail(base); // body không có `en`
+    expect(r.html).toContain("Key metrics");
+    expect(r.html).not.toContain("Executive summary");
+  });
+
+  it("bản chữ thuần có cả hai phần và link dùng chung", () => {
+    expect(m.text).toContain("----- ENGLISH VERSION -----");
+    expect(m.text).toContain("EXECUTIVE SUMMARY");
+    expect(m.text).toContain("Revenue reached 125.430.000");
+  });
+});
+
+describe("ghi chú song ngữ", () => {
+  it("ghi chú cố định có bản tiếng Anh trong từ điển", () => {
+    const notes = [
+      'Thẻ KPI "Doanh thu" chưa có số liệu để vẽ ảnh.',
+      "Đã bỏ 2 ảnh để email không quá nặng.",
+      "Phần phân tích bằng AI không có trong báo cáo này.",
+      '"Số đơn" không có cột ngày nên được tính trên toàn bộ dữ liệu, không theo kỳ.',
+    ];
+    const m = buildReportEmail({ ...base, notes });
+    expect(m.html).toContain("The KPI card &quot;Doanh thu&quot; has no data to draw an image.");
+    expect(m.html).toContain("Dropped 2 images to keep the email light.");
+    expect(m.html).toContain("The AI analysis is not included in this report.");
+    expect(m.html).toContain("has no date column, so it is calculated over all the data");
   });
 });

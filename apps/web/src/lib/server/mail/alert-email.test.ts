@@ -11,7 +11,7 @@ const base: AlertEmailInput = {
 
 describe("buildAlertEmail: cảnh báo bật lên", () => {
   const m = buildAlertEmail(base);
-  it("tiêu đề [Cảnh báo] <tên luật>", () => expect(m.subject).toBe("[Cảnh báo] Doanh thu thấp"));
+  it("tiêu đề [Cảnh báo] <tên luật>", () => expect(m.subject).toBe("[Cảnh báo · Alert] Doanh thu thấp"));
   it("nêu chuyện gì xảy ra, giá trị so với ngưỡng, khoảng đo", () => {
     expect(m.html).toContain("Điều kiện cảnh báo đã xảy ra");
     expect(m.html).toContain("Tổng Doanh thu hôm nay (13/11/2025) thấp hơn 10.000.000.");
@@ -27,11 +27,11 @@ describe("buildAlertEmail: cảnh báo bật lên", () => {
     expect(m.html).toMatch(/href="https:\/\/cerno\.cloud\/unsubscribe\?t=unsub"[^>]*>Huỷ nhận email này/);
   });
   it("bản chữ thuần có đủ nội dung và 3 link", () => {
-    expect(m.text).toContain("CẢNH BÁO: Doanh thu thấp");
+    expect(m.text).toContain("CẢNH BÁO · ALERT: Doanh thu thấp");
     expect(m.text).toContain("- Giá trị hiện tại: 7.000.000");
-    expect(m.text).toContain("Tạm hoãn 24 giờ: https://cerno.cloud/unsubscribe?t=snooze");
-    expect(m.text).toContain("Tắt cảnh báo này: https://cerno.cloud/unsubscribe?t=mute");
-    expect(m.text).toContain("Huỷ nhận email này: https://cerno.cloud/unsubscribe?t=unsub");
+    expect(m.text).toContain("Tạm hoãn 24 giờ / Snooze 24 hours: https://cerno.cloud/unsubscribe?t=snooze");
+    expect(m.text).toContain("Tắt cảnh báo này / Turn off this alert: https://cerno.cloud/unsubscribe?t=mute");
+    expect(m.text).toContain("Huỷ nhận email này / Unsubscribe from this email: https://cerno.cloud/unsubscribe?t=unsub");
     expect(m.text).not.toMatch(/<[a-z]/i);
   });
   it("không iframe/script/form", () => {
@@ -41,13 +41,13 @@ describe("buildAlertEmail: cảnh báo bật lên", () => {
 
 describe("buildAlertEmail: các loại thư", () => {
   it("nhắc lại, đã bình thường, lỗi có tiêu đề và màu riêng", () => {
-    expect(buildAlertEmail({ ...base, kind: "remind" }).subject).toBe("[Cảnh báo] Doanh thu thấp (nhắc lại)");
+    expect(buildAlertEmail({ ...base, kind: "remind" }).subject).toBe("[Cảnh báo · Alert] Doanh thu thấp (nhắc lại · reminder)");
     expect(buildAlertEmail({ ...base, kind: "remind" }).html).toContain("Vẫn đang vi phạm điều kiện");
     const rec = buildAlertEmail({ ...base, kind: "recover" });
-    expect(rec.subject).toBe("[Đã bình thường] Doanh thu thấp");
+    expect(rec.subject).toBe("[Đã bình thường · Back to normal] Doanh thu thấp");
     expect(rec.html).toContain("Chỉ số đã trở lại bình thường");
     const err = buildAlertEmail({ ...base, kind: "error", summary: null, errorText: 'Cột "Doanh thu" không còn trong nguồn dữ liệu.' });
-    expect(err.subject).toBe("[Lỗi cảnh báo] Doanh thu thấp");
+    expect(err.subject).toBe("[Lỗi cảnh báo · Alert error] Doanh thu thấp");
     expect(err.html).toContain('Cột &quot;Doanh thu&quot; không còn trong nguồn dữ liệu.');
     expect(err.text).toContain('Cột "Doanh thu" không còn trong nguồn dữ liệu.');
   });
@@ -132,5 +132,46 @@ describe("buildAlertEmail: an toàn", () => {
     const x = buildAlertEmail({ ...base, dashboardUrl: 'https://x/"><script>1</script>', snoozeUrl: '"><b>' });
     expect(x.html).not.toContain('"><script>');
     expect(x.html).not.toContain('"><b>');
+  });
+});
+
+describe("buildAlertEmail: song ngữ", () => {
+  const m = buildAlertEmail({
+    ...base,
+    explain: "Doanh thu thấp vì cuối tuần.",
+    en: { sentence: "Total Doanh thu today (13/11/2025) is below 10.000.000", thresholdText: "below 10.000.000", label: "today (13/11/2025)", explain: "Revenue is low because of the weekend." },
+  });
+  it("có phần tiếng Việt, dải ENGLISH VERSION rồi phần tiếng Anh", () => {
+    const vi = m.html.indexOf("Điều kiện cảnh báo đã xảy ra");
+    const band = m.html.indexOf("ENGLISH VERSION");
+    const en = m.html.indexOf("The alert condition has occurred");
+    expect(vi).toBeGreaterThan(-1);
+    expect(band).toBeGreaterThan(vi);
+    expect(en).toBeGreaterThan(band);
+    expect(m.html).toContain("English version below");
+  });
+  it("câu điều kiện, nhãn, nhận định bằng tiếng Anh lấy từ `en`", () => {
+    for (const s of ["is below 10.000.000", "Current value", "Alert condition", "today (13/11/2025)", "Revenue is low because of the weekend.", "Insight:", "Open dashboard"]) {
+      expect(m.html, s).toContain(s);
+    }
+  });
+  it("3 link hành động có cả hai ngôn ngữ", () => {
+    for (const s of ["Tạm hoãn 24 giờ · Snooze 24 hours", "Tắt cảnh báo này · Turn off this alert", "Huỷ nhận email này · Unsubscribe from this email"]) {
+      expect(m.html, s).toContain(s);
+    }
+  });
+  it("ảnh chỉ đặt một lần; phần tiếng Anh trỏ lên trên", () => {
+    const c = buildAlertEmail({ ...base, chart: { cid: "alert-chart@cerno.report", alt: "x" } });
+    expect(c.html.match(/cid:alert-chart@cerno\.report/g)).toHaveLength(1);
+    expect(c.html).toContain("shown in the Vietnamese section above");
+  });
+  it("bản chữ thuần có cả hai phần", () => {
+    expect(m.text).toContain("----- ENGLISH VERSION -----");
+    expect(m.text).toContain("Insight: Revenue is low because of the weekend.");
+  });
+  it("thiếu `en` vẫn dựng được thư (giữ chữ tiếng Việt cho câu động)", () => {
+    const r = buildAlertEmail(base);
+    expect(r.html).toContain("Alert condition");
+    expect(r.html).toContain(base.sentence);
   });
 });

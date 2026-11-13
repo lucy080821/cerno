@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { AlertDraft } from "@dashboard/schema";
+import { AlertDraft, AlertMetric } from "@dashboard/schema";
 import { conditionSentence, metricLabel, thresholdText } from "./describe";
 
 const draft = (m: Record<string, unknown>, condition: unknown) =>
@@ -50,5 +50,28 @@ describe("thresholdText", () => {
     expect(thresholdText({ type: "anomaly", sensitivity: "low", lookback: 4, direction: "both" })).toBeNull();
     expect(thresholdText({ type: "stale", hours: 3 })).toBeNull();
     expect(thresholdText({ type: "per_group", inner: { type: "threshold", op: "gt", value: 2 } })).toBe("cao hơn 2");
+  });
+});
+
+describe("bản tiếng Anh (email song ngữ)", () => {
+  const m = AlertMetric.parse({ sourceId: "s", metric: { column: "Doanh thu", aggregation: "sum" }, dateColumn: "Ngày", window: "today" });
+  it("ngưỡng, thay đổi %, bất thường, không có dữ liệu mới", () => {
+    expect(conditionSentence({ type: "threshold", op: "lt", value: 10_000_000 }, m, "today (13/11/2025)", { lang: "en" }))
+      .toBe("Total Doanh thu today (13/11/2025) is below 10.000.000");
+    expect(conditionSentence({ type: "change", op: "drop_pct", value: 20, vs: "prev_period" }, m, "this week (10/11 – 13/11/2025)", { lang: "en" }))
+      .toBe("Total Doanh thu this week (10/11 – 13/11/2025) fell by 20% or more compared with the previous period");
+    expect(conditionSentence({ type: "anomaly", sensitivity: "medium", lookback: 8, direction: "up" } as never, m, "today (13/11/2025)", { lang: "en" }))
+      .toBe("Total Doanh thu today (13/11/2025) rose unusually compared with previous periods of the same kind");
+    expect(conditionSentence({ type: "stale", hours: 24 }, m, "", { lang: "en" })).toBe("No new data for 24 hours");
+  });
+  it("theo từng nhóm và ngưỡng dạng chữ", () => {
+    const g = { ...m, groupBy: "Tỉnh" };
+    expect(conditionSentence({ type: "per_group", inner: { type: "threshold", op: "gt", value: 5 } }, g, "today (13/11/2025)", { lang: "en" }))
+      .toBe("Per Tỉnh: Total Doanh thu today (13/11/2025) is above 5");
+    expect(thresholdText({ type: "threshold", op: "lt", value: 10 }, "en")).toBe("below 10");
+    expect(thresholdText({ type: "change", op: "rise_pct", value: 30, vs: "prev_period" }, "en")).toBe("rise of 30% or more");
+  });
+  it("mặc định vẫn là tiếng Việt", () => {
+    expect(thresholdText({ type: "threshold", op: "lt", value: 10 })).toBe("thấp hơn 10");
   });
 });

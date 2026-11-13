@@ -6,7 +6,7 @@ import { createNotifyToken, unsubscribeApiUrl, unsubscribeConfigured, unsubscrib
 import { liveChat, liveExec } from "@/lib/server/reports/live";
 import { mailAllowedForDashboard } from "@/lib/server/plan";
 import { loadAlertContext } from "./context";
-import { explainAlert } from "./explain";
+import { explainBilingual } from "./explain";
 import type { AlertCtx, AlertDeps, RuleRow } from "./evaluate";
 
 /** Nối các phụ thuộc thật (DB service role, SMTP, AI) cho việc chạy luật cảnh báo. Chỉ chạy ở server. */
@@ -101,6 +101,6 @@ export function liveAlertDeps(origin: string = siteUrl()): AlertDeps {
       };
     },
 
-    explain: aiConfigured() ? (i, ownerId) => explainAlert(liveChat(ownerId), i) : undefined,
+    explain: aiConfigured() ? (i, ownerId) => explainBilingual(liveChat(ownerId), i) : undefined,
   };
 }
