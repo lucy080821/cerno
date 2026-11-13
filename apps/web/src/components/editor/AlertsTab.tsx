@@ -13,6 +13,8 @@ import { conditionSentence } from "@/lib/alerts/describe";
 import { isPlanLimit } from "@/lib/notify/plan-error";
 import { Spinner } from "@/components/Spinner";
 import { useDialog } from "@/components/ui/DialogProvider";
+import { UpgradeNote } from "@/components/upgrade/UpgradeNote";
+import { showPlanLimit } from "@/lib/upgrade";
 import { Icon } from "./fields";
 import s from "./editor.module.css";
 import n from "./notify.module.css";
@@ -112,7 +114,7 @@ export function AlertsTab({ dashboardId, prefill }: { dashboardId: string; prefi
       setBusy(null);
     }
     // Chạm giới hạn của gói: hộp thoại riêng (hiện SAU khi lớp phủ "đang xử lý" đã tắt).
-    if (limit) await dialog.alert({ title: "Đã chạm giới hạn của gói", message: limit });
+    if (limit) await showPlanLimit(dialog, limit);
   };
 
   const patch = (p: Partial<AlertForm>) => {
@@ -469,6 +471,7 @@ export function AlertsTab({ dashboardId, prefill }: { dashboardId: string; prefi
         </p>
       </div>
 
+      {data.plan === "free" && <UpgradeNote />}
       {!data.mailReady && <p className={n.warn}>Máy chủ chưa cấu hình gửi email nên các cảnh báo chưa được gửi đi. Bạn vẫn có thể tạo và kiểm tra luật.</p>}
       {full && <p className={n.warn}>{`Đã đạt giới hạn ${data.limit} cảnh báo cho dashboard này.`}</p>}
 

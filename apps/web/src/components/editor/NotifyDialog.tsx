@@ -12,6 +12,8 @@ import {
 } from "@/lib/notify/format";
 import { isPlanLimit } from "@/lib/notify/plan-error";
 import { Spinner } from "@/components/Spinner";
+import { UpgradeNote } from "@/components/upgrade/UpgradeNote";
+import { showPlanLimit } from "@/lib/upgrade";
 import { useDialog } from "@/components/ui/DialogProvider";
 import { AlertsTab } from "./AlertsTab";
 import type { AlertPrefill } from "@/lib/notify/alert-form";
@@ -67,7 +69,7 @@ function ReportsTab({ dashboardId, widgets }: { dashboardId: string; widgets: Re
       setBusy(null);
     }
     // Chạm giới hạn của gói: hộp thoại riêng (hiện SAU khi lớp phủ "đang xử lý" đã tắt).
-    if (limit) await dialog.alert({ title: "Đã chạm giới hạn của gói", message: limit });
+    if (limit) await showPlanLimit(dialog, limit);
   };
 
   const openNew = () => {
@@ -368,6 +370,8 @@ function ReportsTab({ dashboardId, widgets }: { dashboardId: string; widgets: Re
           <Icon name="plus" size={13} /> Thêm
         </button>
       </div>
+
+      {data.plan === "free" && <UpgradeNote />}
 
       {!data.mailReady && (
         <p className={n.warn}>Máy chủ chưa cấu hình gửi email nên các báo cáo chưa được gửi đi. Bạn vẫn có thể tạo lịch và xem trước.</p>
