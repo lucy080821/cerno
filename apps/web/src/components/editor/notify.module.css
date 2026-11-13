@@ -188,14 +188,86 @@
   background: rgba(255, 255, 255, 0.08);
 }
 
+.pickHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.pickCount {
+  flex: none;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text);
+}
+
 .widgets {
   display: grid;
-  gap: 4px;
-  max-height: 150px;
+  gap: 6px;
+  max-height: 240px;
   overflow-y: auto;
-  padding: 6px 8px;
+  padding: 2px;
+}
+
+.pick {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 8px 10px;
   border: 1px solid var(--line);
   border-radius: 8px;
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.3;
+  cursor: pointer;
+}
+
+.pick:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.pickOn {
+  border-color: var(--brand-a, #6d5efc);
+  background: rgba(109, 94, 252, 0.14);
+}
+
+.pickOff {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Ghi đè `.field input { width: 100% }` (ô chọn nằm trong .field nên bị kéo giãn, đẩy chữ sang phải). */
+.field .pick input {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--brand-a, #6d5efc);
+}
+
+.pickLabel {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pickTag {
+  flex: none;
+  padding: 2px 8px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.pickTagKpi {
+  background: rgba(25, 195, 177, 0.16);
+  color: var(--brand-b, #19c3b1);
 }
 
 .check {

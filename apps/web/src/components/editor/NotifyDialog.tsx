@@ -246,15 +246,20 @@ function ReportsTab({ dashboardId, widgets }: { dashboardId: string; widgets: Re
         </label>
         {form.include_images && widgets.length > 0 && (
           <div className={n.field}>
-            <span>{`Chọn tối đa ${MAX_WIDGETS} biểu đồ hoặc thẻ KPI (không chọn gì = tự chọn các biểu đồ)`}</span>
+            <div className={n.pickHead}>
+              <span>{`Chọn tối đa ${MAX_WIDGETS} biểu đồ hoặc thẻ KPI (không chọn gì = tự chọn các biểu đồ)`}</span>
+              <span className={n.pickCount}>{`Đã chọn ${form.widget_ids.length}/${MAX_WIDGETS}`}</span>
+            </div>
             <div className={n.widgets}>
               {widgets.map((w) => {
                 const on = form.widget_ids.includes(w.id);
+                const full = !on && form.widget_ids.length >= MAX_WIDGETS;
                 return (
-                  <label key={w.id} className={n.check}>
-                    <input type="checkbox" checked={on} disabled={busy !== null || (!on && form.widget_ids.length >= MAX_WIDGETS)}
+                  <label key={w.id} className={`${n.pick} ${on ? n.pickOn : ""} ${full ? n.pickOff : ""}`}>
+                    <input type="checkbox" checked={on} disabled={busy !== null || full}
                       onChange={() => patch({ widget_ids: on ? form.widget_ids.filter((x) => x !== w.id) : [...form.widget_ids, w.id] })} />
-                    <span>{w.label}{w.kind === "kpi" ? " (thẻ KPI)" : ""}</span>
+                    <span className={n.pickLabel}>{w.label}</span>
+                    <span className={`${n.pickTag} ${w.kind === "kpi" ? n.pickTagKpi : ""}`}>{w.kind === "kpi" ? "Thẻ KPI" : "Biểu đồ"}</span>
                   </label>
                 );
               })}
