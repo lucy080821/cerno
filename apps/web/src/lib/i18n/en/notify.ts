@@ -53,6 +53,7 @@ export const EN_NOTIFY: Dict = {
   "Kèm ảnh biểu đồ trong email": "Include chart images in the email",
   "Chọn tối đa {0} biểu đồ hoặc thẻ KPI (không chọn gì = tự chọn các biểu đồ)": "Pick up to {0} charts or KPI cards (none = charts are picked automatically)",
   "Thẻ KPI": "KPI card",
+  "Chỉ có ở gói trả phí": "Paid plan only",
   // Nâng cấp
   "Nâng cấp": "Upgrade",
   "Bạn đang dùng gói Miễn phí.": "You're on the Free plan.",

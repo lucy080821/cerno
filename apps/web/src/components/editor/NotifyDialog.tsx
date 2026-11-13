@@ -274,7 +274,7 @@ function ReportsTab({ dashboardId, widgets }: { dashboardId: string; widgets: Re
         </label>
         <div className={n.chips}>
           {PROMPT_SUGGESTIONS.map((p) => (
-            <button key={p.label} type="button" className={n.chip} disabled={busy !== null || !data.limits.aiReports}
+            <button key={p.label} type="button" className={n.chip} disabled={busy !== null || !data.limits.aiReports} title={data.limits.aiReports ? undefined : "Chỉ có ở gói trả phí"}
               onClick={() => patch({ prompt: appendSuggestion(form.prompt, p.text) })}>
               + {p.label}
             </button>

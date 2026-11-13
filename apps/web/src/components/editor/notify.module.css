@@ -184,8 +184,18 @@
   cursor: pointer;
 }
 
-.chip:hover {
+.chip:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.08);
+}
+
+.chip:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.field textarea:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .pickHead {
