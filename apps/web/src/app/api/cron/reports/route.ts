@@ -6,6 +6,8 @@ import { liveRunDeps } from "@/lib/server/reports/live";
 import { runDueReports } from "@/lib/server/reports/run-due";
 import { evaluateStaleRules } from "@/lib/server/alerts/evaluate";
 import { liveAlertDeps } from "@/lib/server/alerts/live";
+import { purgeOldReportImages } from "@/lib/server/mail/hosted-images";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -50,7 +52,14 @@ async function handle(request: NextRequest) {
     } catch {
       stale = { error: "stale_failed" };
     }
-    return NextResponse.json({ ...summary, sync, stale });
+    // Dọn ảnh biểu đồ cũ trong email (làm hết sức, không ảnh hưởng kết quả).
+    let purged = 0;
+    try {
+      purged = await purgeOldReportImages(createAdminClient());
+    } catch {
+      /* bỏ qua */
+    }
+    return NextResponse.json({ ...summary, sync, stale, purgedImages: purged });
   } catch (e) {
     return NextResponse.json({ error: e instanceof Error ? e.message : "Lỗi" }, { status: 500 });
   }

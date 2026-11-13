@@ -132,7 +132,7 @@ export default function PrivacyPage() {
           đóng hoặc xóa).
         </p>
         <p>
-          Báo cáo định kỳ qua email: khi bạn bật, máy chủ tính số liệu của dashboard rồi gửi tới nhà cung cấp AI một bản tóm tắt gồm tên chỉ số, tên nhóm (ví dụ tên tỉnh, tên sản phẩm), số liệu đã gộp của kỳ báo cáo và kỳ trước, cùng yêu cầu riêng của người nhận (nếu có) để AI viết phần phân tích. Chúng tôi không gửi toàn bộ bảng dữ liệu hay dòng dữ liệu thô, và ảnh biểu đồ trong email do chúng tôi tự tạo, không gửi cho AI. Email báo cáo gửi qua Gmail tới địa chỉ người nhận.
+          Báo cáo định kỳ qua email: khi bạn bật, máy chủ tính số liệu của dashboard rồi gửi tới nhà cung cấp AI một bản tóm tắt gồm tên chỉ số, tên nhóm (ví dụ tên tỉnh, tên sản phẩm), số liệu đã gộp của kỳ báo cáo và kỳ trước, cùng yêu cầu riêng của người nhận (nếu có) để AI viết phần phân tích. Chúng tôi không gửi toàn bộ bảng dữ liệu hay dòng dữ liệu thô, và ảnh biểu đồ trong email do chúng tôi tự tạo, không gửi cho AI. Email báo cáo gửi qua Gmail tới địa chỉ người nhận. Ảnh biểu đồ trong email được lưu tạm ở kho ảnh công khai theo đường dẫn ngẫu nhiên và tự xóa sau 30 ngày; ai có đường dẫn đó (nằm trong email) đều xem được ảnh.
         </p>
       </Section>
 

@@ -1,4 +1,6 @@
 import nodemailer, { type Transporter } from "nodemailer";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { hostImages, useHostedUrls } from "./hosted-images";
 import { clean } from "./invite-email";
 
 /**
@@ -65,16 +67,30 @@ export interface MailMessage {
 export async function sendMail(m: MailMessage): Promise<SendResult> {
   const c = config();
   if (!c) return { ok: false, code: "not_configured" };
+  // Ảnh nhúng bằng link HTTPS (Gmail trên điện thoại hay lỗi ảnh đính kèm CID); không đưa lên được thì giữ ảnh đính kèm.
+  let html = m.html;
+  let attach = m.images;
+  if (m.images?.length) {
+    try {
+      const urls = await hostImages(createAdminClient(), m.images);
+      if (urls) {
+        html = useHostedUrls(m.html, urls);
+        attach = undefined;
+      }
+    } catch {
+      /* giữ ảnh đính kèm */
+    }
+  }
   try {
     await transporter(c).sendMail({
       from: { name: c.fromName, address: c.user },
       to: m.to,
       replyTo: m.replyTo,
       subject: m.subject,
-      html: m.html,
+      html,
       text: m.text,
       headers: m.headers,
-      attachments: m.images?.map((i) => ({
+      attachments: attach?.map((i) => ({
         filename: i.filename,
         content: i.content,
         cid: i.cid,
