@@ -1,4 +1,4 @@
-import { getPages, pageIdOf, resolvePageId, widgetsOnPage, type ChartConfig, type Dashboard, type FieldBinding, type Widget } from "@dashboard/schema";
+import { getPages, pageIdOf, resolvePageId, sourceTitle, widgetsOnPage, type ChartConfig, type Dashboard, type FieldBinding, type Widget } from "@dashboard/schema";
 import {
   aggregate, applyFilters, bindingLabel, forecastFailText, formatDay, pivotSeries, planChartForecast, summarizeForecast,
   type AggregatedTable, type MetricKind, type Row,
@@ -228,7 +228,7 @@ export async function buildAiContext(
         return { cot: c.name, donVi: unitOf(c, c.name), tong: round(sum), trungBinh: round(vals.length ? sum / vals.length : 0), min: round(Math.min(...vals)), max: round(Math.max(...vals)) };
       });
     return {
-      ten: src.type === "sample" ? src.name : src.sheetName,
+      ten: sourceTitle(src),
       soDong: remote ? useData.getState().meta[src.id]?.rowCount ?? rows.length : rows.length,
       ...(remote ? { ghiChu: "nguồn lớn: không có thống kê từng cột, chỉ có số liệu đã gộp của từng widget và vài dòng mẫu" } : {}),
       cot: columns.map((c) => {

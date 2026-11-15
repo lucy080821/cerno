@@ -45,7 +45,7 @@ export async function loadDashboard(id: string): Promise<LoadedDashboard | null>
 
   // Chỉ cho đọc nguồn thuộc CHÍNH workspace của dashboard (người được mời quyền sửa có thể đã thêm id nguồn của người khác vào doc).
   const sources = ((d.doc as { sources?: { id?: unknown; type?: unknown }[] })?.sources ?? [])
-    .filter((s) => s?.type === "google_sheets" && typeof s.id === "string")
+    .filter((s) => (s?.type === "google_sheets" || s?.type === "upload") && typeof s.id === "string")
     .map((s) => s.id as string);
   let updatedAt: string | null = null;
   if (sources.length) {

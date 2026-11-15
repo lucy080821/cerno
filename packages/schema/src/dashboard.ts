@@ -280,6 +280,17 @@ export const GoogleSheetsSource = z.object({
   columns: z.array(Column),
 });
 
+/**
+ * Dữ liệu người dùng tải lên (file Excel/CSV), lưu trong `source_rows` như Google Sheets nhưng không có gì để đọc lại từ xa:
+ * muốn cập nhật thì tải file mới lên. Hiện chỉ có một nguồn "Đơn hàng đa kênh" cho mỗi workspace (xem lib/orders).
+ */
+export const UploadSource = z.object({
+  id: z.string(),
+  type: z.literal("upload"),
+  name: z.string(),
+  columns: z.array(Column),
+});
+
 /** Dữ liệu mẫu có sẵn trong app, dùng để thử editor khi chưa nối nguồn thật. */
 export const SampleSource = z.object({
   id: z.string(),
@@ -288,7 +299,13 @@ export const SampleSource = z.object({
   columns: z.array(Column),
 });
 
-export const DataSource = z.discriminatedUnion("type", [GoogleSheetsSource, SampleSource]);
+export const DataSource = z.discriminatedUnion("type", [GoogleSheetsSource, UploadSource, SampleSource]);
+
+/** Nguồn có dữ liệu lưu trong `source_rows` (Google Sheets hoặc file tải lên), khác với dữ liệu mẫu có sẵn trong app. */
+export const isStoredSource = (s: { type: string }): boolean => s.type !== "sample";
+
+/** Tên hiển thị của nguồn (tên tab với Google Sheets, tên đặt với các nguồn khác). */
+export const sourceTitle = (s: DataSource): string => (s.type === "google_sheets" ? s.sheetName : s.name);
 
 /**
  * Trường tính toán: cột mới tạo từ công thức trên các cột của một nguồn dữ liệu (xem chart-engine/formula.ts).

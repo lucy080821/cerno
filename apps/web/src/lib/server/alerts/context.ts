@@ -1,5 +1,5 @@
 import "server-only";
-import { Dashboard, type CalculatedField } from "@dashboard/schema";
+import { Dashboard, isStoredSource, type CalculatedField } from "@dashboard/schema";
 import { calcDefsFor, type CalcFieldDef } from "@dashboard/chart-engine";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { loadDashboard } from "@/lib/server/reports/live";
@@ -28,7 +28,7 @@ export async function loadAlertContext(dashboardId: string): Promise<AlertContex
   if (!parsed.success) return null;
   const doc = parsed.data;
 
-  const ids = doc.sources.filter((s) => s.type === "google_sheets").map((s) => s.id);
+  const ids = doc.sources.filter(isStoredSource).map((s) => s.id);
   const sources: AlertContext["sources"] = [];
   if (ids.length) {
     const { data } = await createAdminClient().from("data_sources").select("id, name, sheet_name, columns").in("id", ids);

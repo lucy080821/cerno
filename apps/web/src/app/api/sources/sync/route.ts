@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { GoogleAuthError } from "@/lib/google/api";
 import { syncSource } from "@/lib/google/sync";
 import { MANUAL_MIN_SECONDS } from "@/lib/google/constants";
+import { isUploadId } from "@/lib/orders/canonical";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -23,10 +24,13 @@ export async function POST(request: NextRequest) {
   // RLS: chỉ thấy nguồn thuộc workspace của mình.
   const { data: src } = await supabase
     .from("data_sources")
-    .select("id, workspace_id, last_synced_at")
+    .select("id, workspace_id, spreadsheet_id, last_synced_at")
     .eq("id", sourceId)
     .maybeSingle();
   if (!src) return NextResponse.json({ error: "Không tìm thấy nguồn" }, { status: 404 });
+  if (isUploadId(src.spreadsheet_id)) {
+    return NextResponse.json({ error: "Nguồn này là file tải lên: hãy tải file mới lên để cập nhật." }, { status: 400 });
+  }
 
   const { data: canEdit } = await supabase.rpc("can_edit", { ws: src.workspace_id });
   if (!canEdit) return NextResponse.json({ error: "Bạn không có quyền sửa" }, { status: 403 });

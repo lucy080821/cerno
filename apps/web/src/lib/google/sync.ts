@@ -5,10 +5,10 @@ import { hashValues, sheetToTable, type InferredColumn } from "./sheet-data";
 import { isDue } from "./constants";
 import { MAX_ROWS_PER_WORKSPACE } from "@/lib/limits";
 import { invalidateSourceCache } from "@/lib/server/row-cache";
+import { writeSourceRows } from "@/lib/server/source-write";
+import { evaluateAlertsAfterChange } from "@/lib/server/alerts/after-change";
+import { isUploadId } from "@/lib/orders/canonical";
 
-const CHUNK = 2000;
-/** Số lần ghi song song khi nạp nguồn lớn (đủ nhanh, không dồn dập lên DB). */
-const WRITE_CONCURRENCY = 4;
 /** Mỗi lần bộ hẹn giờ chạy chỉ xử lý tối đa bấy nhiêu nguồn, để không vượt thời gian cho phép của một request. */
 const MAX_PER_RUN = 20;
 
@@ -38,6 +38,7 @@ export async function syncSource(sourceId: string, userId: string, accessToken?:
     .eq("id", sourceId)
     .single();
   if (error || !src) throw new Error("Không tìm thấy nguồn dữ liệu");
+  if (isUploadId(src.spreadsheet_id)) throw new Error("Nguồn này là file tải lên, không có gì để đồng bộ: hãy tải file mới lên.");
 
   // Ghi nhận lần thử trước khi gọi Google: nếu tiến trình chết giữa chừng thì lần sau vẫn tôn trọng thời gian chờ.
   await db.from("data_sources").update({ last_attempt_at: new Date().toISOString() }).eq("id", sourceId);
@@ -70,25 +71,7 @@ export async function syncSource(sourceId: string, userId: string, accessToken?:
     const truncated = table.truncated || quotaCut;
     const hash = quotaCut ? `${baseHash}:q${allowed}` : baseHash;
 
-    // Ghi từng đoạn, vài đoạn song song (nguồn 200.000 dòng = 100 đoạn: tuần tự sẽ quá chậm).
-    const starts: number[] = [];
-    for (let i = 0; i < rows.length; i += CHUNK) starts.push(i);
-    let next = 0;
-    let failure: string | null = null;
-    await Promise.all(
-      Array.from({ length: Math.min(WRITE_CONCURRENCY, starts.length) }, async () => {
-        while (!failure && next < starts.length) {
-          const i = starts[next++];
-          const chunk = rows.slice(i, i + CHUNK).map((data, j) => ({ source_id: sourceId, row_index: i + j, data }));
-          const up = await db.from("source_rows").upsert(chunk, { onConflict: "source_id,row_index" });
-          if (up.error) failure = up.error.message;
-        }
-      }),
-    );
-    if (failure) throw new Error(failure);
-    // Sheet ngắn lại: bỏ các dòng thừa ở cuối.
-    const trim = await db.from("source_rows").delete().eq("source_id", sourceId).gte("row_index", rows.length);
-    if (trim.error) throw new Error(trim.error.message);
+    await writeSourceRows(db, sourceId, rows);
 
     // Dấu vân tay ghi sau cùng: nếu bước nào ở trên lỗi thì lần sau vẫn ghi lại đầy đủ.
     await db
@@ -110,16 +93,8 @@ export async function syncSource(sourceId: string, userId: string, accessToken?:
     // Mốc "dữ liệu thật sự đổi" (khác last_synced_at) cho luật cảnh báo "không có dữ liệu mới". Ghi riêng và bỏ qua lỗi:
     // nếu migration 0013 chưa chạy thì đồng bộ vẫn hoạt động bình thường.
     await db.from("data_sources").update({ data_changed_at: syncedAt }).eq("id", sourceId);
-    // Chạy các luật cảnh báo của nguồn. Lỗi cảnh báo KHÔNG được làm hỏng đồng bộ (bên trong đã bắt lỗi, ở đây bắt thêm cho chắc).
-    try {
-      const [{ evaluateAlertsForSource }, { liveAlertDeps }] = await Promise.all([
-        import("@/lib/server/alerts/evaluate"),
-        import("@/lib/server/alerts/live"),
-      ]);
-      await evaluateAlertsForSource(sourceId, liveAlertDeps());
-    } catch (e) {
-      console.error("[sync] alert evaluation failed:", e instanceof Error ? e.message : e);
-    }
+    // Chạy các luật cảnh báo của nguồn (lỗi bên trong đã được bắt, không làm hỏng đồng bộ).
+    await evaluateAlertsAfterChange(sourceId);
     return { columns, rowCount: rows.length, truncated, changed: true, syncedAt };
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Lỗi không xác định";
@@ -143,6 +118,7 @@ export async function syncDueSources(): Promise<DueSyncSummary> {
   const { data, error } = await db
     .from("data_sources")
     .select("id, created_by, sync_interval_minutes, last_synced_at, last_attempt_at")
+    .not("spreadsheet_id", "like", "upload:%")
     .order("last_synced_at", { ascending: true, nullsFirst: true })
     .limit(500);
   if (error) throw new Error(error.message);

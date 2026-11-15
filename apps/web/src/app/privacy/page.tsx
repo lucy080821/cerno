@@ -21,7 +21,7 @@ export default function PrivacyPage() {
     <LegalShell title="Chính sách quyền riêng tư">
       <Section id="gioi-thieu" title="1. Giới thiệu">
         <p>
-          {name} là ứng dụng giúp bạn thiết kế dashboard từ dữ liệu của chính bạn (hiện là Google Sheets), xem trên web và
+          {name} là ứng dụng giúp bạn thiết kế dashboard từ dữ liệu của chính bạn (Google Sheets, hoặc file đơn hàng Excel/CSV bạn tải lên), xem trên web và
           điện thoại. Dịch vụ do <strong>{site.legal.operator}</strong> vận hành (“chúng tôi”). Chính sách này giải thích chúng
           tôi thu thập dữ liệu gì, dùng để làm gì, chia sẻ với ai và bạn có những quyền nào. Dùng {name} nghĩa là bạn đã
           đọc chính sách này và <Link href="/terms">Điều khoản sử dụng</Link>.
@@ -82,12 +82,26 @@ export default function PrivacyPage() {
           Hiện {name} miễn phí nên chúng tôi <strong>không thu thông tin thanh toán</strong>, không dùng cookie quảng cáo và
           chưa dùng công cụ phân tích hành vi. Nếu sau này thay đổi, chúng tôi sẽ cập nhật chính sách này trước khi áp dụng.
         </p>
+
+        <h3>2.6. File đơn hàng bạn tải lên (Excel/CSV)</h3>
+        <p>
+          Khi bạn tải lên file đơn hàng (ví dụ file xuất từ Shopee hoặc TikTok Shop), máy chủ của chúng tôi đọc file để nhận diện
+          cột. <strong>File gốc không được lưu.</strong> Chỉ các cột cần cho biểu đồ được giữ lại trong cơ sở dữ liệu: kênh bán, mã đơn,
+          ngày đặt, trạng thái, SKU, tên sản phẩm, phân loại, số lượng, thành tiền, phí sàn (nếu có), tỉnh/thành và phương thức
+          thanh toán.
+        </p>
+        <p>
+          Tên, số điện thoại và địa chỉ của người mua <strong>không được lưu và không được hiển thị</strong>, trừ khi chính bạn chọn một
+          cột như vậy làm cột dữ liệu khác. Đây là dữ liệu của bạn, không phải dữ liệu từ Google: các cam kết ở mục 4 về dữ liệu
+          Google không áp dụng riêng cho nó, nhưng mục 3, 5, 6 và 7 áp dụng như với mọi dữ liệu khác của bạn.
+        </p>
       </Section>
 
       <Section id="muc-dich" title="3. Chúng tôi dùng dữ liệu để làm gì">
         <ul>
           <li>Đăng nhập, nhận diện bạn và giữ dashboard của bạn riêng tư.</li>
           <li>Đọc dữ liệu từ các file Google Sheets bạn đã chọn và vẽ thành biểu đồ, bảng, KPI.</li>
+          <li>Đọc file đơn hàng bạn tải lên, gộp các kênh bán và vẽ thành biểu đồ, bảng, KPI.</li>
           <li>Chạy các tính năng bạn bật: tự cập nhật dữ liệu, trợ lý AI, chia sẻ và thông báo (khi có).</li>
           <li>Bảo vệ dịch vụ: chống lạm dụng, điều tra lỗi bảo mật, tuân thủ pháp luật.</li>
           <li>Trả lời khi bạn liên hệ hỗ trợ.</li>
@@ -163,6 +177,7 @@ export default function PrivacyPage() {
         <ul>
           <li>Dashboard: lưu cho tới khi bạn xóa. Xóa dashboard trong ứng dụng là xóa khỏi cơ sở dữ liệu của chúng tôi.</li>
           <li>Bản sao dữ liệu Google Sheets: lưu cho tới khi bạn xóa nguồn dữ liệu (nút “Xóa nguồn” ở trang quản lý) hoặc xóa tài khoản.</li>
+          <li>Dữ liệu đơn hàng từ file bạn tải lên: lưu cho tới khi bạn xóa nguồn “Đơn hàng đa kênh” (nút “Xóa nguồn” ở trang quản lý) hoặc xóa tài khoản. File gốc không được lưu.</li>
           <li>Mã làm mới Google: lưu cho tới khi bạn xóa tài khoản hoặc thu hồi quyền ở Google (khi đó chúng tôi không đọc thêm được dữ liệu mới).</li>
           <li>Ảnh bạn tải lên: lưu cho tới khi bạn xóa tài khoản hoặc yêu cầu xóa.</li>
           <li>

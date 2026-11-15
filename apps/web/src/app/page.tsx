@@ -247,7 +247,7 @@ const FAQ: Array<{ q: string; a: string }> = [
   },
   {
     q: "Ngoài Google Sheets còn kết nối được nguồn nào khác không?",
-    a: "Hiện chỉ hỗ trợ Google Sheets. Excel, CSV và cơ sở dữ liệu chưa có.",
+    a: "Có file đơn hàng Excel hoặc CSV: tải file xuất từ Shopee, TikTok Shop (hoặc file tự ghi) lên, Cerno gộp các kênh bán vào một dashboard. Kết nối trực tiếp với sàn hoặc cơ sở dữ liệu thì chưa có.",
   },
 ];
 
@@ -546,7 +546,7 @@ export default function HomePage() {
             <Link href="/" className="logo" aria-label={site.name}>
               <Brand size={26} tone="strong" />
             </Link>
-            <p className={s.footAbout}>{site.tagline}. Dùng Google Sheets làm nguồn dữ liệu.</p>
+            <p className={s.footAbout}>{site.tagline}. Dùng Google Sheets hoặc file đơn hàng làm nguồn dữ liệu.</p>
           </div>
           <nav aria-label="Sản phẩm">
             <h3>Sản phẩm</h3>

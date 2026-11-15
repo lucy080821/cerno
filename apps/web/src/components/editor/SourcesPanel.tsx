@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { isStoredSource, sourceTitle } from "@dashboard/schema";
 import { useEditor } from "@/lib/editor/store";
 import { LOCAL_ROW_LIMIT, useData } from "@/lib/editor/data-store";
 import { fetchSources, loadRows, syncNow, toDocSource, type RemoteSource } from "@/lib/editor/remote-data";
@@ -61,18 +62,19 @@ export function SourcesPanel() {
     <>
       {doc.sources.map((src, i) => {
         const sheet = src.type === "google_sheets";
+        const stored = isStoredSource(src);
         const st = status[src.id];
         // Danh sách đã tải xong mà không còn nguồn này: nó đã bị xóa khỏi tài khoản (ở trang quản lý).
-        const deleted = sheet && Array.isArray(remote) && !remote.some((r) => r.id === src.id);
+        const deleted = stored && Array.isArray(remote) && !remote.some((r) => r.id === src.id);
         return (
           <div key={src.id} className={s.sourceCard}>
-            <strong>{src.type === "sample" ? src.name : src.sheetName}</strong>
+            <strong>{sourceTitle(src)}</strong>
             <span>
-              {sheet ? "Google Sheets" : "Dữ liệu mẫu"} · {src.columns.length} cột
-              {sheet && meta[src.id] ? ` · ${meta[src.id].rowCount.toLocaleString("vi-VN")} dòng` : ""}
-              {sheet && (meta[src.id]?.rowCount ?? 0) > LOCAL_ROW_LIMIT ? " (nguồn lớn: máy chủ tính số liệu)" : ""}
+              {sheet ? "Google Sheets" : src.type === "upload" ? "File tải lên" : "Dữ liệu mẫu"} · {src.columns.length} cột
+              {stored && meta[src.id] ? ` · ${meta[src.id].rowCount.toLocaleString("vi-VN")} dòng` : ""}
+              {stored && (meta[src.id]?.rowCount ?? 0) > LOCAL_ROW_LIMIT ? " (nguồn lớn: máy chủ tính số liệu)" : ""}
               {i === 0 ? " · nguồn chính" : ""}
-              {sheet && syncedAt[src.id] ? ` · cập nhật ${timeAgo(syncedAt[src.id])}` : ""}
+              {stored && syncedAt[src.id] ? ` · cập nhật ${timeAgo(syncedAt[src.id])}` : ""}
               {deleted ? " · nguồn đã bị xóa khỏi tài khoản" : ""}
               {st === "loading" ? <> · <Spinner size={11} inline />đang tải…</> : ""}
               {st === "error" ? " · không tải được dữ liệu" : ""}
@@ -86,7 +88,7 @@ export function SourcesPanel() {
                   {syncing === src.id ? <><Spinner size={12} inline />Đang cập nhật…</> : "Cập nhật từ Google Sheets"}
                 </button>
               )}
-              {sheet && (
+              {stored && (
                 <button
                   className={`${s.smallBtn} ${s.danger}`}
                   disabled={usedBy(src.id)}
@@ -107,8 +109,8 @@ export function SourcesPanel() {
       {remote === null && <p className={s.hint}>Không lấy được danh sách Google Sheets (chưa đăng nhập hoặc lỗi mạng).</p>}
       {remote && available.length > 0 && (
         <div className={`${s.btnRow} ${s.sourceAdd}`}>
-          <select className={`${s.input} ${s.sourceSelect}`} value={pick} onChange={(e) => setPick(e.target.value)} aria-label="Chọn Google Sheets">
-            <option value="">Thêm Google Sheets…</option>
+          <select className={`${s.input} ${s.sourceSelect}`} value={pick} onChange={(e) => setPick(e.target.value)} aria-label="Chọn nguồn dữ liệu">
+            <option value="">Thêm nguồn dữ liệu…</option>
             {available.map((r) => (
               <option key={r.id} value={r.id}>{r.name ?? r.sheet_name} ({r.row_count} dòng)</option>
             ))}

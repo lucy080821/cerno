@@ -4,6 +4,7 @@ import { MAX_PAGES } from "@dashboard/schema";
 import { LegalShell, Section } from "@/components/legal/Legal";
 import { AUTO_SYNC_MINUTES } from "@/lib/google/constants";
 import { MAX_CELLS, MAX_COLUMNS, MAX_ROWS } from "@/lib/google/sheet-data";
+import { MAX_UPLOAD_BYTES } from "@/lib/orders/canonical";
 import { MAX_DASHBOARDS_PER_WORKSPACE, MAX_ROWS_PER_WORKSPACE, MAX_SOURCES_PER_WORKSPACE } from "@/lib/limits";
 import { site } from "@/lib/site";
 
@@ -30,7 +31,7 @@ export default function TermsPage() {
 
       <Section id="dich-vu" title="2. Dịch vụ">
         <p>
-          {name} cho phép bạn kết nối file Google Sheets của mình, thiết kế dashboard và xem trên web, điện thoại. Dịch vụ hiện là{" "}
+          {name} cho phép bạn kết nối file Google Sheets của mình hoặc tải lên file đơn hàng Excel/CSV, thiết kế dashboard và xem trên web, điện thoại. Dịch vụ hiện là{" "}
           <strong>bản thử nghiệm miễn phí</strong>: tính năng có thể thay đổi, thêm bớt hoặc ngừng, và chúng tôi không cam kết mức
           độ sẵn sàng (không có SLA). Nếu sau này có tính phí, chúng tôi sẽ thông báo trước và bạn có quyền không tiếp tục dùng.
         </p>
@@ -56,6 +57,7 @@ export default function TermsPage() {
           <li>Tối đa {MAX_PAGES} trang trong một dashboard; mỗi dashboard tối đa 2 MB dữ liệu cấu trúc.</li>
           <li>Ảnh tải lên: tối đa 15 MB mỗi ảnh gốc (được nén lại, tối đa 5 MB sau khi nén).</li>
           <li>Dữ liệu Google Sheets tự cập nhật mỗi {AUTO_SYNC_MINUTES / 60} giờ; có thể bấm cập nhật thủ công nhưng bị giới hạn tần suất.</li>
+          <li>File đơn hàng tải lên: tối đa {MAX_UPLOAD_BYTES / 1024 / 1024} MB mỗi file (Excel .xlsx hoặc CSV). Dữ liệu từ file tải lên chỉ cập nhật khi bạn tải file mới.</li>
           <li>Trợ lý AI bị giới hạn số yêu cầu mỗi phút để chống lạm dụng.</li>
         </ul>
       </Section>

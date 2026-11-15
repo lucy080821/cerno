@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Brand } from "@/components/Brand";
 import { ConnectSheet } from "./ConnectSheet";
+import { ImportOrders } from "./ImportOrders";
 import { SignOutButton } from "./SignOutButton";
 import { SourceItem, type SourceRow } from "./SourceItem";
 import { DashboardList } from "./DashboardList";
@@ -92,17 +93,20 @@ export default async function DashboardsPage() {
           kind="source"
           title="Nguồn dữ liệu"
           count={sources.length}
-          desc="Nơi lấy số liệu cho biểu đồ: chọn file Google Sheets (dòng đầu của tab là tên cột). Dữ liệu được sao về hệ thống, biểu đồ không gọi Google mỗi lần xem."
+          desc="Nơi lấy số liệu cho biểu đồ: chọn file Google Sheets (dòng đầu của tab là tên cột) hoặc tải file đơn hàng Excel/CSV từ Shopee, TikTok Shop. Dữ liệu được sao về hệ thống, biểu đồ không gọi Google mỗi lần xem."
           actions={
-            <ConnectSheet
-              apiKey={process.env.NEXT_PUBLIC_GOOGLE_API_KEY ?? ""}
-              appId={process.env.NEXT_PUBLIC_GOOGLE_APP_ID ?? ""}
-            />
+            <div className={styles.row}>
+              <ConnectSheet
+                apiKey={process.env.NEXT_PUBLIC_GOOGLE_API_KEY ?? ""}
+                appId={process.env.NEXT_PUBLIC_GOOGLE_APP_ID ?? ""}
+              />
+              <ImportOrders />
+            </div>
           }
         />
 
         {sources.length === 0 ? (
-          <p className={styles.empty}>Chưa có nguồn nào. Bấm "Chọn Google Sheet" để bắt đầu.</p>
+          <p className={styles.empty}>Chưa có nguồn nào. Bấm "Chọn Google Sheet" hoặc "Tải file đơn hàng" để bắt đầu.</p>
         ) : (
           <ul className={styles.list}>
             {sources.map((s) => (

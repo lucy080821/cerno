@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isStoredSource } from "@dashboard/schema";
 import { loadSharedDashboard } from "@/lib/server/embed";
 import { fetchSourceRows } from "@/lib/server/source-rows";
 import { clientIp, createRateLimiter } from "@/lib/server/rate-limit";
@@ -27,7 +28,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ token: string }
 
   const shared = await loadSharedDashboard(token);
   if (!shared?.doc) return notFound();
-  if (!shared.doc.sources.some((s) => s.id === source && s.type === "google_sheets")) return notFound();
+  if (!shared.doc.sources.some((s) => s.id === source && isStoredSource(s))) return notFound();
 
   const admin = createAdminClient();
   const { data: src } = await admin

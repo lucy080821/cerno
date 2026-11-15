@@ -5,7 +5,7 @@ import * as echarts from "echarts/core";
 import { BarChart, FunnelChart, GaugeChart, HeatmapChart, LineChart, PieChart, RadarChart, ScatterChart, TreemapChart } from "echarts/charts";
 import { GraphicComponent, GridComponent, LegendComponent, RadarComponent, TitleComponent, TooltipComponent, VisualMapComponent } from "echarts/components";
 import { SVGRenderer } from "echarts/renderers";
-import { mobileChartFormat, mobileFontSize, mobileKpiTitleSize, mobileKpiValueSize, type ChartConfig, type TextStyle, type Widget } from "@dashboard/schema";
+import { isStoredSource, mobileChartFormat, mobileFontSize, mobileKpiTitleSize, mobileKpiValueSize, type ChartConfig, type TextStyle, type Widget } from "@dashboard/schema";
 import { useEditor } from "@/lib/editor/store";
 import {
   aggregate,
@@ -442,7 +442,7 @@ function WidgetContentInner({ widget, theme, mobile }: { widget: Widget; theme: 
   const calc = useData((st) => st.calc[sourceId]);
   // Nguồn lớn (> LOCAL_ROW_LIMIT dòng): server gộp số liệu, trình duyệt chỉ nhận bảng kết quả.
   const isRemote = useIsRemote(sourceId);
-  const isSheet = useEditor((st) => !!sourceId && st.doc.sources.find((x) => x.id === sourceId)?.type === "google_sheets");
+  const isSheet = useEditor((st) => { const x = st.doc.sources.find((y) => y.id === sourceId); return !!x && isStoredSource(x); });
   const loadStatus = useData((st) => st.status[sourceId]);
   const calcFields = useEditor((st) => st.doc.calculatedFields);
 

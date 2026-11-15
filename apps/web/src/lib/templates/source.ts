@@ -1,4 +1,5 @@
 import type { ColumnInfo, DataSource } from "@dashboard/schema";
+import { isUploadId } from "@/lib/orders/canonical";
 
 /** Phần của một dòng `data_sources` mà việc tạo từ mẫu cần. */
 export interface TemplateSource {
@@ -17,8 +18,11 @@ export function sourceColumns(s: Pick<TemplateSource, "columns">): ColumnInfo[] 
   return s.columns.map((c) => ({ name: c.name, type: normType(c.type) }));
 }
 
-/** Mục nguồn để đưa vào `doc.sources` (cùng dạng editor dùng cho nguồn Google Sheets). */
+/** Mục nguồn để đưa vào `doc.sources` (cùng dạng editor dùng: Google Sheets hoặc file tải lên). */
 export function toDataSource(s: TemplateSource): DataSource {
+  if (isUploadId(s.spreadsheet_id)) {
+    return { id: s.id, type: "upload", name: s.name ?? s.sheet_name, columns: s.columns.map((c) => ({ name: c.name, type: normType(c.type), ...(c.unit ? { unit: c.unit } : {}) })) };
+  }
   return {
     id: s.id,
     type: "google_sheets",

@@ -7,7 +7,10 @@ import { sampleSheetCopyUrl, type TemplateEntry } from "@/content/templates";
 import { createDashboard } from "@/lib/dashboards/api";
 import { sourceColumns, toDataSource, type TemplateSource } from "@/lib/templates/source";
 import { Spinner } from "@/components/Spinner";
+import { ORDERS_TEMPLATE_ID } from "@/content/templates/ban-hang-da-kenh";
+import { isUploadId } from "@/lib/orders/canonical";
 import { ConnectSheet } from "./ConnectSheet";
+import { ImportOrders } from "./ImportOrders";
 import dash from "./dashboards.module.css";
 import styles from "./templates.module.css";
 
@@ -28,7 +31,9 @@ type Mapping = Record<string, string>;
 export function TemplateMapDialog({ entry, sources, apiKey, appId, onClose }: Props) {
   const router = useRouter();
   const t = entry.template;
-  const [sourceId, setSourceId] = useState(sources[0]?.id ?? "");
+  const forOrders = t.id === ORDERS_TEMPLATE_ID;
+  // Mẫu đơn hàng dùng nguồn "Đơn hàng đa kênh" (file tải lên); các mẫu khác mặc định nguồn mới nhất.
+  const [sourceId, setSourceId] = useState((forOrders ? sources.find((s) => isUploadId(s.spreadsheet_id)) : undefined)?.id ?? sources[0]?.id ?? "");
   const [mapping, setMapping] = useState<Mapping>({});
   const [ruleKeys, setRuleKeys] = useState<Set<string>>(new Set());
   const [aiKeys, setAiKeys] = useState<Set<string>>(new Set());
@@ -161,11 +166,13 @@ export function TemplateMapDialog({ entry, sources, apiKey, appId, onClose }: Pr
         )}
         <h2 id="tpl-title" className={styles.dialogTitle}>{`Tạo từ mẫu “${t.name}”`}</h2>
         <p className={styles.sub}>
-          Chọn Google Sheet chứa dữ liệu của bạn. Cerno tự ghép các cột với từng mục của mẫu; bạn có thể đổi lại nếu chưa đúng.
+          {forOrders
+            ? "Mẫu này dùng nguồn \"Đơn hàng đa kênh\": tải file đơn hàng từ Shopee, TikTok Shop (hoặc file tự ghi) lên, các cột sẽ tự khớp."
+            : "Chọn Google Sheet chứa dữ liệu của bạn. Cerno tự ghép các cột với từng mục của mẫu; bạn có thể đổi lại nếu chưa đúng."}
         </p>
 
         {sources.length === 0 ? (
-          <p className={styles.note}>Bạn chưa kết nối Google Sheet nào. Kết nối một Sheet để tiếp tục.</p>
+          <p className={styles.note}>{forOrders ? "Bạn chưa có dữ liệu đơn hàng. Tải file đơn hàng lên để tiếp tục." : "Bạn chưa kết nối Google Sheet nào. Kết nối một Sheet để tiếp tục."}</p>
         ) : (
           <label className={styles.field}>
             Nguồn dữ liệu
@@ -178,7 +185,7 @@ export function TemplateMapDialog({ entry, sources, apiKey, appId, onClose }: Pr
         )}
 
         <div className={styles.sheetLinks}>
-          <ConnectSheet apiKey={apiKey} appId={appId} />
+          {forOrders ? <ImportOrders /> : <ConnectSheet apiKey={apiKey} appId={appId} />}
           {entry.sampleSheetId && (
             <a className={dash.ghost} href={sampleSheetCopyUrl(entry.sampleSheetId)} target="_blank" rel="noopener noreferrer">
               Sao chép Sheet mẫu

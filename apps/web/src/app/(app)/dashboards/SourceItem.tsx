@@ -5,6 +5,8 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useDialog } from "@/components/ui/DialogProvider";
 
+import { isUploadId } from "@/lib/orders/canonical";
+import { ImportOrders } from "./ImportOrders";
 import { SourcePreview } from "./SourcePreview";
 import styles from "./dashboards.module.css";
 import { Spinner } from "@/components/Spinner";
@@ -26,6 +28,7 @@ export function SourceItem({ source }: { source: SourceRow }) {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
   const [open, setOpen] = useState(false);
+  const upload = isUploadId(source.spreadsheet_id);
 
   async function sync() {
     setBusy(true);
@@ -56,7 +59,9 @@ export function SourceItem({ source }: { source: SourceRow }) {
       : "";
     const ok = await dialog.confirm({
       title: "Xóa nguồn dữ liệu?",
-      message: `${warn}Xóa nguồn "${source.name ?? source.sheet_name}" và bản sao dữ liệu đã lưu?\nFile Google Sheets gốc của bạn không bị ảnh hưởng.`,
+      message: upload
+        ? `${warn}Xóa nguồn "${source.name ?? source.sheet_name}" và toàn bộ dữ liệu đơn hàng đã tải lên?\nFile gốc trên máy bạn không bị ảnh hưởng.`
+        : `${warn}Xóa nguồn "${source.name ?? source.sheet_name}" và bản sao dữ liệu đã lưu?\nFile Google Sheets gốc của bạn không bị ảnh hưởng.`,
       confirmText: "Xóa nguồn",
       tone: "danger",
     });
@@ -77,16 +82,20 @@ export function SourceItem({ source }: { source: SourceRow }) {
         <div>
           <strong>{source.name ?? source.sheet_name}</strong>
           <div className={styles.muted}>
-            {source.row_count.toLocaleString("vi-VN")} dòng · {source.columns.length} cột · cập nhật: {when} · tự động mỗi 2 giờ
+            {source.row_count.toLocaleString("vi-VN")} dòng · {source.columns.length} cột · cập nhật: {when}{upload ? " · file tải lên" : " · tự động mỗi 2 giờ"}
           </div>
         </div>
         <div className={styles.row}>
           <button className={styles.ghost} onClick={() => setOpen((o) => !o)} aria-expanded={open}>
             {open ? "Ẩn dữ liệu" : "Xem dữ liệu"}
           </button>
-          <button className={styles.ghost} onClick={sync} disabled={busy}>
-            {busy ? <><Spinner size={12} inline />Đang xử lý…</> : "Cập nhật ngay"}
-          </button>
+          {upload ? (
+            <ImportOrders label="Tải thêm file" />
+          ) : (
+            <button className={styles.ghost} onClick={sync} disabled={busy}>
+              {busy ? <><Spinner size={12} inline />Đang xử lý…</> : "Cập nhật ngay"}
+            </button>
+          )}
           <button className={styles.ghost} onClick={remove} disabled={busy}>Xóa nguồn</button>
         </div>
       </div>

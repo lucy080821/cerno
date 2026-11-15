@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
-import type { Dashboard } from "@dashboard/schema";
+import { isStoredSource, type Dashboard } from "@dashboard/schema";
 import { Spinner } from "@/components/Spinner";
 import { resetCalcSync, syncCalc } from "@/lib/editor/calc";
 import { LOCAL_ROW_LIMIT, useData } from "@/lib/editor/data-store";
@@ -87,7 +87,7 @@ export function ReadOnlyViewer({ doc, access, sourceRows, bar, brand = true, com
     const data = useData.getState();
     // Truy vấn số liệu của nguồn lớn đi qua đường dẫn tương ứng với cách truy cập (mã công khai hay phiên đăng nhập).
     data.setQueryBase(access.kind === "token" ? `/api/embed/${encodeURIComponent(access.token)}/query` : "/api/query");
-    const sheets = loaded.sources.filter((x) => x.type === "google_sheets");
+    const sheets = loaded.sources.filter(isStoredSource);
     if (access.kind === "static") {
       // Dữ liệu có sẵn trong mã: nạp thẳng vào kho, không gọi mạng.
       for (const src of sheets) {

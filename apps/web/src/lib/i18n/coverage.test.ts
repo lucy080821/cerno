@@ -34,6 +34,7 @@ const IGNORE_FILES = [
   /lib\/alerts\/describe\.ts$/, // câu mô tả điều kiện ghép động (hiện trong email và danh sách luật), không dịch bằng từ điển
   /server\/alerts\//, // nhãn khoảng thời gian trong email cảnh báo (luôn tiếng Việt)
   /server\/reports\//, // báo cáo email luôn bằng tiếng Việt (người nhận không đổi ngôn ngữ giao diện)
+  /lib\/orders\/(fixtures|fake-db)\.ts$/, // bảng mô phỏng file của sàn và DB giả, chỉ dùng trong test
   /server\/mail\//, // nội dung email mời tự có hai ngôn ngữ trong bộ soạn thư (chọn theo ngôn ngữ người mời)
 ];
 
@@ -49,6 +50,7 @@ const IGNORE_TEXT: RegExp[] = [
   /^createOther /,
   /^Cách \{0\} thu thập/, // mô tả SEO của trang
   /^(Việc|sử dụng và chuyển giao thông tin nhận được từ các API của Google)/, // bản dịch tiếng Việt của tuyên bố Google (ẩn khi xem bản tiếng Anh)
+  /^(ma don hang|trang thai don hang|doanh thu)$/, // tên cột đã chuẩn hoá trong hồ sơ nhận diện file (lib/orders/profiles.ts), không hiển thị
   /^Thiếu SUPABASE/,
   /^Không lưu được refresh token/,
   /^Lỗi truy vấn/,

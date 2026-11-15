@@ -160,7 +160,7 @@ export const EN_LANDING: Dict = {
   "Tôi có xóa được tài khoản và dữ liệu không?": "Can I delete my account and data?",
   "Được, ngay trong ứng dụng. Xóa nguồn dữ liệu sẽ xóa bản sao dữ liệu đã lưu. Xóa tài khoản sẽ xóa toàn bộ dashboard, nguồn, ảnh đã tải lên và thu hồi quyền Google. File Google Sheets gốc của bạn không bị ảnh hưởng.": "Yes, right in the app. Deleting a data source removes the saved copy of its data. Deleting your account removes all dashboards, sources and uploaded images and revokes the Google permission. Your original Google Sheets files aren't affected.",
   "Ngoài Google Sheets còn kết nối được nguồn nào khác không?": "Besides Google Sheets, can other sources be connected?",
-  "Hiện chỉ hỗ trợ Google Sheets. Excel, CSV và cơ sở dữ liệu chưa có.": "Only Google Sheets is supported for now. Excel, CSV and databases aren't available yet.",
+  "Có file đơn hàng Excel hoặc CSV: tải file xuất từ Shopee, TikTok Shop (hoặc file tự ghi) lên, Cerno gộp các kênh bán vào một dashboard. Kết nối trực tiếp với sàn hoặc cơ sở dữ liệu thì chưa có.": "Yes, Excel or CSV order files: upload a file exported from Shopee or TikTok Shop (or your own log) and Cerno combines the sales channels into one dashboard. Direct connections to the marketplaces or to databases aren't available yet.",
 
   // Mô tả sản phẩm (JSON-LD hiển thị)
   "Kết nối Google Sheets và tự cập nhật dữ liệu": "Connect Google Sheets with automatic data refresh",
@@ -237,7 +237,7 @@ export const EN_LANDING: Dict = {
   "Câu hỏi thường gặp": "Frequently asked questions",
   "Dựng dashboard đầu tiên trong vài phút": "Build your first dashboard in minutes",
   "Không cần thẻ tín dụng. Kết nối Google Sheets và bắt đầu.": "No credit card needed. Connect Google Sheets and start.",
-  ". Dùng Google Sheets làm nguồn dữ liệu.": ". Uses Google Sheets as the data source.",
+  ". Dùng Google Sheets hoặc file đơn hàng làm nguồn dữ liệu.": ". Uses Google Sheets or order files as the data source.",
   "Sản phẩm": "Product",
   "Pháp lý và liên hệ": "Legal and contact",
   "Pháp lý": "Legal",

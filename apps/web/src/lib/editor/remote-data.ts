@@ -1,4 +1,5 @@
-import type { Dashboard, DataSource } from "@dashboard/schema";
+import { isStoredSource, type Dashboard, type DataSource } from "@dashboard/schema";
+import { isUploadId } from "@/lib/orders/canonical";
 import type { Row } from "@dashboard/chart-engine";
 import { SAMPLE_ROWS_REMOTE, isRemoteSource, useData } from "./data-store";
 import { useEditor } from "./store";
@@ -48,6 +49,7 @@ export async function loadRows(id: string, rowCount?: number): Promise<boolean> 
 }
 
 export function toDocSource(r: RemoteSource): DataSource {
+  if (isUploadId(r.spreadsheet_id)) return { id: r.id, type: "upload", name: r.name ?? r.sheet_name, columns: r.columns };
   return {
     id: r.id,
     type: "google_sheets",
@@ -63,7 +65,7 @@ export function toDocSource(r: RemoteSource): DataSource {
  */
 function patchColumns(byId: Map<string, DataSource["columns"]>) {
   const changed = useEditor.getState().doc.sources.some((s) => {
-    const cols = s.type === "google_sheets" ? byId.get(s.id) : undefined;
+    const cols = isStoredSource(s) ? byId.get(s.id) : undefined;
     return !!cols && JSON.stringify(cols) !== JSON.stringify(s.columns);
   });
   if (!changed) return;
@@ -71,7 +73,7 @@ function patchColumns(byId: Map<string, DataSource["columns"]>) {
     doc: {
       ...st.doc,
       sources: st.doc.sources.map((s) => {
-        const cols = s.type === "google_sheets" ? byId.get(s.id) : undefined;
+        const cols = isStoredSource(s) ? byId.get(s.id) : undefined;
         return cols ? { ...s, columns: cols } : s;
       }),
     },
@@ -120,7 +122,7 @@ export async function syncNow(id: string): Promise<SyncOutcome> {
  * Sau khi mở dashboard: tải dữ liệu cho mọi nguồn Google Sheets trong đó và cập nhật danh sách cột.
  */
 export async function hydrateSources(doc: Dashboard): Promise<void> {
-  const sheets = doc.sources.filter((s) => s.type === "google_sheets");
+  const sheets = doc.sources.filter(isStoredSource);
   if (!sheets.length) return;
   const remote = await fetchSources();
   const byId = new Map((remote ?? []).map((r) => [r.id, r]));

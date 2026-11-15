@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
-import { Dashboard } from "@dashboard/schema";
+import { Dashboard, isStoredSource } from "@dashboard/schema";
 import { ReadOnlyViewer } from "@/components/editor/ReadOnlyViewer";
 import { ViewerBar } from "@/components/ViewerBar";
 import { createClient } from "@/lib/supabase/server";
@@ -33,7 +33,7 @@ export default async function SharedViewPage({ params }: { params: Promise<{ id:
 
   const doc = parsed.data;
   // Số dòng từng nguồn (RLS: chỉ thấy nguồn mà dashboard được mời đang dùng).
-  const srcIds = doc.sources.filter((s) => s.type === "google_sheets").map((s) => s.id);
+  const srcIds = doc.sources.filter(isStoredSource).map((s) => s.id);
   const { data: counts } = srcIds.length
     ? await supabase.from("data_sources").select("id, row_count").in("id", srcIds)
     : { data: [] };
