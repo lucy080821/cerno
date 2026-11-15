@@ -29,7 +29,16 @@ const HANDWRITTEN: TemplateEntry[] = [BAN_HANG_DA_KENH, BAN_HANG, THUONG_MAI_DIE
 const exported: TemplateEntry[] = GENERATED_TEMPLATES.map((raw) => TemplateFile.parse(raw));
 const exportedIds = new Set(exported.map((e) => e.template.id));
 
-export const TEMPLATES: TemplateEntry[] = [...exported, ...HANDWRITTEN.filter((e) => !exportedIds.has(e.template.id))];
+/**
+ * Ảnh minh họa của mẫu: `public/img/templates/<id>.webp`, chụp từ chính bản xem trước bằng `npm run shoot:templates`
+ * (dashboard thật chạy trên dữ liệu mẫu). Có test bảo đảm mọi mẫu đều có file ảnh.
+ */
+export const templateImage = (id: string) => `/img/templates/${id}.webp`;
+
+export const TEMPLATES: TemplateEntry[] = [...exported, ...HANDWRITTEN.filter((e) => !exportedIds.has(e.template.id))].map((e) => ({
+  ...e,
+  previewImage: e.previewImage ?? templateImage(e.template.id),
+}));
 
 export const getTemplateEntry = (id: string): TemplateEntry | undefined =>
   TEMPLATES.find((t) => t.template.id === id);

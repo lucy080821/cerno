@@ -1,0 +1,48 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(6, 10, 20, 0.78);
+  backdrop-filter: blur(2px);
+}
+.dialog {
+  position: relative;
+  display: grid;
+  gap: 10px;
+  width: min(1240px, 100%);
+  max-height: calc(100vh - 32px);
+  padding: 16px 18px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: var(--bg-2);
+}
+.head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.industry { font-size: 12px; color: var(--brand-b, #19c3b1); }
+.title { margin: 2px 0 0; font-size: 1.2rem; }
+.close {
+  border: 0;
+  background: none;
+  color: inherit;
+  font-size: 26px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 6px;
+  opacity: 0.7;
+}
+.close:hover { opacity: 1; }
+.note { margin: 0; font-size: 13px; opacity: 0.75; }
+/* Khung cuộn ngang trên màn hình hẹp, còn lại hiện trọn dashboard trong chiều cao màn hình. */
+.scroll { overflow-x: auto; border-radius: 10px; border: 1px solid var(--line); }
+.frame {
+  position: relative;
+  width: min(100%, calc((100vh - 250px) * var(--ratio, 1.6)));
+  min-width: 720px;
+  margin-inline: auto;
+  aspect-ratio: var(--ratio, 1.6);
+  background: #f1f4f9;
+  overflow: hidden;
+}
+.foot { display: flex; justify-content: flex-end; gap: 10px; }

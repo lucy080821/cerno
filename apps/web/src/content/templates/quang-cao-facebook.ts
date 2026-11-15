@@ -8,8 +8,9 @@ const ADS = ["Video 15s", "Ảnh đơn", "Carousel", "Bộ sưu tập"];
 
 function sampleRows() {
   const rows = [];
-  for (let i = 0; i < 40; i++) {
-    const day = Math.floor(i / 4);
+  // 80 dòng trải ~2 tháng (20 ngày cách nhau 3 ngày) để KPI so được với tháng trước và biểu đồ tuần có nhiều điểm.
+  for (let i = 0; i < 80; i++) {
+    const day = Math.floor(i / 4) * 3;
     const c = i % 4;
     const spend = 220_000 + ((i * 53) % 13) * 85_000;
     const impressions = 9_000 + ((i * 1471) % 17) * 3_100;

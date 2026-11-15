@@ -10,7 +10,8 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "export:demo": "node scripts/export-demo.mjs",
-    "export:template": "node scripts/export-template.mjs"
+    "export:template": "node scripts/export-template.mjs",
+    "shoot:templates": "node scripts/shoot-templates.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.6.0",

@@ -43,15 +43,21 @@
   background: var(--bg-2);
 }
 
+/* Ảnh chụp dashboard thật (tỉ lệ 16:10 của khung dashboard) hiện trọn, không cắt. Bấm vào để xem trước chạy thật. */
 .preview {
   position: relative;
-  height: 132px;
   display: grid;
   place-items: center;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  padding: 0;
+  border: 0;
   background: var(--brand-gradient);
   color: #fff;
+  font: inherit;
   font-size: 2.4rem;
   font-weight: 800;
+  cursor: zoom-in;
 }
 
 .previewImg {
@@ -86,11 +92,22 @@
 }
 
 .cardAction {
+  display: flex;
+  gap: 8px;
   padding: 0 14px 14px;
 }
 
 .cardAction button {
-  width: 100%;
+  white-space: nowrap;
+}
+
+/* "Xem trước" vừa chữ, "Dùng mẫu này" chiếm phần còn lại. */
+.cardAction button:first-child {
+  flex: 0 0 auto;
+}
+
+.cardAction button:last-child {
+  flex: 1;
 }
 
 /* ---------- Hộp thoại chọn cột ---------- */

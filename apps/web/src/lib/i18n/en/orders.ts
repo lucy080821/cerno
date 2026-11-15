@@ -121,4 +121,9 @@ export const EN_ORDERS: Dict = {
   "Sản phẩm bán chạy": "Best-selling products",
   "Doanh thu theo khu vực": "Revenue by region",
   "So sánh các kênh": "Channel comparison",
+  // Xem trước mẫu
+  "Xem trước mẫu {0}": "Preview the {0} template",
+  "Xem trước mẫu": "Template preview",
+  "Dữ liệu mẫu minh họa. Bạn có thể đổi bộ lọc và bấm vào biểu đồ để thử.": "Sample data for illustration. You can change the filters and click the charts to try them.",
+  "Đang tải bản xem trước…": "Loading the preview…",
 };

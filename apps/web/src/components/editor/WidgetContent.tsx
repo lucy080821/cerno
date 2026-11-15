@@ -230,7 +230,8 @@ function TableView({ widget, rows, theme, calc, remote, useRemote, mobile }: {
         cols: cols as Array<string | null>,
       };
     }
-    const t = aggregate(rows, cfg.dimensions, cfg.metrics);
+    // Phải truyền `calc`: số đo là trường tính toán dạng tổng hợp (vd CPA = SUM/SUM) chỉ tính được khi có nó, thiếu thì ra 0.
+    const t = aggregate(rows, cfg.dimensions, cfg.metrics, calc);
     return {
       // Bảng: tiêu đề cột số liệu chỉ là tên cột (hoặc nhãn người dùng đặt), không kèm "Tổng/Trung bình…".
       head: [...t.dimLabels, ...cfg.metrics.map((m) => m.label ?? m.column)],
