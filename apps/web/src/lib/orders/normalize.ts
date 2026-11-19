@@ -27,6 +27,8 @@ function num(c: RawCell): number | null {
   return t === null ? null : parseNumber(t);
 }
 
+const headerOf = (c: RawCell): string => (c instanceof Date ? "" : String(c ?? "").trim());
+
 const two = (n: number) => String(n).padStart(2, "0");
 
 const SLASH_DATE = /^(\d{1,2})([/.-])(\d{1,2})\2(\d{4})(.*)$/;
@@ -73,7 +75,7 @@ function dateText(c: RawCell, order: "dmy" | "mdy" = "dmy"): string | null {
 export function mapStatus(raw: string): { status: OrderStatus; known: boolean } {
   const n = normalizeText(raw);
   if (/(^| )(huy|cancel|cancelled|canceled)( |$)/.test(n)) return { status: "Đã hủy", known: true };
-  if (/(hoan tra|tra hang|tra lai|hoan tien|return|refund|giao khong thanh cong|giao that bai|failed|undelivered)/.test(n)) return { status: "Hoàn trả", known: true };
+  if (/(hoan tra|hoan hang|tra hang|tra lai|hoan tien|return|refund|giao khong thanh cong|giao that bai|failed|undelivered)/.test(n)) return { status: "Hoàn trả", known: true };
   if (/(hoan thanh|completed|complete|da giao|da nhan|delivered|thanh cong)/.test(n)) return { status: "Hoàn thành", known: true };
   if (/(cho |dang |xu ly|van chuyen|unpaid|on hold|awaiting|in transit|to ship|shipped|ready|pending|processing|new)/.test(n)) return { status: "Chưa hoàn tất", known: true };
   return { status: "Chưa hoàn tất", known: false };
@@ -85,6 +87,8 @@ export interface NormalizeStats {
   skippedEmpty: number;
   missingDate: number;
   missingRevenue: number;
+  /** Số dòng mô tả cột (ngay dưới tiêu đề) đã bỏ qua: một số file xuất của sàn có dòng này. */
+  skippedDescription: number;
   byStatus: Record<OrderStatus, number>;
   dateMin: string | null;
   dateMax: string | null;
@@ -112,6 +116,27 @@ interface Line {
   fee: number | null;
   province: string | null;
   payment: string | null;
+  discount: number | null;
+  cost: number | null;
+  shippingFee: number | null;
+  adCost: number | null;
+}
+
+/**
+ * Dòng mô tả cột: một số file xuất có dòng thứ hai giải thích từng cột ("Platform unique order ID.", "Ngày tạo đơn..."). Nhận ra khi
+ * dòng ĐẦU TIÊN dưới tiêu đề có ngày là chữ không đọc được thành ngày, không có số nào ở cột số lượng, thành tiền, đơn giá, và có chữ giải thích ở ít nhất một cột trong số đó.
+ */
+function looksLikeDescriptionRow(r: RawCell[], mapping: ColumnMapping): boolean {
+  const at = (f: InputField): RawCell => {
+    const i = mapping[f]?.[0];
+    return i === undefined ? undefined : r[i];
+  };
+  const d = at("date");
+  if (typeof d !== "string" || d.trim() === "" || toIsoDate(d.trim()) !== null) return false;
+  const cells = (["quantity", "revenue", "unitPrice"] as const).map(at);
+  if (cells.some((c) => num(c) !== null)) return false;
+  // Dòng dữ liệu thật thiếu tiền thì ô để TRỐNG; dòng mô tả thì có CHỮ giải thích ở các cột số.
+  return cells.some((c) => text(c) !== null);
 }
 
 /**
@@ -135,6 +160,7 @@ export function normalizeOrders(table: RawTable, headerRow: number, mapping: Col
     skippedEmpty: 0,
     missingDate: 0,
     missingRevenue: 0,
+    skippedDescription: 0,
     byStatus: { "Hoàn thành": 0, "Chưa hoàn tất": 0, "Đã hủy": 0, "Hoàn trả": 0 },
     dateMin: null,
     dateMax: null,
@@ -147,7 +173,16 @@ export function normalizeOrders(table: RawTable, headerRow: number, mapping: Col
 
   const lines: Line[] = [];
   const keys: string[] = [];
+  let rawRevenueCount = 0;
+  let firstDataRow = true;
   for (const r of table.slice(headerRow + 1)) {
+    if (firstDataRow) {
+      firstDataRow = false;
+      if (looksLikeDescriptionRow(r, mapping)) {
+        stats.skippedDescription++;
+        continue;
+      }
+    }
     const cells = [first("orderId", r), first("date", r), first("revenue", r), first("unitPrice", r), first("product", r), first("sku", r)];
     if (cells.every((c) => text(c) === null && typeof c !== "number" && !(c instanceof Date))) {
       stats.skippedEmpty++;
@@ -169,10 +204,13 @@ export function normalizeOrders(table: RawTable, headerRow: number, mapping: Col
     }
 
     const quantity = num(first("quantity", r));
+    const discount = num(first("discount", r));
     let revenue = num(first("revenue", r));
+    if (revenue !== null) rawRevenueCount++;
     if (revenue === null) {
+      // Không có thành tiền (hoặc ô công thức chưa có giá trị): tính từ đơn giá × số lượng, trừ giảm giá của dòng nếu có.
       const unit = num(first("unitPrice", r));
-      if (unit !== null && quantity !== null) revenue = unit * quantity;
+      if (unit !== null && quantity !== null) revenue = unit * quantity - (discount ?? 0);
     }
     const feeCols = mapping.platformFee ?? [];
     const feeVals = feeCols.map((i) => num(r[i])).filter((v): v is number => v !== null);
@@ -191,6 +229,10 @@ export function normalizeOrders(table: RawTable, headerRow: number, mapping: Col
       fee: feeVals.length ? feeVals.reduce((a, b) => a + b, 0) : null,
       province: text(first("province", r)),
       payment: text(first("payment", r)),
+      discount,
+      cost: num(first("cost", r)),
+      shippingFee: num(first("shippingFee", r)),
+      adCost: num(first("adCost", r)),
     });
     keys.push(keyed && idc.value !== null ? idc.value : `~${lines.length}`);
   }
@@ -198,9 +240,13 @@ export function normalizeOrders(table: RawTable, headerRow: number, mapping: Col
   // Giá trị cấp đơn lấy từ dòng đầu tiên của đơn (phí: dòng đầu tiên có giá trị).
   const firstLine = new Map<string, number>();
   const orderFee = new Map<string, number>();
+  const orderShip = new Map<string, number>();
+  const orderAd = new Map<string, number>();
   keys.forEach((k, i) => {
     if (!firstLine.has(k)) firstLine.set(k, i);
     if (!orderFee.has(k) && lines[i].fee !== null) orderFee.set(k, lines[i].fee as number);
+    if (!orderShip.has(k) && lines[i].shippingFee !== null) orderShip.set(k, lines[i].shippingFee as number);
+    if (!orderAd.has(k) && lines[i].adCost !== null) orderAd.set(k, lines[i].adCost as number);
   });
 
   const rows: Row[] = lines.map((l, i) => {
@@ -232,16 +278,27 @@ export function normalizeOrders(table: RawTable, headerRow: number, mapping: Col
       [COL.platformFee]: isFirst && isValidStatus(head.status) ? orderFee.get(keys[i]) ?? null : null,
       [COL.province]: l.province,
       [COL.payment]: l.payment,
+      [COL.discount]: l.discount,
+      // Phí vận chuyển khách trả chỉ có với đơn hợp lệ; chi phí quảng cáo đã chi dù đơn có hủy hay không.
+      [COL.shippingFee]: isFirst && valid ? orderShip.get(keys[i]) ?? null : null,
+      [COL.cost]: l.cost === null ? null : valid ? l.cost : 0,
+      [COL.adCost]: isFirst ? orderAd.get(keys[i]) ?? null : null,
     };
   });
   stats.lines = rows.length;
   stats.orders = firstLine.size;
 
+  if (stats.skippedDescription) warnings.push("Đã bỏ qua dòng mô tả cột nằm ngay dưới tiêu đề.");
   if (stats.missingDate) warnings.push(`${stats.missingDate.toLocaleString("vi-VN")} dòng không đọc được ngày đặt: các dòng này không lên biểu đồ theo thời gian.`);
   if (stats.missingRevenue) warnings.push(`${stats.missingRevenue.toLocaleString("vi-VN")} dòng không có thành tiền: không được tính vào doanh thu.`);
   if (unknownStatuses.size) {
     const list = [...unknownStatuses].slice(0, 5).map((s) => `"${s}"`).join(", ");
     warnings.push(`Có trạng thái chưa nhận ra (${list}${unknownStatuses.size > 5 ? "…" : ""}): tạm tính là Chưa hoàn tất.`);
+  }
+  const revCol = mapping.revenue?.[0];
+  if (revCol !== undefined && lines.length > 0 && rawRevenueCount === 0) {
+    const name = headerOf(table[headerRow]?.[revCol]) || `Cột ${revCol + 1}`;
+    warnings.push(`Cột "${name}" không có giá trị nào (thường là ô công thức chưa được tính): doanh thu tạm tính từ đơn giá × số lượng. Hãy mở file bằng Excel, lưu lại rồi tải lên nếu muốn dùng số liệu gốc.`);
   }
   if (lossyIds) warnings.push("Mã đơn bị Excel đổi sang dạng số nên có thể sai. Hãy xuất lại file và đừng mở bằng Excel trước khi tải lên.");
   if (noId) warnings.push(`${noId.toLocaleString("vi-VN")} dòng không có mã đơn: coi mỗi dòng là một đơn và không gộp trùng được khi tải lại file.`);

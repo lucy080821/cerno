@@ -39,6 +39,7 @@ export const SHOPEE: Profile = {
     platformFee: ["phi co dinh", "phi dich vu", "phi thanh toan"],
     province: ["tinh thanh pho"],
     payment: ["phuong thuc thanh toan"],
+    shippingFee: ["phi van chuyen ma nguoi mua tra"],
   },
   sumFields: ["platformFee"],
 };
@@ -60,6 +61,8 @@ export const TIKTOK: Profile = {
     unitPrice: ["sku unit original price"],
     province: ["province", "city"],
     payment: ["payment method"],
+    discount: ["sku seller discount"],
+    shippingFee: ["shipping fee after discount"],
   },
   sumFields: [],
 };
@@ -83,8 +86,45 @@ export const GENERIC: Profile = {
     platformFee: ["phi san", "phi"],
     province: ["tinh thanh pho", "tinh thanh", "tinh", "thanh pho", "province", "city"],
     payment: ["phuong thuc thanh toan", "hinh thuc thanh toan", "thanh toan", "payment method"],
+    discount: ["giam gia", "chiet khau", "khuyen mai", "discount"],
+    shippingFee: ["phi van chuyen khach tra", "phi ship khach tra", "phi van chuyen nguoi mua tra"],
+    cost: ["gia von", "chi phi gia von", "tong gia von", "cogs"],
+    adCost: ["chi phi quang cao", "phi quang cao", "quang cao", "ad cost", "ads cost"],
   },
   sumFields: ["platformFee"],
+};
+
+/**
+ * Nhận diện linh hoạt khi tên cột không khớp từng chữ (vd "Phí sàn Shopee", "Trạng thái đơn", "Kênh thanh toán").
+ * Chỉ chạy cho trường CHƯA có cột nào khớp chính xác, trên tên đã chuẩn hoá (`normalizeText`). Mẫu viết chặt: neo đầu và cuối,
+ * chỉ cho thêm chữ ở đúng chỗ an toàn, để không nhận nhầm (vd "Phí vận chuyển" không phải phí sàn, "Trạng thái trả hàng" không phải
+ * trạng thái đơn). `FUZZY_DENY` loại thêm các từ khoá nguy hiểm.
+ */
+export const FUZZY: Partial<Record<InputField, RegExp[]>> = {
+  orderId: [/^(ma|so) (don|don hang|hoa don)( [a-z0-9 ]+)?$/, /^order (id|no|number)( [a-z0-9 ]+)?$/],
+  date: [/^(ngay|thoi gian|ngay gio) (dat|tao|len)( hang| don| don hang)?( [a-z0-9 ]+)?$/, /^ngay (ban|mua)( hang)?$/, /^(order )?(created|create) (time|date)$/],
+  status: [/^trang thai( don( hang)?)?( (cua )?(shopee|tiktok|san|goc|hien tai))?$/, /^order status( [a-z]+)?$/],
+  sku: [/^(ma|sku)( san pham| sp| hang| hang hoa)( [a-z0-9 ]+)?$/, /^seller sku( [a-z0-9 ]+)?$/],
+  product: [/^ten (san pham|hang|mat hang|hang hoa)( [a-z0-9 ]+)?$/, /^product name( [a-z0-9 ]+)?$/],
+  variant: [/^(ten )?phan loai( hang)?( [a-z0-9 ]+)?$/],
+  quantity: [/^so luong( [a-z0-9 ]+)?$/],
+  revenue: [/^(thanh tien|doanh thu|doanh so|tong tien hang|tien hang)( (hang hoa|ban hang|san pham|dong|truoc giam gia|sau giam gia))?$/, /^tong gia ban( san pham)?$/],
+  unitPrice: [/^(don gia|gia ban|gia ban le|gia uu dai|gia khuyen mai)( [a-z0-9 ]+)?$/],
+  platformFee: [/^phi (san|co dinh|dich vu|thanh toan|giao dich|hoa hong|nen tang)( [a-z0-9 ]+)?$/, /^(commission|transaction|service|payment) fee( [a-z0-9 ]+)?$/],
+  province: [/^tinh thanh( pho)?( [a-z0-9 ]+)?$/, /^thanh pho( [a-z0-9 ]+)?$/],
+  payment: [/^(kenh|hinh thuc|phuong thuc|cach) thanh toan( [a-z0-9 ]+)?$/, /^payment( method| channel)?$/],
+  discount: [/^(giam gia|chiet khau|khuyen mai)( [a-z0-9 ]+)?$/],
+  shippingFee: [/^phi (van chuyen|ship|giao hang) (khach|nguoi mua|kh)( tra| chiu| thanh toan)?( [a-z0-9 ]+)?$/],
+  cost: [/^(chi phi )?gia von( [a-z0-9 ]+)?$/, /^tong gia von$/, /^cogs$/],
+  adCost: [/^(chi phi|phi) (quang cao|ads|marketing)( [a-z0-9 ]+)?$/],
+};
+export const FUZZY_DENY: Partial<Record<InputField, RegExp>> = {
+  orderId: /(van chuyen|van don|doi tac)/,
+  date: /(giao|gui|hoan thanh|thanh toan|du kien|huy)/,
+  quantity: /(tra|hoan|ton|kho|returned|huy)/,
+  unitPrice: /(nhap|von)/,
+  platformFee: /(van chuyen|ship|giao hang|quang cao|tai tro)/,
+  discount: /(phan tram|ty le)/,
 };
 
 export const PROFILES: Profile[] = [SHOPEE, TIKTOK, GENERIC];

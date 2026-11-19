@@ -1,7 +1,7 @@
 import { normalizeText } from "@dashboard/schema";
 import { INPUT_FIELDS, type Channel, type ColumnMapping, type InputField } from "./canonical";
 import type { RawCell, RawSheet, RawTable } from "./files";
-import { GENERIC, PROFILES, type Profile } from "./profiles";
+import { FUZZY, FUZZY_DENY, GENERIC, PROFILES, type Profile } from "./profiles";
 
 export interface Detection {
   profile: Profile["id"];
@@ -16,7 +16,7 @@ export interface Detection {
 }
 
 /** Thứ tự gán cột: trường quan trọng trước, để một cột không bị trường phụ giành mất. */
-const ORDER: InputField[] = ["date", "orderId", "revenue", "status", "quantity", "product", "sku", "variant", "unitPrice", "province", "payment", "platformFee"];
+const ORDER: InputField[] = ["date", "orderId", "revenue", "status", "quantity", "product", "sku", "variant", "unitPrice", "province", "payment", "platformFee", "discount", "shippingFee", "cost", "adCost"];
 const WEIGHT: Partial<Record<InputField, number>> = { date: 3, orderId: 3, revenue: 3, status: 2, quantity: 2, product: 2 };
 
 export const headerText = (c: RawCell): string => (c instanceof Date ? "" : String(c ?? "").trim());
@@ -45,6 +45,21 @@ export function proposeMapping(profile: Profile, headers: string[]): ColumnMappi
         break;
       }
     }
+  }
+  // Lượt 2: tên gần đúng cho trường chưa có cột nào. Cột khớp chính xác ở lượt 1 luôn thắng.
+  for (const field of ORDER) {
+    if ((mapping[field]?.length ?? 0) > 0) continue;
+    const patterns = FUZZY[field];
+    if (!patterns) continue;
+    const deny = FUZZY_DENY[field];
+    const cands = norm
+      .map((h, i) => ({ h, i }))
+      .filter(({ h, i }) => !used.has(i) && h !== "" && patterns.some((p) => p.test(h)) && !(deny && deny.test(h)))
+      .sort((a, b) => a.h.length - b.h.length || a.i - b.i); // tên ngắn gọn nhất trước, bằng nhau thì cột bên trái
+    if (!cands.length) continue;
+    const picked = profile.sumFields.includes(field) ? cands.map((c) => c.i).sort((a, b) => a - b) : [cands[0].i];
+    mapping[field] = picked;
+    picked.forEach((i) => used.add(i));
   }
   return mapping;
 }

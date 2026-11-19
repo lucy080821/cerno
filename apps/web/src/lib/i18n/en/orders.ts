@@ -126,4 +126,13 @@ export const EN_ORDERS: Dict = {
   "Xem trước mẫu": "Template preview",
   "Dữ liệu mẫu minh họa. Bạn có thể đổi bộ lọc và bấm vào biểu đồ để thử.": "Sample data for illustration. You can change the filters and click the charts to try them.",
   "Đang tải bản xem trước…": "Loading the preview…",
+  // Cột chuẩn mở rộng và nhận diện cột
+  "Giảm giá": "Discount",
+  "Phí vận chuyển khách trả": "Shipping fee paid by buyer",
+  "Giảm giá của dòng sản phẩm": "Discount on the product line",
+  "Phí vận chuyển khách trả (cấp đơn)": "Shipping fee paid by buyer (per order)",
+  "Giá vốn của dòng sản phẩm (tổng, không phải đơn giá)": "Cost of goods for the product line (total, not unit cost)",
+  "Chi phí quảng cáo (cấp đơn)": "Ad cost (per order)",
+  "Đã bỏ qua dòng mô tả cột nằm ngay dưới tiêu đề.": "Skipped the column-description row right below the header.",
+  "Cột \"{0}\" không có giá trị nào (thường là ô công thức chưa được tính): doanh thu tạm tính từ đơn giá × số lượng. Hãy mở file bằng Excel, lưu lại rồi tải lên nếu muốn dùng số liệu gốc.": "Column \"{0}\" has no values (usually formula cells that were never calculated): revenue is estimated as unit price × quantity. Open the file in Excel, save it, and upload again if you want the original figures.",
 };

@@ -2,8 +2,9 @@
  * Mô hình "Đơn hàng đa kênh": mọi file xuất từ sàn (Shopee, TikTok Shop...) hay sổ bán hàng tự ghi đều được đưa về
  * CÙNG MỘT bảng cột này, nên một dashboard mẫu chạy được cho mọi kênh. Mỗi dòng là một dòng sản phẩm của một đơn.
  *
- * Các cột tiền và cột đếm theo ĐƠN (Số đơn, Số đơn hủy, Phí sàn) chỉ ghi ở dòng đầu tiên của mỗi đơn, vì file của sàn
- * lặp các giá trị cấp đơn ở mọi dòng sản phẩm: cộng thẳng sẽ bị đếm nhiều lần.
+ * Các cột tiền và cột đếm theo ĐƠN (Số đơn, Số đơn hủy, Phí sàn, Phí vận chuyển khách trả, Chi phí quảng cáo) chỉ ghi ở dòng
+ * đầu tiên của mỗi đơn, vì file của sàn lặp các giá trị cấp đơn ở mọi dòng sản phẩm: cộng thẳng sẽ bị đếm nhiều lần.
+ * Giá vốn là tổng giá vốn của dòng sản phẩm và chỉ có với đơn hợp lệ (đơn hủy/hoàn trả: 0, hàng về kho nên không mất vốn).
  *
  * Thông tin người mua (tên, số điện thoại, địa chỉ) KHÔNG bao giờ được đọc: chỉ có tỉnh/thành để xem theo vùng.
  */
@@ -44,6 +45,10 @@ export const COL = {
   platformFee: "Phí sàn",
   province: "Tỉnh/Thành",
   payment: "Thanh toán",
+  discount: "Giảm giá",
+  shippingFee: "Phí vận chuyển khách trả",
+  cost: "Giá vốn",
+  adCost: "Chi phí quảng cáo",
 } as const;
 
 export interface OrderColumn {
@@ -70,6 +75,10 @@ export const ORDER_COLUMNS: OrderColumn[] = [
   { name: COL.platformFee, type: "number", unit: "đồng" },
   { name: COL.province, type: "string" },
   { name: COL.payment, type: "string" },
+  { name: COL.discount, type: "number", unit: "đồng" },
+  { name: COL.shippingFee, type: "number", unit: "đồng" },
+  { name: COL.cost, type: "number", unit: "đồng" },
+  { name: COL.adCost, type: "number", unit: "đồng" },
 ];
 
 /** Cột trong file người dùng mà việc nhập đọc. Ánh xạ: trường → chỉ số cột trong file (Phí sàn có thể cộng nhiều cột). */
@@ -86,6 +95,10 @@ export const INPUT_FIELDS = [
   "platformFee",
   "province",
   "payment",
+  "discount",
+  "shippingFee",
+  "cost",
+  "adCost",
 ] as const;
 export type InputField = (typeof INPUT_FIELDS)[number];
 export type ColumnMapping = Partial<Record<InputField, number[]>>;
@@ -104,6 +117,10 @@ export const INPUT_LABELS: Record<InputField, string> = {
   platformFee: "Phí sàn (cộng các cột phí)",
   province: "Tỉnh/Thành phố",
   payment: "Phương thức thanh toán",
+  discount: "Giảm giá của dòng sản phẩm",
+  shippingFee: "Phí vận chuyển khách trả (cấp đơn)",
+  cost: "Giá vốn của dòng sản phẩm (tổng, không phải đơn giá)",
+  adCost: "Chi phí quảng cáo (cấp đơn)",
 };
 
 /** Hạn mức một lần tải lên. */
