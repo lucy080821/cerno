@@ -19,7 +19,7 @@ function readDone(): string[] {
   }
 }
 
-function text(t: Todo): { title: string; detail: string; impact: string; action: string } {
+export function todoText(t: Todo): { title: string; detail: string; impact: string; action: string } {
   switch (t.kind) {
     case "missing_cost":
       return { title: `Nhập giá vốn cho ${count(t.amount ?? 0)} sản phẩm`, detail: `${count(t.orders ?? 0)} đơn chưa tính được lãi vì thiếu giá vốn. Nhập một lần, Cerno tính lại mọi đơn.`, impact: "Mở khóa số liệu lãi", action: "Nhập giá vốn" };
@@ -76,7 +76,7 @@ export function TodosView() {
   return (
     <div className={styles.stack}>
       {todos.map((t) => {
-        const x = text(t);
+        const x = todoText(t);
         const isDone = done.includes(t.id);
         const pri = PRI[t.priority];
         return (

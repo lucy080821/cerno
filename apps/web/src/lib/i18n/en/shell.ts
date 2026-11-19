@@ -1,0 +1,100 @@
+import type { Dict } from "../translate";
+
+/** Thanh bên mới và các trang Tổng quan, Nguồn dữ liệu, Chi phí, Hỏi AI, Cảnh báo, Báo cáo định kỳ, Mẫu dashboard, Chia sẻ và nhúng. */
+export const EN_SHELL: Dict = {
+  // Thanh bên
+  "Hỏi AI": "Ask AI",
+  "Hành động": "Actions",
+  "Chia sẻ và nhúng": "Sharing & embeds",
+  "Gói miễn phí": "Free plan",
+  "Gói trả phí": "Paid plan",
+  "{0} trên {1} nguồn dữ liệu": "{0} of {1} data sources",
+  "Cửa hàng của bạn": "Your store",
+
+  // Tổng quan
+  "Lãi thật, đơn lỗ và việc nên làm trước, tính từ dữ liệu đơn hàng của bạn.": "Real profit, losing orders and what to do first, from your order data.",
+  "Bắt đầu bằng dữ liệu đơn hàng": "Start with your order data",
+  "Tải file đơn hàng Excel/CSV từ Shopee, TikTok Shop hoặc sổ bán hàng. Cerno tính lãi thật của từng đơn sau phí sàn, giá vốn và quảng cáo.": "Upload an Excel/CSV order file from Shopee, TikTok Shop or your sales log. Cerno works out the real profit of every order after platform fees, product cost and ads.",
+  "{0} đơn hoàn và hủy": "{0} returned & cancelled orders",
+  "Xem tất cả": "See all",
+  "Chưa có việc gì cần làm.": "Nothing to do yet.",
+  "{0} doanh thu": "{0} of revenue",
+  "Lãi của từng đơn, đơn nào lỗ và vì sao.": "Profit of every order, which ones lose money and why.",
+  "Nhập giá vốn để tính đúng lãi mọi đơn.": "Enter product costs to get every order's profit right.",
+  "Tự thiết kế báo cáo từ dữ liệu của bạn.": "Design your own reports from your data.",
+  "Tải file đơn hàng hoặc nối Google Sheets.": "Upload order files or connect Google Sheets.",
+
+  // Nguồn dữ liệu, Mẫu dashboard, trang Dashboard
+  "Tải file đơn hàng từ Shopee, TikTok Shop hoặc nối Google Sheets. Tối đa {0} nguồn.": "Upload order files from Shopee, TikTok Shop or connect Google Sheets. Up to {0} sources.",
+  "Chọn một mẫu theo ngành, Cerno tự ghép cột với dữ liệu của bạn rồi tạo dashboard để chỉnh tiếp.": "Pick an industry template; Cerno matches the columns to your data and creates a dashboard you can keep editing.",
+  "Nguồn dữ liệu (": "Data sources (",
+  ") nay nằm ở trang riêng:": ") now have their own page:",
+  ". Mẫu dashboard theo ngành có ở trang": ". Industry templates are on the",
+
+  // Chi phí
+  "Tiền đang đi vào đâu: giá vốn, phí sàn, quảng cáo, so với doanh thu thực.": "Where the money goes: product cost, platform fees and ads, compared with net revenue.",
+  "{0} doanh thu thực": "{0} of net revenue",
+  "Doanh thu thực đi đâu": "Where net revenue goes",
+  "trên {0} đơn đã đủ dữ liệu": "across {0} orders with complete data",
+  "Doanh thu thực đã trừ đơn hủy và hoàn trả. Phí ship khách trả (": "Net revenue excludes cancelled and returned orders. Shipping paid by buyers (",
+  ") được cộng vào lãi.": ") is added to profit.",
+  "Chi phí chưa thấy trong file": "Costs not in the file",
+  "(đã tính vào lãi thật).": "(already included in real profit).",
+  "Phí ship hai chiều và phí xử lý đơn hoàn: file đơn hàng của sàn chưa có số này.": "Two-way shipping and return handling fees: platform order files don't include these yet.",
+  "Đóng gói, nhân công, mặt bằng: chưa nhập được, sẽ có ở bản sau.": "Packaging, labour, rent: can't be entered yet, coming in a later version.",
+  "Giá vốn: lấy từ trang": "Product cost: taken from the",
+  ", sản phẩm chưa có giá vốn thì đơn đó chưa tính lãi.": " page; orders with products that have no cost don't get a profit yet.",
+  "Chi phí theo sản phẩm": "Costs by product",
+  "Chi phí / doanh thu": "Cost / revenue",
+  "Chưa có sản phẩm nào đủ dữ liệu giá vốn.": "No product has complete cost data yet.",
+
+  // Hỏi AI
+  "Hỏi bằng tiếng Việt về số liệu của bạn. AI trả lời, vẽ biểu đồ và sửa dashboard giúp bạn, mọi thay đổi đều hoàn tác được.": "Ask about your numbers in plain language. AI answers, draws charts and edits the dashboard for you; every change can be undone.",
+  "Chọn dashboard để hỏi": "Pick a dashboard to ask about",
+  "AI đọc số liệu của dashboard đang mở": "AI reads the numbers of the open dashboard",
+  "Bạn chưa có dashboard nào. Tạo một dashboard từ mẫu rồi quay lại hỏi AI.": "You don't have any dashboards yet. Create one from a template, then come back to ask AI.",
+  "Mở và hỏi AI": "Open and ask AI",
+  "Bạn có thể hỏi": "You can ask",
+  "Sản phẩm nào đang lỗ nhiều nhất tháng này?": "Which product is losing the most money this month?",
+  "Vẽ biểu đồ lãi theo ngày của Shopee và TikTok Shop": "Chart daily profit for Shopee and TikTok Shop",
+  "Vì sao doanh thu tuần này giảm so với tuần trước?": "Why is revenue down this week compared with last week?",
+  "Dữ liệu gửi cho AI": "Data sent to AI",
+  "Cerno chỉ gửi bản tóm tắt đã gộp số liệu của dashboard và vài dòng mẫu, không gửi toàn bộ dữ liệu. Dữ liệu không được dùng để huấn luyện AI. Xem thêm ở": "Cerno only sends an aggregated summary of the dashboard and a few sample rows, never your full data. Your data is not used to train AI. More in the",
+
+  // Cảnh báo
+  "Nhận email khi số liệu vượt ngưỡng, thay đổi bất thường hoặc không có dữ liệu mới. Cerno kiểm tra sau mỗi lần dữ liệu cập nhật.": "Get an email when a number crosses a threshold, changes unusually or stops updating. Cerno checks after every data update.",
+  "Chưa đọc được danh sách cảnh báo: cần chạy migration": "Couldn't read your alerts: run migration",
+  "Cảnh báo của bạn": "Your alerts",
+  "{0} cảnh báo · {1} đang báo": "{0} alerts · {1} firing",
+  "Chưa có cảnh báo nào. Chọn một dashboard bên dưới, mô tả điều bạn muốn được báo (ví dụ \"báo khi doanh thu hôm nay dưới 2 triệu\"), AI sẽ dựng luật để bạn xác nhận.": "No alerts yet. Pick a dashboard below and describe what you want to hear about (e.g. \"tell me when today's revenue is under 2 million\"); AI drafts the rule for you to confirm.",
+  "Lần báo gần nhất": "Last alert",
+  "Tạo cảnh báo mới": "Create a new alert",
+  "chọn dashboard chứa số liệu cần theo dõi": "pick the dashboard with the numbers to watch",
+  "Bạn chưa có dashboard nào.": "You don't have any dashboards yet.",
+  "Tạo dashboard từ mẫu": "Create a dashboard from a template",
+  "trước.": "first.",
+
+  // Báo cáo định kỳ
+  "Cerno gửi email tóm tắt số liệu theo lịch: chỉ số chính, nhóm tăng giảm, ảnh biểu đồ và link mở dashboard.": "Cerno emails a summary on a schedule: key metrics, top movers, chart images and a link to the dashboard.",
+  "Chưa đọc được danh sách báo cáo: cần chạy migration": "Couldn't read your reports: run migration",
+  "Báo cáo đang gửi": "Scheduled reports",
+  "{0} người nhận": "{0} recipients",
+  "Chưa có báo cáo nào. Chọn một dashboard bên dưới để đặt lịch gửi báo cáo cho bạn hoặc đồng nghiệp.": "No reports yet. Pick a dashboard below to schedule reports for yourself or your colleagues.",
+  "Người nhận": "Recipient",
+  "Lịch gửi": "Schedule",
+  "Lần gửi gần nhất": "Last sent",
+  "Lần gửi tới": "Next send",
+  "Đặt lịch báo cáo mới": "Schedule a new report",
+  "chọn dashboard muốn gửi": "pick the dashboard to send",
+  "Đặt lịch báo cáo": "Schedule report",
+
+  // Chia sẻ và nhúng
+  "Gửi link xem không cần đăng nhập, mời đồng nghiệp theo email (xem hoặc sửa), hoặc nhúng dashboard vào website.": "Send a view link with no sign-in, invite colleagues by email (view or edit), or embed dashboards in your website.",
+  "Một số thông tin chia sẻ chưa đọc được: cần chạy migration": "Some sharing details couldn't be read: run migrations",
+  "bấm Chia sẻ để bật link, mời người hoặc lấy mã nhúng": "click Share to turn on a link, invite people or get the embed code",
+  "Nhúng website": "Website embed",
+  "Người được mời": "Invited people",
+  "Ai có link cũng xem và đổi bộ lọc được, không cần tài khoản, không sửa được. Bạn đổi hoặc tắt link bất kỳ lúc nào, link cũ ngừng hoạt động ngay.": "Anyone with the link can view and change filters without an account, but can't edit. Change or turn off the link at any time; the old link stops working right away.",
+  "Mời theo email và nhúng website": "Email invites and website embeds",
+  "Người được mời đăng nhập bằng Google đúng email để xem hoặc sửa đúng dashboard đó. Mã nhúng chỉ chạy trên các tên miền bạn khai báo.": "Invited people sign in with Google using that email to view or edit just that dashboard. The embed code only works on the domains you list.",
+};

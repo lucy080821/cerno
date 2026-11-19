@@ -3,26 +3,78 @@
   min-height: 100vh;
 }
 
+/* Thanh bên tối (xanh đậm) như ảnh thiết kế: đặt lại token màu trong phạm vi thanh bên. */
 .side {
-  width: 236px;
+  --text: #eef0fb;
+  --muted: #9aa1c3;
+  --line: rgba(255, 255, 255, 0.08);
+  width: 252px;
   flex: none;
   position: sticky;
   top: 0;
   height: 100vh;
   display: flex;
   flex-direction: column;
-  gap: 18px;
-  padding: 22px 14px;
-  /* Thanh bên tối (xanh đậm) như ảnh thiết kế: đặt lại token màu trong phạm vi thanh bên. */
-  --text: #eef0fb;
-  --muted: #9aa1c3;
-  --line: rgba(255, 255, 255, 0.08);
+  gap: 12px;
+  padding: 18px 14px 14px;
   color: var(--text);
   background: #1b1e3f;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
 }
 
 .brand {
   padding: 0 8px;
+}
+
+/* Thẻ cửa hàng: chữ viết tắt + tên + các kênh có đơn. */
+.shop {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--line);
+  color: var(--text);
+  text-decoration: none;
+}
+
+.shop:hover {
+  background: rgba(255, 255, 255, 0.09);
+}
+
+.shopAvatar {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 0.85rem;
+  color: #fff;
+  background: var(--brand-gradient);
+}
+
+.shopText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.35;
+}
+
+.shopText b {
+  font-size: 0.9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.shopText span {
+  font-size: 0.75rem;
+  color: var(--muted);
 }
 
 .nav {
@@ -32,8 +84,8 @@
 }
 
 .group {
-  padding: 14px 10px 6px;
-  font-size: 0.7rem;
+  padding: 10px 10px 3px;
+  font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -44,10 +96,10 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 9px 10px;
+  padding: 6px 10px;
   border-radius: 10px;
   color: var(--text);
-  font-size: 0.92rem;
+  font-size: 0.88rem;
   text-decoration: none;
 }
 
@@ -61,14 +113,83 @@
   box-shadow: 0 6px 18px rgba(109, 94, 252, 0.35);
 }
 
+.on:hover {
+  background: linear-gradient(90deg, #6d5efc, #7f72ff);
+}
+
 .icon {
   width: 20px;
-  text-align: center;
+  display: grid;
+  place-items: center;
   color: var(--muted);
 }
 
 .on .icon {
   color: #fff;
+}
+
+.label {
+  flex: 1;
+  min-width: 0;
+}
+
+.badge {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #fff;
+  background: #ef4444;
+}
+
+/* Thẻ gói ở cuối thanh bên. */
+.plan {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--line);
+  color: var(--text);
+  font-size: 0.78rem;
+  text-decoration: none;
+}
+
+.plan:hover {
+  background: rgba(255, 255, 255, 0.09);
+}
+
+.plan b {
+  font-size: 0.85rem;
+}
+
+.plan span {
+  color: var(--muted);
+}
+
+.meter {
+  display: block;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+}
+
+.meter i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--brand-gradient);
+}
+
+.planCta {
+  color: var(--text) !important;
 }
 
 .main {
@@ -115,6 +236,16 @@
 
 .user {
   white-space: nowrap;
+  color: var(--muted);
+  text-decoration: none;
+  padding: 6px 10px;
+  border-radius: 8px;
+}
+
+.user:hover,
+.userOn {
+  color: var(--text);
+  background: rgba(20, 22, 43, 0.05);
 }
 
 .body {
@@ -133,13 +264,15 @@
     flex-direction: row;
     align-items: center;
     overflow-x: auto;
+    overflow-y: hidden;
     padding: 12px 16px;
-    border-right: 0;
   }
   .nav {
     flex-direction: row;
   }
-  .group {
+  .group,
+  .shop,
+  .plan {
     display: none;
   }
   .item {

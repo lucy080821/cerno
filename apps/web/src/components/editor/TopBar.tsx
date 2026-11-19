@@ -7,6 +7,7 @@ import { useDialog } from "@/components/ui/DialogProvider";
 import { LogoMark } from "@/components/Logo";
 import { ExportDialog } from "./ExportDialog";
 import { ShareDialog } from "./ShareDialog";
+import { clearOpenParam, readOpenParam } from "@/lib/editor/open-param";
 import { NotifyDialog } from "./NotifyDialog";
 import { reportableWidgets } from "@/lib/notify/format";
 import { useEditor } from "@/lib/editor/store";
@@ -90,6 +91,14 @@ export function TopBar({ onMobile, onFullscreen, notify, canShare = true }: {
   const notifyRequest = useEditor((st) => st.notifyRequest);
   const [exportOpen, setExportOpen] = useState(false);
   const dashboardId = useEditor((st) => st.doc.id);
+
+  // Mở sẵn hộp thoại khi vào từ trang Chia sẻ / Cảnh báo / Báo cáo định kỳ (`?open=`). Tab AI do RightPanel xử lý.
+  useEffect(() => {
+    const target = readOpenParam();
+    if (target === "share" && canShare) setShareOpen(true);
+    else if (target === "alerts" || target === "reports") useEditor.getState().openNotify({ tab: target });
+    if (target && target !== "ai") clearOpenParam();
+  }, [canShare]);
 
   const zoomBy = (f: number) => {
     const { viewport } = useEditor.getState();

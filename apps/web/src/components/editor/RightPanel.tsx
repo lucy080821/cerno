@@ -1,5 +1,6 @@
 "use client";
 
+import { clearOpenParam, readOpenParam } from "@/lib/editor/open-param";
 import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import { useEditor } from "@/lib/editor/store";
 import {
@@ -39,6 +40,14 @@ export function RightPanel({ dashboardId, canModerate = false }: { dashboardId: 
     last.current = w;
     setWidth(w);
     setOpen(loadLayoutPrefs().rightOpen);
+  }, []);
+
+  // Vào từ trang Hỏi AI (`/editor/<id>?open=ai`): mở bảng phải ở tab AI.
+  useEffect(() => {
+    if (readOpenParam() !== "ai") return;
+    setTab("ai");
+    setOpen(true);
+    clearOpenParam();
   }, []);
 
   // Cửa sổ thu nhỏ lại thì bảng không được chiếm quá 60% bề ngang.
