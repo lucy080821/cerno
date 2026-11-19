@@ -13,8 +13,12 @@
   flex-direction: column;
   gap: 18px;
   padding: 22px 14px;
-  border-right: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.02);
+  /* Thanh bên tối (xanh đậm) như ảnh thiết kế: đặt lại token màu trong phạm vi thanh bên. */
+  --text: #eef0fb;
+  --muted: #9aa1c3;
+  --line: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+  background: #1b1e3f;
 }
 
 .brand {
@@ -48,12 +52,13 @@
 }
 
 .item:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .on {
-  background: color-mix(in srgb, var(--brand-a) 28%, transparent);
-  box-shadow: inset 3px 0 0 var(--brand-a);
+  background: linear-gradient(90deg, #6d5efc, #7f72ff);
+  color: #fff;
+  box-shadow: 0 6px 18px rgba(109, 94, 252, 0.35);
 }
 
 .icon {
@@ -63,7 +68,7 @@
 }
 
 .on .icon {
-  color: var(--text);
+  color: #fff;
 }
 
 .main {
@@ -81,6 +86,7 @@
   flex-wrap: wrap;
   padding: 22px 28px 18px;
   border-bottom: 1px solid var(--line);
+  background: #ffffff;
 }
 
 .titleBox {
@@ -129,7 +135,6 @@
     overflow-x: auto;
     padding: 12px 16px;
     border-right: 0;
-    border-bottom: 1px solid var(--line);
   }
   .nav {
     flex-direction: row;

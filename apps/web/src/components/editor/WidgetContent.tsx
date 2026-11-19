@@ -155,14 +155,14 @@ function Placeholder({ children }: { children: string }) {
 
 /**
  * Biểu đồ tĩnh vẽ từ bảng ĐÃ GỘP có sẵn (dùng trong khung chat AI). Không đọc dữ liệu nguồn, không tương tác chéo.
- * Dùng chủ đề tối vì khung chat tối, bất kể chủ đề của dashboard.
+ * Dùng chủ đề sáng vì khung chat sáng, bất kể chủ đề của dashboard.
  */
 export function StaticChart({ config, table, palette }: {
   config: ChartConfig;
   table: AggregatedTable;
   palette: string[];
 }) {
-  const theme = useMemo<ChartTheme>(() => ({ palette, mode: "dark" }), [palette]);
+  const theme = useMemo<ChartTheme>(() => ({ palette, mode: "light" }), [palette]);
   const option = useMemo(() => buildChartOptionFromTable(config, table, theme), [config, table, theme]);
   if (!option) return <Placeholder>Không vẽ được biểu đồ này</Placeholder>;
   return (

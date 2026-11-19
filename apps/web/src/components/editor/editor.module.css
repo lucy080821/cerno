@@ -1,13 +1,13 @@
 /* ---------- Khung tổng ---------- */
 .app {
-  --bg: #0b0f1a;
-  --panel: #121a2b;
-  --panel-2: #172036;
-  --line: rgba(255, 255, 255, 0.08);
-  --text: #e6eaf4;
-  --muted: #8b97b1;
+  --bg: #eef0f6;
+  --panel: #ffffff;
+  --panel-2: #f5f6fa;
+  --line: rgba(20, 22, 43, 0.072);
+  --text: #14162b;
+  --muted: #5d6782;
   --accent: #6d5efc;
-  --danger: #f0568a;
+  --danger: #d6336c;
   position: relative;
   display: grid;
   grid-template-rows: 52px 1fr;
@@ -19,7 +19,7 @@
   overflow: hidden;
   /* Thanh cuộn mảnh, tối màu cho cả editor (thuộc tính này được kế thừa xuống mọi panel). */
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+  scrollbar-color: rgba(20, 22, 43, 0.162) transparent;
 }
 
 /* Chrome/Edge mới dùng scrollbar-width ở trên; WebKit cũ cần thêm bộ này. */
@@ -28,11 +28,11 @@
   height: 8px;
 }
 .app ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.18);
+  background: rgba(20, 22, 43, 0.162);
   border-radius: 8px;
 }
 .app ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(20, 22, 43, 0.27);
 }
 .app ::-webkit-scrollbar-track,
 .app ::-webkit-scrollbar-corner {
@@ -55,7 +55,7 @@
   padding: 6px 12px;
   border-radius: 999px;
   border: 1px solid var(--line);
-  background: rgba(18, 26, 43, 0.85);
+  background: rgba(255, 255, 255, 0.94);
   color: var(--text);
   font: inherit;
   cursor: pointer;
@@ -80,7 +80,7 @@
   max-width: calc(100% - 120px);
   padding: 5px 8px;
   border-radius: 999px;
-  background: rgba(18, 26, 43, 0.92);
+  background: rgba(255, 255, 255, 0.94);
   border: 1px solid var(--line);
   color: var(--text);
 }
@@ -116,8 +116,8 @@
   display: grid;
   place-items: center;
   height: 100vh;
-  background: #0b0f1a;
-  color: #8b97b1;
+  background: #eef0f6;
+  color: #5d6782;
 }
 
 .body {
@@ -186,7 +186,7 @@
   background: var(--panel-2);
   border: 1px solid var(--line);
   border-radius: 8px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 10px 30px rgba(20, 22, 43, 0.135);
   display: grid;
   gap: 2px;
 }
@@ -204,7 +204,7 @@
   cursor: pointer;
 }
 .menuItem:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(20, 22, 43, 0.072);
 }
 
 .topLeft,
@@ -274,7 +274,7 @@
 }
 
 .iconBtn:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(20, 22, 43, 0.072);
 }
 
 .iconBtn:disabled {
@@ -294,7 +294,7 @@
 }
 
 .zoomLabel:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(20, 22, 43, 0.072);
 }
 
 .btn {
@@ -313,7 +313,7 @@
 }
 
 .btn:hover {
-  background: #1d2944;
+  background: #eceef5;
 }
 
 .btnActive {
@@ -374,7 +374,7 @@
   height: 22px;
   border-radius: 7px;
   background: color-mix(in srgb, var(--accent) 20%, transparent);
-  color: #c4beff;
+  color: #5b4cf0;
 }
 
 .sectionText {
@@ -421,7 +421,7 @@
 
 .addTile:hover {
   border-color: var(--accent);
-  background: #1d2944;
+  background: #eceef5;
 }
 
 .layers,
@@ -443,7 +443,7 @@
 }
 
 .layer:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(20, 22, 43, 0.045);
 }
 
 .layerActive,
@@ -481,14 +481,14 @@
   padding: 1px 5px;
   border-radius: 4px;
   background: rgba(109, 94, 252, 0.22);
-  color: #b4abff;
+  color: #5b4cf0;
   font-size: 10px;
   text-align: center;
 }
 
 .badgeNum {
   background: rgba(25, 195, 177, 0.18);
-  color: #5eead4;
+  color: #0d9488;
 }
 
 /* ---------- Ô nhập ---------- */
@@ -704,8 +704,8 @@
   overflow: hidden;
   touch-action: none;
   user-select: none;
-  background-color: #0b0f1a;
-  background-image: radial-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+  background-color: #eef0f6;
+  background-image: radial-gradient(rgba(20, 22, 43, 0.063) 1px, transparent 1px);
   background-size: 22px 22px;
 }
 
@@ -720,7 +720,7 @@
 
 .artboard {
   position: relative;
-  box-shadow: 0 10px 50px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 10px 50px rgba(20, 22, 43, 0.15);
 }
 
 .widget,
@@ -814,7 +814,7 @@
   margin-bottom: 8px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(20, 22, 43, 0.018);
 }
 .fmtBlockHead {
   display: flex;
@@ -850,7 +850,7 @@
   position: absolute;
   inset: 0;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.18);
+  background: rgba(20, 22, 43, 0.162);
   transition: background 0.15s;
   pointer-events: none;
 }
@@ -885,7 +885,7 @@
   width: 100%;
   height: 100%;
   padding: 12px;
-  color: #8b95a7;
+  color: #5d6782;
   font-size: 13px;
   text-align: center;
   background: repeating-linear-gradient(45deg, transparent 0 10px, rgba(127, 140, 160, 0.08) 10px 20px);
@@ -1061,7 +1061,7 @@
   inset: 0;
   display: grid;
   place-items: center;
-  color: #8b95a7;
+  color: #5d6782;
   pointer-events: none;
 }
 
@@ -1072,7 +1072,7 @@
   transform: translateX(-50%);
   padding: 6px 14px;
   border-radius: 999px;
-  background: rgba(18, 26, 43, 0.9);
+  background: rgba(255, 255, 255, 0.94);
   border: 1px solid var(--line);
   color: var(--muted);
   font-size: 12px;
@@ -1086,9 +1086,9 @@
   transform: translateX(-50%);
   padding: 10px 16px;
   border-radius: 10px;
-  background: #1d2944;
+  background: #eceef5;
   border: 1px solid var(--line);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 10px 30px rgba(20, 22, 43, 0.12);
   z-index: 300000;
 }
 
@@ -1099,7 +1099,7 @@
   z-index: 200000;
   display: grid;
   place-items: center;
-  background: rgba(4, 7, 14, 0.72);
+  background: rgba(20, 22, 43, 0.4);
   backdrop-filter: blur(4px);
 }
 
@@ -1150,7 +1150,7 @@
   border-radius: 44px;
   background: #000;
   overflow: hidden;
-  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 30px 80px rgba(20, 22, 43, 0.18);
 }
 
 .phoneNotch {
@@ -1360,7 +1360,7 @@
   position: absolute;
   z-index: 30;
   min-width: 100%;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 8px 24px rgba(20, 22, 43, 0.12);
 }
 .fcOption {
   display: flex;
@@ -1437,7 +1437,7 @@
 .msg code {
   padding: 0 4px;
   border-radius: 4px;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(20, 22, 43, 0.09);
   font-size: 12px;
 }
 .msgUser { align-self: flex-end; background: var(--accent); color: #fff; }
@@ -1489,7 +1489,7 @@
 .actionTitle { color: var(--muted); font-size: 11px; margin-bottom: 4px; }
 .actionLog ul { margin: 0 0 8px; padding: 0; list-style: none; }
 .actionLog li { padding: 1px 0; }
-.actionOk { color: #22c3a6; }
+.actionOk { color: #0d9488; }
 .actionBad { color: var(--danger); }
 .chatNote { margin: 0; padding: 6px 12px; color: var(--danger); font-size: 11.5px; }
 
@@ -1536,7 +1536,7 @@
 /* ---------- Trạng thái lưu ---------- */
 .savedOk { color: var(--muted); }
 .savedBusy { color: var(--accent); }
-.savedWarn { color: #fbbf24; }
+.savedWarn { color: #d97706; }
 .savedErr { color: var(--danger); }
 
 .saveBanner {
@@ -1553,11 +1553,11 @@
   border: 1px solid var(--line);
   border-radius: 10px;
   background: var(--panel);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 8px 24px rgba(20, 22, 43, 0.12);
   font-size: 12px;
 }
 
-.saveBannerWarn { border-color: #fbbf24; }
+.saveBannerWarn { border-color: #d97706; }
 .saveBannerErr { border-color: var(--danger); }
 
 /* ---------- Danh sách trang (editor, bên trái) ---------- */
@@ -1598,7 +1598,7 @@
 }
 
 .pageBtn:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(20, 22, 43, 0.045);
 }
 
 .pageName {
@@ -1613,7 +1613,7 @@
   min-width: 20px;
   padding: 0 6px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(20, 22, 43, 0.072);
   color: var(--muted);
   font-size: 11px;
   text-align: center;
@@ -1813,7 +1813,7 @@
   padding: 4px;
   border: 1px solid var(--line);
   border-radius: 999px;
-  background: rgba(18, 26, 43, 0.9);
+  background: rgba(255, 255, 255, 0.94);
   color: var(--text);
   transform: translateX(-50%);
   backdrop-filter: blur(6px);
@@ -1834,7 +1834,7 @@
 }
 
 .pageSwitchBtn:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(20, 22, 43, 0.09);
 }
 
 .pageSwitchBtn:disabled {
@@ -1944,8 +1944,8 @@
   padding: 5px 12px;
   border: 1px solid rgba(15, 23, 42, 0.15);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.7);
-  color: #334155;
+  background: rgba(20, 22, 43, 0.63);
+  color: #cbd2e1;
   font-size: 12px;
   cursor: pointer;
 }
@@ -1998,7 +1998,7 @@
   padding: 7px 12px;
   border: 1px solid var(--line);
   border-radius: 999px;
-  background: rgba(18, 26, 43, 0.9);
+  background: rgba(255, 255, 255, 0.94);
   color: var(--text);
   font: inherit;
   font-size: 12px;
@@ -2036,7 +2036,7 @@
   display: grid;
   place-items: center;
   padding: 16px;
-  background: rgba(0, 0, 0, 0.55);
+  background: rgba(20, 22, 43, 0.38);
 }
 .dialog {
   width: min(820px, 100%);
@@ -2046,7 +2046,7 @@
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 12px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 20px 60px rgba(20, 22, 43, 0.15);
   overflow: hidden;
 }
 .modalHead,
@@ -2098,7 +2098,7 @@
   font-size: 12.5px;
 }
 .calcWarn {
-  color: #fbbf24;
+  color: #d97706;
   font-size: 12.5px;
 }
 .calcOk {
@@ -2171,11 +2171,11 @@
 }
 .badgeCalc {
   background: rgba(160, 108, 245, 0.25);
-  color: #d6b9ff;
+  color: #7c3aed;
 }
 .badgeErr {
   background: rgba(240, 86, 138, 0.25);
-  color: #ff9db9;
+  color: #d6336c;
 }
 
 /* ---------- Trang xem công khai / nhúng ---------- */
@@ -2185,7 +2185,7 @@
   z-index: 30;
   display: grid;
   place-items: center;
-  background: rgba(11, 15, 26, 0.55);
+  background: rgba(255, 255, 255, 0.94);
   pointer-events: none;
 }
 .embedError {
@@ -2207,13 +2207,13 @@
   z-index: 20;
   padding: 2px 8px;
   border-radius: 999px;
-  background: rgba(11, 15, 26, 0.55);
-  color: #c9d1e6;
+  background: rgba(255, 255, 255, 0.94);
+  color: #2c3350;
   font-size: 11px;
   text-decoration: none;
 }
 .embedBrand:hover {
-  color: #fff;
+  color: var(--text);
 }
 
 /* ---------- Hộp thoại chia sẻ / nhúng ---------- */
@@ -2405,7 +2405,7 @@
 .stepText code {
   padding: 1px 5px;
   border-radius: 4px;
-  background: rgba(255, 255, 255, 0.07);
+  background: rgba(20, 22, 43, 0.063);
   font-size: 12px;
 }
 .shareNote {
@@ -2415,7 +2415,7 @@
   border: 1px solid rgba(251, 191, 36, 0.35);
   border-radius: 8px;
   background: rgba(251, 191, 36, 0.07);
-  color: #fcd34d;
+  color: #b45309;
   font-size: 12.5px;
   line-height: 1.5;
 }
@@ -2446,7 +2446,7 @@
   flex-direction: column;
   height: 100vh;
   height: 100dvh;
-  background: #0b0f1a;
+  background: #eef0f6;
 }
 .appFill {
   height: auto;
@@ -2460,9 +2460,9 @@
   gap: 12px;
   height: 44px;
   padding: 0 14px;
-  background: #121a2b;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  color: #e6eaf4;
+  background: #ffffff;
+  border-bottom: 1px solid rgba(20, 22, 43, 0.072);
+  color: #14162b;
   font-size: 13px;
 }
 .viewBarName {
@@ -2479,17 +2479,17 @@
   align-items: center;
   height: 28px;
   padding: 0 12px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(20, 22, 43, 0.126);
   border-radius: 7px;
-  color: #e6eaf4;
+  color: #14162b;
   text-decoration: none;
   white-space: nowrap;
 }
 .viewBarLink:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(20, 22, 43, 0.072);
 }
 .viewBarBrand {
-  color: #8b97b1;
+  color: #5d6782;
   text-decoration: none;
   font-size: 12px;
   white-space: nowrap;
@@ -2524,8 +2524,8 @@
   bottom: 4px;
   padding: 1px 6px;
   border-radius: 6px;
-  background: rgba(0, 0, 0, 0.45);
-  color: #e6eaf4;
+  background: rgba(20, 22, 43, 0.38);
+  color: #14162b;
   font-size: 10.5px;
   pointer-events: auto;
 }
@@ -2595,7 +2595,7 @@
   padding: 4px;
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: rgba(0, 0, 0, 0.28);
+  background: rgba(20, 22, 43, 0.07);
 }
 
 .mainTab {
@@ -2609,8 +2609,8 @@
 .mainTabOn {
   border-bottom-color: transparent;
   background: color-mix(in srgb, var(--accent) 30%, var(--panel-2));
-  color: #fff;
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08) inset, 0 2px 8px rgba(0, 0, 0, 0.25);
+  color: var(--text);
+  box-shadow: 0 1px 0 rgba(20, 22, 43, 0.072) inset, 0 2px 8px rgba(20, 22, 43, 0.075);
 }
 
 .rightBody:not(.rightBodyChat) {
@@ -2627,18 +2627,18 @@
 .rightBody .section {
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.022));
+  background: linear-gradient(180deg, rgba(20, 22, 43, 0.045), rgba(20, 22, 43, 0.02));
   overflow: hidden;
 }
 
 .rightBody .sectionTitle {
   padding: 11px 12px;
-  color: #d3daec;
+  color: #2c3350;
   font-size: 11.5px;
 }
 
 .rightBody .sectionTitle:hover {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(20, 22, 43, 0.036);
 }
 
 .rightBody .section[open] > .sectionTitle {
@@ -2653,7 +2653,7 @@
 .rightBody .field {
   gap: 5px;
   margin-bottom: 10px;
-  color: #a9b4cc;
+  color: #4b5470;
   font-size: 11.5px;
   font-weight: 600;
 }
@@ -2665,14 +2665,14 @@
 .rightBody .input {
   height: 32px;
   border-radius: 8px;
-  background: rgba(0, 0, 0, 0.26);
-  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(20, 22, 43, 0.065);
+  border-color: rgba(20, 22, 43, 0.108);
   font-size: 12.5px;
   font-weight: 400;
 }
 
 .rightBody .input:hover {
-  border-color: rgba(255, 255, 255, 0.24);
+  border-color: rgba(20, 22, 43, 0.216);
 }
 
 .rightBody .input:focus {
@@ -2692,7 +2692,7 @@
   width: 32px;
   height: 32px;
   border-radius: 8px;
-  border-color: rgba(255, 255, 255, 0.18);
+  border-color: rgba(20, 22, 43, 0.162);
 }
 
 .rightBody .colorWrap {
@@ -2711,13 +2711,13 @@
   margin: 0;
   font-size: 12.5px;
   font-weight: 400;
-  color: #d3daec;
+  color: #2c3350;
 }
 
 .rightBody .smallBtn {
   height: 30px;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(20, 22, 43, 0.045);
 }
 
 .rightBody .addBtn {
@@ -2725,7 +2725,7 @@
   padding: 6px 10px;
   border: 1px dashed color-mix(in srgb, var(--accent) 55%, transparent);
   border-radius: 8px;
-  color: #c4beff;
+  color: #5b4cf0;
 }
 
 .rightBody .addBtn:hover {
@@ -2736,7 +2736,7 @@
   margin: 14px 0 6px;
   padding-top: 12px;
   border-top: 1px dashed var(--line);
-  color: #cfd7ea;
+  color: #2c3350;
   font-weight: 700;
 }
 
@@ -2748,7 +2748,7 @@
 
 .rightBody .fmtBlock {
   border-radius: 10px;
-  background: rgba(0, 0, 0, 0.16);
+  background: rgba(20, 22, 43, 0.04);
 }
 
 /* Tab Dữ liệu / Kiểu dáng của widget */
@@ -2771,60 +2771,59 @@
 
 .rightBody .tabOn {
   background: color-mix(in srgb, var(--accent) 28%, var(--panel-2));
-  color: #fff;
+  color: var(--text);
 }
 
 /* Gợi ý cuối bảng */
 .rightBody:not(.rightBodyChat) > div > .hint {
   margin: 0;
   padding: 10px 12px;
-  border: 1px dashed rgba(255, 255, 255, 0.16);
+  border: 1px dashed rgba(20, 22, 43, 0.144);
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(20, 22, 43, 0.018);
 }
 
 /* =====================================================================================================
-   Bảng phải: các chi tiết trang trí từng màu tím nay dùng #172036 (nền tối xanh). Viền và vòng sáng của ô nhập dùng
-   trắng mờ vì #172036 trên nền bảng quá tối để nhìn thấy. Trạng thái BẬT (công tắc, nút B/I/U) vẫn giữ màu nhấn
-   để phân biệt bật/tắt.
+   Bảng phải: các chi tiết trang trí dùng nền xám nhạt trung tính. Trạng thái BẬT (công tắc, nút B/I/U) vẫn giữ
+   màu nhấn để phân biệt bật/tắt.
    ===================================================================================================== */
 .sectionIcon {
-  background: #172036;
-  color: #cfd7ea;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #f5f6fa;
+  color: #2c3350;
+  border: 1px solid rgba(20, 22, 43, 0.09);
 }
 
 .mainTabOn,
 .rightBody .tabOn {
-  background: #172036;
-  color: #fff;
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14) inset, 0 2px 8px rgba(0, 0, 0, 0.3);
+  background: #ffffff;
+  color: var(--text);
+  box-shadow: 0 0 0 1px rgba(20, 22, 43, 0.126) inset, 0 2px 8px rgba(20, 22, 43, 0.09);
 }
 
 .rightBody .input:focus {
-  border-color: rgba(255, 255, 255, 0.5);
-  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.09);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(109, 94, 252, 0.15);
 }
 
 .rightBody .smallBtn:hover:not(:disabled) {
-  border-color: rgba(255, 255, 255, 0.42);
-  background: #172036;
+  border-color: rgba(20, 22, 43, 0.378);
+  background: #f5f6fa;
 }
 
 .rightBody .addBtn {
-  border-color: rgba(255, 255, 255, 0.28);
-  color: #cfd7ea;
+  border-color: rgba(20, 22, 43, 0.252);
+  color: #2c3350;
 }
 
 .rightBody .addBtn:hover {
-  background: #172036;
+  background: #f5f6fa;
 }
 
 .rightBody .badge,
 .mainTab .badge {
-  background: #172036;
-  color: #e8edf7;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: #f5f6fa;
+  color: #14162b;
+  border: 1px solid rgba(20, 22, 43, 0.18);
 }
 
 
@@ -2874,8 +2873,8 @@
 }
 
 .panelToggle:hover {
-  color: #fff;
-  background: #1f2b47;
+  color: var(--text);
+  background: #eceef5;
 }
 
 .panelToggle svg {
@@ -2960,7 +2959,7 @@
 .rightResizer:hover::after,
 .rightResizer:focus-visible::after,
 .rightResizerOn::after {
-  background: rgba(255, 255, 255, 0.45);
+  background: rgba(20, 22, 43, 0.405);
 }
 
 .rightResizer:focus-visible {
@@ -2982,13 +2981,13 @@
   gap: 4px;
   margin-bottom: 8px;
   padding: 8px 10px;
-  border: 1px dashed rgba(255, 255, 255, 0.22);
+  border: 1px dashed rgba(20, 22, 43, 0.198);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.025);
+  background: rgba(20, 22, 43, 0.023);
 }
 
 .bubbleSlot > span {
-  color: #a9b4cc;
+  color: #4b5470;
   font-size: 11.5px;
   font-weight: 600;
 }
@@ -2998,11 +2997,11 @@
 .iconGroup { margin-bottom: 4px; color: var(--muted); font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
 .iconGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(34px, 1fr)); gap: 4px; }
 .iconBtn { display: grid; place-items: center; height: 34px; border: 1px solid transparent; border-radius: 8px; background: transparent; color: var(--text); cursor: pointer; }
-.iconBtn:hover { background: rgba(255, 255, 255, 0.08); }
+.iconBtn:hover { background: rgba(20, 22, 43, 0.072); }
 .iconBtnOn, .iconBtnOn:hover { border-color: var(--brand-a, #6d5efc); background: rgba(109, 94, 252, 0.25); }
 
 /* Nút chuyển ngôn ngữ của trang nhúng (không có thanh tiêu đề): góc dưới bên trái */
-.embedLang { position: absolute; left: 12px; bottom: 12px; z-index: 20; color: var(--text); background: rgba(18, 26, 43, 0.85); }
+.embedLang { position: absolute; left: 12px; bottom: 12px; z-index: 20; color: var(--text); background: rgba(255, 255, 255, 0.94); }
 
 /* Bộ chọn cấp thời gian (Ngày/Tuần/Tháng…) của người xem */
 .grainSwitch {
@@ -3198,7 +3197,7 @@
   cursor: help;
 }
 .fcBadgeOff {
-  color: var(--muted, #8b8fa7);
+  color: var(--muted, #5d6782);
   background: transparent;
   border-style: dashed;
   border-color: currentColor;

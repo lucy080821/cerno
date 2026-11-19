@@ -461,7 +461,7 @@ function ChartBindings({
       )}
       {!isTable && spec.hint && <p className={s.hint}>{spec.hint}</p>}
       {!isTable && (cfg.dimensions.length < spec.dims[0] || cfg.metrics.length < spec.metrics[0]) && (
-        <p className={s.hint} style={{ color: "#f59e0b" }}>
+        <p className={s.hint} style={{ color: "#b45309" }}>
           Chưa đủ dữ liệu: loại {spec.label} cần {spec.dims[0] > 0 ? `${spec.dims[0]} chiều và ` : ""}ít nhất {spec.metrics[0]} số đo.
         </p>
       )}

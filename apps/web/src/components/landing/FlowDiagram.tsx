@@ -60,7 +60,7 @@ export function FlowDiagram() {
       <g>
         <circle cx="480" cy="120" r="64" className={s.flowRing} />
         <circle cx="480" cy="120" r="64" className={`${s.flowRing} ${s.flowRing2}`} />
-        <rect x="428" y="68" width="104" height="104" rx="24" fill="#14162b" stroke="rgba(255,255,255,0.14)" />
+        <rect x="428" y="68" width="104" height="104" rx="24" fill="#14162b" stroke="rgba(20,22,43,0.14)" />
         <path d="M502 100A26 26 0 1 0 502 140" fill="none" stroke="url(#fl-c)" strokeWidth="10" strokeLinecap="round" />
         <circle cx="490" cy="120" r="7" fill="#19c3b1" />
         <text x="480" y="232" textAnchor="middle" className={s.flowLabel}>Cerno tự đọc và tính</text>

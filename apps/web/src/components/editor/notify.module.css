@@ -67,16 +67,16 @@
   font-size: 11px;
   font-weight: 700;
   background: rgba(52, 211, 153, 0.16);
-  color: #34d399;
+  color: #059669;
 }
 
 .tagOff {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(20, 22, 43, 0.072);
   color: var(--muted);
 }
 
 .err {
-  color: #ff8a8a;
+  color: #dc2626;
   font-size: 12px;
   line-height: 1.5;
 }
@@ -86,14 +86,14 @@
   padding: 8px 10px;
   border-radius: 8px;
   background: rgba(251, 191, 36, 0.12);
-  color: #fbbf24;
+  color: #d97706;
   font-size: 12.5px;
   line-height: 1.5;
 }
 
 .ok {
   margin: 0;
-  color: #34d399;
+  color: #059669;
   font-size: 12.5px;
 }
 
@@ -145,7 +145,7 @@
   padding: 7px 9px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: var(--panel-2, rgba(255, 255, 255, 0.04));
+  background: var(--panel-2, rgba(20, 22, 43, 0.036));
   color: var(--text);
   font: inherit;
   font-size: 13px;
@@ -185,7 +185,7 @@
 }
 
 .chip:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(20, 22, 43, 0.072);
 }
 
 .chip:disabled {
@@ -235,7 +235,7 @@
 }
 
 .pick:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(20, 22, 43, 0.045);
 }
 
 .pickOn {
@@ -270,7 +270,7 @@
   flex: none;
   padding: 2px 8px;
   border-radius: 99px;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(20, 22, 43, 0.072);
   font-size: 11px;
   color: var(--muted);
 }
@@ -336,7 +336,7 @@
   cursor: pointer;
   color: var(--text);
   background: var(--panel);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 16px rgba(20, 22, 43, 0.09);
 }
 
 @media (max-width: 560px) {
@@ -349,20 +349,20 @@
 /* ---------- Cảnh báo ---------- */
 .tagBad {
   background: rgba(220, 38, 38, 0.18);
-  color: #ff8a8a;
+  color: #dc2626;
 }
 
 .tagWarn {
   background: rgba(251, 191, 36, 0.16);
-  color: #fbbf24;
+  color: #d97706;
 }
 
 .bad {
-  color: #ff8a8a;
+  color: #dc2626;
 }
 
 .good {
-  color: #34d399;
+  color: #059669;
 }
 
 .preview {
@@ -371,7 +371,7 @@
   padding: 10px 12px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(20, 22, 43, 0.036);
   font-size: 13.5px;
   line-height: 1.5;
 }

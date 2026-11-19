@@ -5,7 +5,7 @@
   display: grid;
   place-items: center;
   padding: 16px;
-  background: rgba(6, 10, 20, 0.78);
+  background: rgba(20, 22, 43, 0.4);
   backdrop-filter: blur(2px);
 }
 .dialog {
@@ -42,7 +42,7 @@
   min-width: 720px;
   margin-inline: auto;
   aspect-ratio: var(--ratio, 1.6);
-  background: #f1f4f9;
+  background: #14162b;
   overflow: hidden;
 }
 .foot { display: flex; justify-content: flex-end; gap: 10px; }

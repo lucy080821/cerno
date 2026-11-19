@@ -2,7 +2,7 @@ import { compact } from "./format";
 
 /** Biểu đồ SVG nhẹ cho các trang lãi từng đơn (không tải ECharts). Màu lấy theo biến CSS của giao diện. */
 const POS = "var(--green)";
-const NEG = "#f87171";
+const NEG = "#ef5b5b";
 const BASE = "var(--brand-a)";
 
 export interface WaterfallItem {
@@ -101,7 +101,7 @@ export function HBars({ rows, userLabels = true }: { rows: { label: string; valu
       {rows.map((r) => (
         <div key={r.label} style={{ display: "grid", gridTemplateColumns: "minmax(120px, 34%) 1fr auto", gap: 12, alignItems: "center", fontSize: "0.88rem" }}>
           <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} data-i18n-skip={userLabels ? "" : undefined}>{r.label}</span>
-          <span style={{ height: 10, borderRadius: 5, background: "rgba(255,255,255,0.07)", overflow: "hidden" }}>
+          <span style={{ height: 10, borderRadius: 5, background: "rgba(20,22,43,0.07)", overflow: "hidden" }}>
             <span style={{ display: "block", height: "100%", width: `${(Math.abs(r.value) / max) * 100}%`, borderRadius: 5, background: r.tone === "base" ? BASE : (r.tone ?? (r.value < 0 ? "neg" : "pos")) === "neg" ? NEG : POS }} />
           </span>
           <b style={{ fontVariantNumeric: "tabular-nums", minWidth: 90, textAlign: "right" }}>{r.text}</b>

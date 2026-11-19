@@ -5,7 +5,7 @@ import { LogoMark } from "./Logo";
  * Logo + tên ứng dụng, luôn đi liền nhau. Mọi chỗ hiện tên thương hiệu (tiêu đề trang, liên kết "Tạo bằng ...")
  * dùng component này để logo không bao giờ bị thiếu.
  *
- * `strong`: chữ trắng, đậm, to hơn một chút và giãn chữ, để tách bạch với logo màu bên cạnh.
+ * `strong`: chữ theo màu `--text` của vùng chứa (tối trên nền sáng, sáng trên thanh bên tối), đậm, to hơn một chút và giãn chữ, để tách bạch với logo màu bên cạnh.
  * `inherit` (mặc định): chữ thừa hưởng màu và cỡ của phần tử bao ngoài (dùng cho dòng nhỏ kiểu "Tạo bằng ...").
  */
 export function Brand({

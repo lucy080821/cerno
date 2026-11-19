@@ -1,7 +1,7 @@
 .menu {
   position: fixed; z-index: 400000; min-width: 250px; padding: 6px; border-radius: 10px;
-  background: #121a2b; color: #e6eaf4; border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45); font-size: 13px;
+  background: #ffffff; color: #14162b; border: 1px solid rgba(20, 22, 43, 0.108);
+  box-shadow: 0 12px 32px rgba(20, 22, 43, 0.135); font-size: 13px;
 }
 .item {
   display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 16px; text-align: left;
@@ -9,6 +9,6 @@
 }
 .item:hover:not(:disabled), .item:focus-visible { background: rgba(109, 94, 252, 0.28); outline: none; }
 .item:disabled { opacity: 0.4; cursor: default; }
-.item kbd { font: inherit; font-size: 11px; color: #8b97b1; }
-.sep { height: 1px; margin: 5px 4px; background: rgba(255, 255, 255, 0.1); }
-.label { padding: 4px 10px 2px; font-size: 11px; color: #8b97b1; max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.item kbd { font: inherit; font-size: 11px; color: #5d6782; }
+.sep { height: 1px; margin: 5px 4px; background: rgba(20, 22, 43, 0.09); }
+.label { padding: 4px 10px 2px; font-size: 11px; color: #5d6782; max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

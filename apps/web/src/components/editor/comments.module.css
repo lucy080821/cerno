@@ -23,17 +23,17 @@
 .actions button { background: none; border: 0; padding: 0; font: inherit; font-size: 11px; color: var(--muted); cursor: pointer; }
 .actions button:hover { color: var(--text); text-decoration: underline; }
 .hint { color: var(--muted); margin: 0; }
-.error { color: #ff7a7a; margin: 0; }
+.error { color: #dc2626; margin: 0; }
 
 /* Trình xem chỉ-đọc: nút nổi + ngăn trượt bên phải. */
 .fab {
   position: absolute; right: 16px; bottom: 56px; z-index: 30; border: 1px solid var(--line); border-radius: 99px;
   padding: 8px 14px; font: inherit; font-size: 13px; cursor: pointer; color: var(--text); background: var(--panel);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 16px rgba(20, 22, 43, 0.09);
 }
 .drawer {
   position: absolute; top: 0; right: 0; bottom: 0; z-index: 40; width: min(360px, 100%); display: flex; flex-direction: column;
-  background: var(--panel); border-left: 1px solid var(--line); box-shadow: -8px 0 24px rgba(0, 0, 0, 0.3);
+  background: var(--panel); border-left: 1px solid var(--line); box-shadow: -8px 0 24px rgba(20, 22, 43, 0.09);
 }
 .drawerHead { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border-bottom: 1px solid var(--line); font-weight: 600; color: var(--text); }
 .drawerHead button { background: none; border: 0; color: var(--muted); font-size: 18px; cursor: pointer; }

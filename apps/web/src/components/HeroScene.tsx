@@ -22,10 +22,10 @@ function smooth(pts: Pt[]): string {
 const COLORS = {
   cyan: BRAND.teal,
   violet: BRAND.violet,
-  green: "#34d399",
-  amber: "#fbbf24",
-  muted: "#8b97b1",
-  text: "#e8edf7",
+  green: "#059669",
+  amber: "#d97706",
+  muted: "#5d6782",
+  text: "#14162b",
 };
 
 // Dây điện: từ cổng của database (x=270) tới mép trái card dashboard (x=480).
@@ -40,7 +40,7 @@ function Card({ x, y, w, h, title, children }: {
 }) {
   return (
     <g>
-      <rect x={x} y={y} width={w} height={h} rx={14} fill="url(#card)" stroke="rgba(255,255,255,0.14)" />
+      <rect x={x} y={y} width={w} height={h} rx={14} fill="url(#card)" stroke="rgba(20,22,43,0.14)" />
       <text x={x + 18} y={y + 26} className={s.text} fontSize={12.5} fontWeight={600} fill={COLORS.text}>
         {title}
       </text>
@@ -76,8 +76,8 @@ export function HeroScene() {
           </feMerge>
         </filter>
         <linearGradient id="card" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="rgba(255,255,255,0.08)" />
-          <stop offset="1" stopColor="rgba(255,255,255,0.03)" />
+          <stop offset="0" stopColor="#ffffff" />
+          <stop offset="1" stopColor="#f7f8fc" />
         </linearGradient>
         <linearGradient id="dbBody" x1="0" y1="0" x2="1" y2="0">
           <stop offset="0" stopColor="#0e2a3d" />
@@ -105,14 +105,14 @@ export function HeroScene() {
       {/* ---------- Dây điện ---------- */}
       {WIRES.map((w) => (
         <g key={w.id}>
-          <path id={w.id} d={w.d} fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth={3} />
+          <path id={w.id} d={w.d} fill="none" stroke="rgba(20,22,43,0.12)" strokeWidth={3} />
           <path d={w.d} fill="none" stroke={w.color} strokeOpacity={0.35} strokeWidth={1.5} />
           <path d={w.d} pathLength={100} fill="none" stroke={w.color} strokeWidth={3.5}
             strokeLinecap="round" filter="url(#glow)" className={s.pulse} />
-          <path d={w.d} pathLength={100} fill="none" stroke="#fff" strokeWidth={1.6}
+          <path d={w.d} pathLength={100} fill="none" stroke="#6d5efc" strokeWidth={1.6}
             strokeLinecap="round" className={s.pulseShort} style={{ animationDelay: "0.8s" }} />
           {[0, 1].map((k) => (
-            <circle key={k} r={3.2} fill="#fff" filter="url(#glow)" className={s.packet}>
+            <circle key={k} r={3.2} fill="#6d5efc" filter="url(#glow)" className={s.packet}>
               <animateMotion dur="3.2s" begin={`${-k * 1.6}s`} repeatCount="indefinite">
                 <mpath href={`#${w.id}`} />
               </animateMotion>
@@ -124,7 +124,7 @@ export function HeroScene() {
       {/* Liên kết ngắn giữa các card */}
       {[115, 300, 470].map((y, i) => (
         <g key={y}>
-          <path d={`M780 ${y} L800 ${y}`} stroke="rgba(255,255,255,0.18)" strokeWidth={2} />
+          <path d={`M780 ${y} L800 ${y}`} stroke="rgba(20,22,43,0.18)" strokeWidth={2} />
           <path d={`M780 ${y} L800 ${y}`} pathLength={100} stroke={COLORS.cyan} strokeWidth={2.5}
             strokeLinecap="round" className={s.pulseShort} style={{ animationDelay: `${i * 0.5}s` }} />
         </g>
@@ -137,12 +137,12 @@ export function HeroScene() {
             <g key={i} transform={`translate(0 ${i * 70})`}>
               <path d="M0 20 V54 A100 20 0 0 0 200 54 V20" fill="url(#dbBody)" stroke="rgba(56,189,248,0.55)" />
               <ellipse cx={100} cy={20} rx={100} ry={20} fill="url(#dbTop)" stroke="rgba(186,230,253,0.6)" />
-              <ellipse cx={100} cy={20} rx={70} ry={11} fill="none" stroke="rgba(255,255,255,0.25)" />
+              <ellipse cx={100} cy={20} rx={70} ry={11} fill="none" stroke="rgba(20,22,43,0.25)" />
               <circle cx={34} cy={46} r={3.4} fill={COLORS.green} filter="url(#glow)" className={s.led}
                 style={{ animationDelay: `${i * 0.5}s` }} />
               <circle cx={48} cy={46} r={3.4} fill={COLORS.amber} className={s.led}
                 style={{ animationDelay: `${i * 0.5 + 0.9}s` }} />
-              <rect x={120} y={42} width={56} height={6} rx={3} fill="rgba(255,255,255,0.18)" />
+              <rect x={120} y={42} width={56} height={6} rx={3} fill="rgba(20,22,43,0.18)" />
             </g>
           ))}
         </g>
@@ -174,7 +174,7 @@ export function HeroScene() {
 
       {/* Cột */}
       <Card x={480} y={180} w={300} h={170} title="Doanh thu theo tháng">
-        <line x1={498} y1={330} x2={762} y2={330} stroke="rgba(255,255,255,0.12)" />
+        <line x1={498} y1={330} x2={762} y2={330} stroke="rgba(20,22,43,0.12)" />
         {barHeights.map((h, i) => (
           <rect key={i} className={s.bar} x={500 + i * 32.5} y={330 - h} width={22} height={h} rx={4}
             fill="url(#barFill)" style={{ animationDelay: `${0.3 + i * 0.09}s` }} />
@@ -202,7 +202,7 @@ export function HeroScene() {
       {/* Donut */}
       <Card x={800} y={260} w={330} h={130} title="Nguồn truy cập">
         <g transform="rotate(-90 870 335)" fill="none" strokeWidth={14}>
-          <circle cx={870} cy={335} r={34} stroke="rgba(255,255,255,0.08)" />
+          <circle cx={870} cy={335} r={34} stroke="rgba(20,22,43,0.08)" />
           <circle cx={870} cy={335} r={34} pathLength={100} stroke={COLORS.cyan}
             strokeDasharray="43 57" className={s.fade} />
           <circle cx={870} cy={335} r={34} pathLength={100} stroke={COLORS.violet}

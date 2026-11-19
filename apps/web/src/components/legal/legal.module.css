@@ -64,13 +64,13 @@
 
 .section p {
   margin: 8px 0;
-  color: #cdd6e8;
+  color: #2c3350;
 }
 
 .section ul,
 .section ol {
   margin: 8px 0 8px 22px;
-  color: #cdd6e8;
+  color: #2c3350;
 }
 
 .section li {
@@ -87,7 +87,7 @@
 .section code {
   padding: 1px 6px;
   border-radius: 5px;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(20, 22, 43, 0.072);
   font-size: 0.88em;
 }
 
@@ -125,7 +125,7 @@
 }
 
 .table th {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(20, 22, 43, 0.036);
   color: var(--muted);
   font-weight: 600;
 }
