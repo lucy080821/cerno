@@ -35,6 +35,7 @@ const IGNORE_FILES = [
   /server\/alerts\//, // nhãn khoảng thời gian trong email cảnh báo (luôn tiếng Việt)
   /server\/reports\//, // báo cáo email luôn bằng tiếng Việt (người nhận không đổi ngôn ngữ giao diện)
   /lib\/orders\/(fixtures|fake-db)\.ts$/, // bảng mô phỏng file của sàn và DB giả, chỉ dùng trong test
+  /components\/profit\/format\.ts$/, // định dạng số tiền (số/ngày luôn theo kiểu vi-VN)
   /server\/mail\//, // nội dung email mời tự có hai ngôn ngữ trong bộ soạn thư (chọn theo ngôn ngữ người mời)
 ];
 

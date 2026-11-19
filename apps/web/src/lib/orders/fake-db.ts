@@ -31,6 +31,8 @@ const test = (c: Cond, r: any) => (c.op === "eq" ? r[c.col] === c.val : c.op ===
 export class FakeDb {
   sources: SourceRecord[] = [];
   rows = new Map<string, Row[]>();
+  /** Bảng giá vốn (product_costs). */
+  costs: { workspace_id: string; sku: string; name?: string; unit_cost: number }[] = [];
   /** Thời gian chờ giả lập cho mỗi lời gọi, để các tác vụ đồng thời xen kẽ nhau. */
   delayMs = 0;
   private seq = 0;
@@ -52,6 +54,7 @@ export class FakeDb {
       const q: Q = { op: "select", conds: [], head: false, single: false };
       const run = async () => {
         await this.wait();
+        if (table === "product_costs") return { data: this.costs.filter((r) => q.conds.every((c) => test(c, r))), error: null };
         return table === "data_sources" ? this.execSources(q) : this.execRows(q);
       };
       const chain: any = {

@@ -9,6 +9,9 @@ import { invalidateSourceCache } from "@/lib/server/row-cache";
 import { writeSourceRows } from "@/lib/server/source-write";
 import { ORDERS_SHEET_NAME, ORDERS_SOURCE_NAME, ORDERS_SPREADSHEET_ID, ORDER_COLUMNS } from "./canonical";
 import { mergeOrders } from "./merge";
+import { applyCatalogCosts } from "@/lib/profit/catalog";
+import { loadCatalog } from "@/lib/server/profit";
+import { inWorkspaceQueue } from "@/lib/server/workspace-queue";
 import type { NormalizeStats } from "./normalize";
 import type { Prepared } from "./prepare";
 
@@ -32,22 +35,6 @@ export interface ImportResult {
 }
 
 const CHUNK = 10_000;
-
-/**
- * Hai lần tải lên cùng lúc vào một workspace sẽ cùng đọc-rồi-ghi toàn bộ nguồn và ghi đè lẫn nhau, nên xếp hàng theo workspace.
- * (Khoá nằm trong bộ nhớ của tiến trình Node: đủ cho một tiến trình duy nhất như Hostinger; nhiều tiến trình cần khoá ở DB.)
- */
-const queues = new Map<string, Promise<unknown>>();
-async function inWorkspaceQueue<T>(workspaceId: string, task: () => Promise<T>): Promise<T> {
-  const prev = queues.get(workspaceId) ?? Promise.resolve();
-  const run = prev.catch(() => undefined).then(task);
-  queues.set(workspaceId, run);
-  try {
-    return await run;
-  } finally {
-    if (queues.get(workspaceId) === run) queues.delete(workspaceId);
-  }
-}
 
 /** Đọc lại toàn bộ dòng đang có của nguồn (service role), theo từng đoạn 10.000 dòng. */
 async function loadExistingRows(admin: SupabaseClient, sourceId: string, expected: number): Promise<Row[]> {
@@ -116,7 +103,9 @@ export function importOrders(args: {
 
     try {
       const existing = created ? [] : await loadExistingRows(admin, sourceId, (src.row_count as number) ?? 0);
-      const merged = mergeOrders(existing, normalized.rows, normalized.keyed);
+      // Giá vốn người dùng đã nhập ở trang "Sản phẩm và giá vốn" áp cho cả đơn mới lẫn đơn cũ.
+      const catalog = await loadCatalog(admin, workspaceId);
+      const merged = applyCatalogCosts(mergeOrders(existing, normalized.rows, normalized.keyed), catalog.map).rows;
 
       const perSource = maxRowsFor(ORDER_COLUMNS.length);
       if (merged.length > perSource) {

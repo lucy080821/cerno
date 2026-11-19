@@ -9,7 +9,7 @@ import { publicOrigin } from "@/lib/auth/public-origin";
  * Làm mới phiên Supabase ở mỗi request và chặn trang cần đăng nhập.
  * Cả /dashboards và /editor đều yêu cầu đăng nhập. Người đã đăng nhập vào / hoặc /login thì chuyển tới /dashboards.
  */
-const PROTECTED = ["/dashboards", "/editor", "/account", "/d"];
+const PROTECTED = ["/dashboards", "/editor", "/account", "/d", "/orders", "/products", "/profit", "/returns", "/todos"];
 const isProtected = (path: string) => PROTECTED.some((p) => path === p || path.startsWith(`${p}/`));
 
 /**
@@ -88,5 +88,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/", "/dashboards/:path*", "/editor/:path*", "/account/:path*", "/d/:path*", "/login", "/embed/:path*"],
+  matcher: ["/", "/dashboards/:path*", "/editor/:path*", "/account/:path*", "/d/:path*", "/orders/:path*", "/products/:path*", "/profit/:path*", "/returns/:path*", "/todos/:path*", "/login", "/embed/:path*"],
 };

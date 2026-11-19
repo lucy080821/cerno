@@ -1,11 +1,9 @@
-import { LangSwitch } from "@/components/i18n/LangSwitch";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { Brand } from "@/components/Brand";
+import { AppShell } from "../AppShell";
 import { ConnectSheet } from "./ConnectSheet";
 import { ImportOrders } from "./ImportOrders";
-import { SignOutButton } from "./SignOutButton";
 import { SourceItem, type SourceRow } from "./SourceItem";
 import { DashboardList } from "./DashboardList";
 import { SectionHead, sectionClass } from "./SectionHead";
@@ -46,17 +44,8 @@ export default async function DashboardsPage() {
   const name = (user.user_metadata?.full_name as string | undefined) ?? user.email ?? "";
 
   return (
+    <AppShell active="dashboards" userName={name} title="Dashboard" desc="Thiết kế báo cáo từ dữ liệu của bạn, quản lý nguồn dữ liệu và các dashboard được chia sẻ.">
     <main className={styles.page}>
-      <header className={styles.top}>
-        <Link href="/" className={styles.brand}><Brand size={26} tone="strong" /></Link>
-        <div className={styles.user}>
-          <LangSwitch />
-          <span>{name}</span>
-          <Link href="/account" className={styles.accountLink}>Tài khoản</Link>
-          <SignOutButton />
-        </div>
-      </header>
-
       <DashboardList
         dashboards={dashboards}
         sources={sources}
@@ -120,5 +109,6 @@ export default async function DashboardsPage() {
         <Link href="/privacy">Quyền riêng tư</Link> · <Link href="/terms">Điều khoản</Link>
       </footer>
     </main>
+    </AppShell>
   );
 }

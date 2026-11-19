@@ -1,9 +1,8 @@
-import { LangSwitch } from "@/components/i18n/LangSwitch";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { site } from "@/lib/site";
-import { Brand } from "@/components/Brand";
+import { AppShell } from "../AppShell";
 import { DeleteAccount } from "./DeleteAccount";
 import styles from "./account.module.css";
 
@@ -24,14 +23,8 @@ export default async function AccountPage() {
   const name = (user.user_metadata?.full_name as string | undefined) ?? "";
 
   return (
+    <AppShell active="account" userName={name || user.email || ""} title="Tài khoản">
     <main className={styles.page}>
-      <header className={styles.top}>
-        <Link href="/dashboards" className={styles.back}>← Quay lại danh sách dashboard</Link>
-        <span className={styles.brand}><Brand size={22} tone="strong" /></span>
-        <LangSwitch />
-      </header>
-
-      <h1>Tài khoản</h1>
       <section className={styles.card}>
         <div className={styles.row}><span>Tên</span><strong>{name || "—"}</strong></div>
         <div className={styles.row}><span>Email</span><strong>{user.email}</strong></div>
@@ -61,5 +54,6 @@ export default async function AccountPage() {
         Xem thêm <Link href="/privacy">Chính sách quyền riêng tư</Link> và <Link href="/terms">Điều khoản sử dụng</Link>.
       </p>
     </main>
+    </AppShell>
   );
 }
