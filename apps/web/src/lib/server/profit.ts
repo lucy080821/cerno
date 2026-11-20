@@ -119,6 +119,19 @@ export async function workspaceOf(supabase: SupabaseClient, userId: string, edit
   return (data?.workspace_id as string | undefined) ?? null;
 }
 
+/**
+ * Ghi lại toàn bộ dòng của nguồn đơn hàng sau khi một bảng phụ (giá vốn, chi phí quảng cáo) đổi: đổi dấu vân tay để bộ nhớ đệm
+ * và dashboard thấy số mới, ghi mốc "dữ liệu đổi" cho luật cảnh báo. Gọi trong `inWorkspaceQueue`.
+ */
+export async function commitOrderRows(admin: SupabaseClient, sourceId: string, rows: Row[]): Promise<void> {
+  await writeSourceRows(admin, sourceId, rows);
+  const now = new Date().toISOString();
+  const upd = await admin.from("data_sources").update({ last_sync_hash: `upload:${randomUUID()}`, last_synced_at: now }).eq("id", sourceId);
+  if (upd.error) throw new Error(upd.error.message);
+  await admin.from("data_sources").update({ data_changed_at: now }).eq("id", sourceId);
+  invalidateSourceCache(sourceId);
+}
+
 export interface SaveCostsResult {
   saved: number;
   removed: number;
@@ -161,14 +174,7 @@ export async function saveCosts(args: {
     const touched = new Map([...catalog.map].filter(([k]) => upserts.some((u) => costKey(u.sku) === k)));
     const rows = await loadOrderRows(src.id);
     const { rows: next, changed } = applyCatalogCosts(rows, touched);
-    if (changed > 0) {
-      await writeSourceRows(admin, src.id, next);
-      const now = new Date().toISOString();
-      const upd = await admin.from("data_sources").update({ last_sync_hash: `upload:${randomUUID()}`, last_synced_at: now }).eq("id", src.id);
-      if (upd.error) throw new Error(upd.error.message);
-      await admin.from("data_sources").update({ data_changed_at: now }).eq("id", src.id);
-      invalidateSourceCache(src.id);
-    }
+    if (changed > 0) await commitOrderRows(admin, src.id, next);
     return { saved: upserts.length, removed: removes.length, updatedRows: changed };
   });
 }

@@ -51,7 +51,7 @@ export function detectDateOrder(values: RawCell[]): "dmy" | "mdy" {
 }
 
 /** Ngày đặt dạng "yyyy-mm-dd", kèm " hh:mm" khi ô có giờ (để gom theo giờ trong ngày được). */
-function dateText(c: RawCell, order: "dmy" | "mdy" = "dmy"): string | null {
+export function dateText(c: RawCell, order: "dmy" | "mdy" = "dmy"): string | null {
   if (c instanceof Date) {
     if (Number.isNaN(c.getTime())) return null;
     const day = `${c.getUTCFullYear()}-${two(c.getUTCMonth() + 1)}-${two(c.getUTCDate())}`;

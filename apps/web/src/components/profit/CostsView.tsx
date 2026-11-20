@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { AdSpendCard } from "./AdSpendCard";
 import { HBars } from "./charts";
 import { compact, count, pct, vnd } from "./format";
 import { Card, ErrorBox, FeeEstimateNote, Kpi, Loading, MissingCostNote, NoOrders } from "./Shared";
@@ -49,12 +50,14 @@ export function CostsView() {
         <Card title="Chi phí chưa thấy trong file">
           <ul className={styles.listPlain}>
             <li>Quảng cáo đã chi cho đơn hủy và hoàn: <b>{compact(lostAds)}</b> (đã tính vào lãi thật).</li>
+            <li>Chi phí quảng cáo: nhập ở khung "Chi phí quảng cáo" bên dưới nếu file đơn hàng không có cột này.</li>
             <li>Phí ship hai chiều và phí xử lý đơn hoàn: file đơn hàng của sàn chưa có số này.</li>
             <li>Đóng gói, nhân công, mặt bằng: chưa nhập được, sẽ có ở bản sau.</li>
             <li>Giá vốn: lấy từ trang <Link href="/products">Sản phẩm và giá vốn</Link>, sản phẩm chưa có giá vốn thì đơn đó chưa tính lãi.</li>
           </ul>
         </Card>
       </div>
+      <AdSpendCard editable={data.editable} adCostInOrders={s.adCost} onChanged={() => void reload()} />
       <Card title="Chi phí theo sản phẩm" aside="phí sàn và quảng cáo của đơn chia cho sản phẩm theo doanh thu">
         <div className={styles.tableWrap}>
           <table className={styles.table}>

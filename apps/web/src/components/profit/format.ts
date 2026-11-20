@@ -13,3 +13,6 @@ export function compact(n: number | null | undefined): string {
 export const pct = (x: number | null | undefined, d = 1) => (x === null || x === undefined || !Number.isFinite(x) ? "—" : `${(x * 100).toLocaleString("vi-VN", { maximumFractionDigits: d })}%`);
 export const count = (n: number) => n.toLocaleString("vi-VN");
 
+export const nf = new Intl.NumberFormat("vi-VN");
+/** "2025-09-05" (hoặc kèm giờ) → "05/09/2025". */
+export const dayText = (s: string | null | undefined) => (s ? `${s.slice(8, 10)}/${s.slice(5, 7)}/${s.slice(0, 4)}` : "");

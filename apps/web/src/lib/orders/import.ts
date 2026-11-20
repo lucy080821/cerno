@@ -9,7 +9,9 @@ import { invalidateSourceCache } from "@/lib/server/row-cache";
 import { writeSourceRows } from "@/lib/server/source-write";
 import { ORDERS_SHEET_NAME, ORDERS_SOURCE_NAME, ORDERS_SPREADSHEET_ID, ORDER_COLUMNS } from "./canonical";
 import { mergeOrders } from "./merge";
+import { applyAdSpend } from "@/lib/profit/ad-spend";
 import { applyCatalogCosts } from "@/lib/profit/catalog";
+import { loadAdSpend } from "@/lib/server/ad-spend";
 import { loadCatalog } from "@/lib/server/profit";
 import { inWorkspaceQueue } from "@/lib/server/workspace-queue";
 import type { NormalizeStats } from "./normalize";
@@ -105,7 +107,9 @@ export function importOrders(args: {
       const existing = created ? [] : await loadExistingRows(admin, sourceId, (src.row_count as number) ?? 0);
       // Giá vốn người dùng đã nhập ở trang "Sản phẩm và giá vốn" áp cho cả đơn mới lẫn đơn cũ.
       const catalog = await loadCatalog(admin, workspaceId);
-      const merged = applyCatalogCosts(mergeOrders(existing, normalized.rows, normalized.keyed), catalog.map).rows;
+      const withCosts = applyCatalogCosts(mergeOrders(existing, normalized.rows, normalized.keyed), catalog.map).rows;
+      // Chi phí quảng cáo theo ngày (trang "Chi phí") được chia lại cho cả đơn mới lẫn đơn cũ vì tỉ lệ doanh thu trong ngày đã đổi.
+      const merged = applyAdSpend(withCosts, (await loadAdSpend(admin, workspaceId)).entries).rows;
 
       const perSource = maxRowsFor(ORDER_COLUMNS.length);
       if (merged.length > perSource) {
