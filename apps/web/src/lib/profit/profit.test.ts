@@ -153,3 +153,58 @@ describe("chạy trên file mô phỏng Shopee", () => {
     expect(s.profit).toBeCloseTo(sum(COL.netRevenue) + sum(COL.shippingFee) - sum(COL.platformFee) - sum(COL.cost) - sum(COL.adCost));
   });
 });
+
+describe("phí sàn của đơn hoàn và phí ước tính", () => {
+  it("đơn hoàn trả vẫn mất phí ghi trong file, lãi = -(phí + quảng cáo)", () => {
+    const [o] = buildOrders([line({ [COL.status]: "Hoàn trả", [COL.netRevenue]: 0, [COL.cost]: 0, [COL.platformFee]: 18_000, [COL.adCost]: 5_000 })]);
+    expect(o.fee).toBe(18_000);
+    expect(o.profit).toBe(-23_000);
+    expect(o.reason).toBe("return");
+    expect(o.feeEstimated).toBe(false);
+  });
+
+  const estimator = (calls: { n: number }) => () => {
+    calls.n++;
+    return 30_000;
+  };
+
+  it("điền phí ước tính khi file không có phí, và đánh dấu", () => {
+    const calls = { n: 0 };
+    const [o] = buildOrders([line({})], estimator(calls));
+    expect(o.fee).toBe(30_000);
+    expect(o.feeEstimated).toBe(true);
+    expect(o.profit).toBe(100_000 - 30_000 - 40_000);
+    const s = summarize([o]);
+    expect(s.feeEstimated).toBe(1);
+  });
+
+  it("file đã có phí thì KHÔNG ước tính, kể cả khi phí ghi là 0", () => {
+    const calls = { n: 0 };
+    const orders = buildOrders([line({ [COL.platformFee]: 12_000 }), line({ [COL.orderId]: "B", [COL.platformFee]: 0 })], estimator(calls));
+    expect(orders.map((o) => o.fee)).toEqual([12_000, 0]);
+    expect(orders.every((o) => !o.feeEstimated)).toBe(true);
+    expect(calls.n).toBe(0);
+  });
+
+  it("đơn hủy không được ước tính phí; đơn hoàn thì có (dùng giá trị gốc của dòng)", () => {
+    let seen: number[] = [];
+    const orders = buildOrders(
+      [line({ [COL.status]: "Đã hủy", [COL.netRevenue]: 0, [COL.cost]: 0 }), line({ [COL.orderId]: "R", [COL.status]: "Hoàn trả", [COL.netRevenue]: 0, [COL.cost]: 0 })],
+      (o) => {
+        seen = o.lines.map((l) => l.gross);
+        return 25_000;
+      },
+    );
+    expect(orders[0].fee).toBe(0);
+    expect(orders[0].feeEstimated).toBe(false);
+    expect(orders[1].fee).toBe(25_000);
+    expect(seen).toEqual([100_000]);
+    expect(orders[1].profit).toBe(-25_000);
+  });
+
+  it("bộ ước tính trả null thì giữ nguyên (không phí)", () => {
+    const [o] = buildOrders([line({})], () => null);
+    expect(o.fee).toBe(0);
+    expect(o.feeEstimated).toBe(false);
+  });
+});

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { DayBars, HBars, Histogram, Waterfall } from "./charts";
 import { compact, count, pct, signed, vnd } from "./format";
 import { REASON_LABEL } from "./reasons";
-import { Card, ErrorBox, Kpi, Loading, MissingCostNote, NoOrders } from "./Shared";
+import { Card, ErrorBox, FeeEstimateNote, Kpi, Loading, MissingCostNote, NoOrders } from "./Shared";
 import { useProfitSummary } from "./useProfit";
 import styles from "./profit.module.css";
 
@@ -21,6 +21,7 @@ export function ProfitView() {
   return (
     <div className={styles.stack}>
       <MissingCostNote missing={s.missingCost} total={s.orders} />
+      <FeeEstimateNote count={s.feeEstimated} />
       <div className={styles.kpis}>
         <Kpi label="Lãi thật" value={compact(s.profit)} tone={s.profit < 0 ? "neg" : "pos"} note={`Trên ${count(s.computable)} đơn đã đủ dữ liệu`} />
         <Kpi label="Lãi trung bình mỗi đơn" value={vnd(s.avgProfit)} note={`Biên lãi ${pct(s.margin)}`} />

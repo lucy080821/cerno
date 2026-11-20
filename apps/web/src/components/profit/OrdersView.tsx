@@ -79,7 +79,7 @@ function OrderDetail({ o, onClose }: { o: OrderProfit; onClose: () => void }) {
           {o.discount > 0 && <tr><td>Giảm giá đã trừ</td><td className={`${styles.r} ${styles.muted}`}>{vnd(o.discount)}</td></tr>}
           <tr><td>Doanh thu thực</td><td className={styles.r}><b>{vnd(o.revenue)}</b></td></tr>
           <tr><td>Phí vận chuyển khách trả</td><td className={`${styles.r} ${styles.pos}`}>+{vnd(o.shippingIn)}</td></tr>
-          <tr><td>Phí sàn</td><td className={`${styles.r} ${styles.neg}`}>-{vnd(o.fee)}</td></tr>
+          <tr><td>Phí sàn{o.feeEstimated && <span className={styles.muted}> (ước tính)</span>}</td><td className={`${styles.r} ${styles.neg}`}>-{vnd(o.fee)}</td></tr>
           <tr><td>Giá vốn</td><td className={`${styles.r} ${styles.neg}`}>{o.profit === null ? "?" : `-${vnd(o.cost)}`}</td></tr>
           <tr><td>Quảng cáo chia vào đơn</td><td className={`${styles.r} ${styles.neg}`}>-{vnd(o.adCost)}</td></tr>
         </tbody>
@@ -188,7 +188,7 @@ export function OrdersView({ initialFilter }: { initialFilter: OrderFilter }) {
                     <td><b data-i18n-skip>{o.hasId ? o.id : "—"}</b><span className={styles.sub}><span data-i18n-skip>{o.channel}</span> · {o.date ?? "—"} · {o.status}</span></td>
                     <td data-i18n-skip style={{ maxWidth: 220, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{productText(o)}</td>
                     <td className={styles.r}>{vnd(o.revenue)}</td>
-                    <td className={`${styles.r} ${styles.muted}`}>{o.profit === null ? "—" : vnd(o.fee + o.cost + o.adCost)}</td>
+                    <td className={`${styles.r} ${styles.muted}`} title={o.feeEstimated ? "Có phí sàn ước tính" : undefined}>{o.profit === null ? "—" : `${o.feeEstimated ? "≈ " : ""}${vnd(o.fee + o.cost + o.adCost)}`}</td>
                     <td className={styles.r}><ProfitCell o={o} /></td>
                     <td className={`${styles.r} ${o.margin !== null && o.margin < 0 ? styles.neg : styles.muted}`}>{pct(o.margin, 0)}</td>
                   </tr>

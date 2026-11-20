@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { HBars } from "./charts";
 import { compact, count, pct, vnd } from "./format";
-import { Card, ErrorBox, Kpi, Loading, MissingCostNote, NoOrders } from "./Shared";
+import { Card, ErrorBox, FeeEstimateNote, Kpi, Loading, MissingCostNote, NoOrders } from "./Shared";
 import { useProfitSummary } from "./useProfit";
 import styles from "./profit.module.css";
 
@@ -26,6 +26,7 @@ export function CostsView() {
   return (
     <div className={styles.stack}>
       <MissingCostNote missing={s.missingCost} total={s.orders} />
+      <FeeEstimateNote count={s.feeEstimated} />
       <div className={styles.kpis}>
         <Kpi label="Tổng chi phí" value={compact(total)} note={`${share(total)} doanh thu thực`} />
         <Kpi label="Giá vốn" value={compact(s.cost)} note={`${share(s.cost)} doanh thu thực`} />

@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/server/session-user";
 import { createRateLimiter } from "@/lib/server/rate-limit";
-import { computeProfit, findOrdersSource, loadCatalog, workspaceOf } from "@/lib/server/profit";
+import { computeProfitFor, findOrdersSource, loadCatalog, workspaceOf } from "@/lib/server/profit";
 import { buildTodos } from "@/lib/profit/todos";
+import { feePayload } from "@/lib/server/fees";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -26,9 +27,9 @@ export async function GET() {
     return NextResponse.json({ source: null, editable, catalog: { available: catalog.available, entries: catalog.entries } }, { headers: { "cache-control": "private, no-store" } });
   }
   try {
-    const { summary } = await computeProfit(source.id);
+    const { summary, fees } = await computeProfitFor(supabase, workspaceId, source.id);
     return NextResponse.json(
-      { source, editable, summary, todos: buildTodos(summary), catalog: { available: catalog.available, entries: catalog.entries } },
+      { source, editable, summary, todos: buildTodos(summary), catalog: { available: catalog.available, entries: catalog.entries }, fees: feePayload(fees) },
       { headers: { "cache-control": "private, no-store" } },
     );
   } catch (e) {

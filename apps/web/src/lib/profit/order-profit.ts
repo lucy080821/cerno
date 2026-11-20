@@ -20,6 +20,8 @@ export interface OrderLine {
   discount: number;
   /** Giá vốn của dòng; null = chưa biết. */
   cost: number | null;
+  /** Giá trị dòng trước khi chuẩn hoá đơn hủy/hoàn (cột Doanh thu), dùng để ước tính phí sàn của đơn hoàn. */
+  gross: number;
 }
 
 export type LossReason = "return" | "cancel" | "discount" | "ads" | "cost";
@@ -37,6 +39,8 @@ export interface OrderProfit {
   discount: number;
   shippingIn: number;
   fee: number;
+  /** true khi phí sàn là số ƯỚC TÍNH theo biểu phí (file đơn hàng không có phí của đơn này). */
+  feeEstimated: boolean;
   cost: number;
   adCost: number;
   /** null khi đơn hợp lệ mà còn dòng chưa có giá vốn. */
@@ -68,8 +72,18 @@ export function lossReason(o: Pick<OrderProfit, "status" | "revenue" | "discount
   return "cost";
 }
 
-/** Gom các dòng sản phẩm thành đơn và tính lãi từng đơn. Thứ tự đơn giữ theo dòng đầu tiên xuất hiện. */
-export function buildOrders(rows: Row[]): OrderProfit[] {
+/**
+ * Ước tính phí sàn của một đơn khi file không có phí (vd Shopee theo biểu phí ngành hàng). Trả null nếu không ước tính được.
+ * Chỉ được gọi cho đơn không hủy mà không dòng nào trong file có phí.
+ */
+export type FeeEstimator = (o: Pick<OrderProfit, "channel" | "date" | "status" | "shippingIn" | "lines">) => number | null;
+
+/**
+ * Gom các dòng sản phẩm thành đơn và tính lãi từng đơn. Thứ tự đơn giữ theo dòng đầu tiên xuất hiện.
+ * `estimateFee` (tuỳ chọn): điền phí sàn ước tính cho đơn mà file không ghi phí (đánh dấu `feeEstimated`).
+ */
+export function buildOrders(rows: Row[], estimateFee?: FeeEstimator): OrderProfit[] {
+  const feeInFile = new Set<OrderProfit>();
   const byKey = new Map<string, OrderProfit>();
   const order: OrderProfit[] = [];
   rows.forEach((r, i) => {
@@ -91,6 +105,7 @@ export function buildOrders(rows: Row[]): OrderProfit[] {
         discount: 0,
         shippingIn: 0,
         fee: 0,
+        feeEstimated: false,
         cost: 0,
         adCost: 0,
         profit: null,
@@ -105,10 +120,12 @@ export function buildOrders(rows: Row[]): OrderProfit[] {
     const revenue = num(r[COL.netRevenue]) ?? 0;
     const discount = num(r[COL.discount]) ?? 0;
     const cost = num(r[COL.cost]);
-    o.lines.push({ sku: str(r[COL.sku]), product: str(r[COL.product]), variant: str(r[COL.variant]), quantity: num(r[COL.quantity]) ?? 0, revenue, discount, cost });
+    o.lines.push({ sku: str(r[COL.sku]), product: str(r[COL.product]), variant: str(r[COL.variant]), quantity: num(r[COL.quantity]) ?? 0, revenue, discount, cost, gross: num(r[COL.revenue]) ?? 0 });
     o.revenue += revenue;
     o.discount += discount;
-    o.fee += num(r[COL.platformFee]) ?? 0;
+    const fileFee = num(r[COL.platformFee]);
+    if (fileFee !== null) feeInFile.add(o);
+    o.fee += fileFee ?? 0;
     o.shippingIn += num(r[COL.shippingFee]) ?? 0;
     o.adCost += num(r[COL.adCost]) ?? 0;
     if (cost === null) {
@@ -116,6 +133,13 @@ export function buildOrders(rows: Row[]): OrderProfit[] {
     } else o.cost += cost;
   });
   for (const o of order) {
+    if (estimateFee && o.status !== "Đã hủy" && !feeInFile.has(o)) {
+      const est = estimateFee(o);
+      if (est !== null && est > 0) {
+        o.fee = est;
+        o.feeEstimated = true;
+      }
+    }
     if (o.valid && !o.costKnown) continue;
     o.profit = o.revenue + o.shippingIn - o.fee - o.cost - o.adCost;
     o.margin = o.revenue > 0 ? o.profit / o.revenue : null;
@@ -193,6 +217,8 @@ export interface ProfitSummary {
   thin: number;
   returned: number;
   cancelled: number;
+  /** Số đơn có phí sàn là số ước tính (không phải số trong file). */
+  feeEstimated: number;
   revenue: number;
   fee: number;
   cost: number;
@@ -224,7 +250,7 @@ function shares(o: OrderProfit): number[] {
 
 export function summarize(orders: OrderProfit[]): ProfitSummary {
   const s: ProfitSummary = {
-    orders: orders.length, computable: 0, missingCost: 0, profitable: 0, loss: 0, thin: 0, returned: 0, cancelled: 0,
+    orders: orders.length, computable: 0, missingCost: 0, profitable: 0, loss: 0, thin: 0, returned: 0, cancelled: 0, feeEstimated: 0,
     revenue: 0, fee: 0, cost: 0, adCost: 0, shippingIn: 0, profit: 0, lossAmount: 0, avgProfit: null, margin: null,
     returnLoss: 0, cancelLoss: 0,
     histogram: PROFIT_BINS.map((b) => ({ label: b.label, count: 0, negative: b.max <= 0 })),
@@ -241,6 +267,7 @@ export function summarize(orders: OrderProfit[]): ProfitSummary {
       if (!s.dateMin || d < s.dateMin) s.dateMin = d;
       if (!s.dateMax || d > s.dateMax) s.dateMax = d;
     }
+    if (o.feeEstimated) s.feeEstimated++;
     if (o.status === "Hoàn trả") s.returned++;
     if (o.status === "Đã hủy") s.cancelled++;
     const ch = chans.get(o.channel) ?? { orders: 0, profit: 0, computable: 0, loss: 0 };

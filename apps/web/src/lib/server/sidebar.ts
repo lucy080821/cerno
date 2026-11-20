@@ -3,7 +3,7 @@ import { MAX_SOURCES_PER_WORKSPACE, PLAN_LIMITS } from "@/lib/limits";
 import { normalizePlan, type Plan } from "@/lib/plan";
 import { buildTodos } from "@/lib/profit/todos";
 import { channelLine, shopName } from "@/lib/shell/sidebar";
-import { computeProfit, findOrdersSource } from "./profit";
+import { computeProfitFor, findOrdersSource } from "./profit";
 
 export interface SidebarData {
   shop: string;
@@ -67,7 +67,7 @@ export async function loadSidebar(supabase: SupabaseClient, userId: string, user
     attempt("profit", async () => {
       const src = await findOrdersSource(supabase, mem);
       if (!src) return null;
-      return (await computeProfit(src.id)).summary;
+      return (await computeProfitFor(supabase, mem, src.id)).summary;
     }, null),
   ]);
 

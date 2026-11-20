@@ -8,7 +8,7 @@ export const REASON_LABEL: Record<LossReason, string> = {
   cost: "Giá vốn và phí sàn cao hơn giá bán",
 };
 export const REASON_HINT: Record<LossReason, string> = {
-  return: "Giữ video đóng gói và mở hàng để khiếu nại lấy lại phí.",
+  return: "Đơn hoàn vẫn bị thu phí sàn. Giữ video đóng gói và mở hàng để khiếu nại lấy lại phí.",
   cancel: "Tiền quảng cáo đã chi cho đơn này không lấy lại được.",
   discount: "Nếu bỏ voucher, đơn này đã có lãi.",
   ads: "Lãi trước quảng cáo vẫn dương, nhưng quảng cáo chia vào đơn cao hơn.",

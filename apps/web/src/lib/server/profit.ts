@@ -6,6 +6,7 @@ import { ORDERS_SHEET_NAME, ORDERS_SPREADSHEET_ID } from "@/lib/orders/canonical
 import { applyCatalogCosts, catalogMap, costKey, type CostEntry } from "@/lib/profit/catalog";
 import { buildOrders, summarize, type OrderProfit, type ProfitSummary } from "@/lib/profit/order-profit";
 import { getSourceMeta, getSourceRows, invalidateSourceCache } from "@/lib/server/row-cache";
+import { loadFeeConfig, makeFeeEstimator, type FeeConfig } from "@/lib/server/fees";
 import { writeSourceRows } from "@/lib/server/source-write";
 import { inWorkspaceQueue } from "@/lib/server/workspace-queue";
 
@@ -67,19 +68,28 @@ export async function loadOrderRows(sourceId: string): Promise<Row[]> {
 
 const computed = new Map<string, { orders: OrderProfit[]; summary: ProfitSummary }>();
 
-/** Đơn + tổng hợp lãi của nguồn, nhớ theo phiên bản dữ liệu (tải file / lưu giá vốn thì phiên bản đổi, tự tính lại). */
-export async function computeProfit(sourceId: string): Promise<{ orders: OrderProfit[]; summary: ProfitSummary }> {
+/**
+ * Đơn + tổng hợp lãi của nguồn, nhớ theo phiên bản dữ liệu (tải file / lưu giá vốn thì phiên bản đổi, tự tính lại) và theo
+ * cài đặt ước tính phí (`fees`; đổi cài đặt hoặc ngành hàng thì chữ ký đổi).
+ */
+export async function computeProfit(sourceId: string, fees?: FeeConfig): Promise<{ orders: OrderProfit[]; summary: ProfitSummary }> {
   const meta = await getSourceMeta(sourceId, true);
   if (!meta) return { orders: [], summary: summarize([]) };
-  const key = `${sourceId}|${meta.version}`;
+  const key = `${sourceId}|${meta.version}|${fees?.signature ?? "none"}`;
   const hit = computed.get(key);
   if (hit) return hit;
-  const orders = buildOrders(await getSourceRows(sourceId, meta));
+  const orders = buildOrders(await getSourceRows(sourceId, meta), fees ? makeFeeEstimator(fees) : undefined);
   const result = { orders, summary: summarize(orders) };
   for (const k of computed.keys()) if (k.startsWith(`${sourceId}|`)) computed.delete(k);
   computed.set(key, result);
   if (computed.size > 50) computed.delete(computed.keys().next().value as string);
   return result;
+}
+
+/** Như `computeProfit` nhưng tự nạp cài đặt ước tính phí của workspace (qua RLS bằng client của người dùng). */
+export async function computeProfitFor(db: SupabaseClient, workspaceId: string, sourceId: string): Promise<{ orders: OrderProfit[]; summary: ProfitSummary; fees: FeeConfig }> {
+  const fees = await loadFeeConfig(db, workspaceId);
+  return { ...(await computeProfit(sourceId, fees)), fees };
 }
 
 /** Workspace của người dùng (thành viên bất kỳ vai trò; trang xem lãi cho mọi thành viên). */

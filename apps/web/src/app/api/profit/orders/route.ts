@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/server/session-user";
 import { createRateLimiter } from "@/lib/server/rate-limit";
-import { computeProfit, findOrdersSource, workspaceOf } from "@/lib/server/profit";
+import { computeProfitFor, findOrdersSource, workspaceOf } from "@/lib/server/profit";
 import { filterOrders, orderCounts, sortOrders, type OrderFilter, type OrderSort } from "@/lib/profit/order-profit";
 
 export const runtime = "nodejs";
@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
   const source = await findOrdersSource(supabase, workspaceId);
   if (!source) return NextResponse.json({ source: null, orders: [], total: 0, page: 1, pageSize: PAGE_SIZE, counts: null, channels: [] });
   try {
-    const { orders } = await computeProfit(source.id);
+    const { orders } = await computeProfitFor(supabase, workspaceId, source.id);
     const list = sortOrders(filterOrders(orders, filter, q, channel), sort);
     return NextResponse.json(
       {

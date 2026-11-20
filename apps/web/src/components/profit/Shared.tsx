@@ -65,3 +65,14 @@ export function MissingCostNote({ missing, total }: { missing: number; total: nu
     </div>
   );
 }
+
+/** Nhắc khi có đơn dùng phí sàn ước tính (file không có phí). */
+export function FeeEstimateNote({ count }: { count: number }) {
+  if (!count) return null;
+  return (
+    <div className={styles.note}>
+      <b>{count.toLocaleString("vi-VN")}</b> đơn dùng phí sàn <b>ước tính</b> theo biểu phí Shopee vì file đơn hàng không có phí. Số thật nằm ở Báo cáo thu nhập của Shopee. Bật hoặc chỉnh ở trang{" "}
+      <Link href="/products">Sản phẩm và giá vốn</Link>.
+    </div>
+  );
+}

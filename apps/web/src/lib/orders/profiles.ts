@@ -36,7 +36,8 @@ export const SHOPEE: Profile = {
     quantity: ["so luong"],
     revenue: ["tong gia ban san pham", "tong gia ban"],
     unitPrice: ["gia uu dai", "gia goc"],
-    platformFee: ["phi co dinh", "phi dich vu", "phi thanh toan"],
+    // "Phí Thanh Toán" được Shopee đổi tên thành "Phí Xử Lý Giao Dịch" từ 24/04/2026; "Phí Hạ Tầng" (3.000đ/đơn) có từ 01/07/2025.
+    platformFee: ["phi co dinh", "phi dich vu", "phi thanh toan", "phi xu ly giao dich", "phi ha tang"],
     province: ["tinh thanh pho"],
     payment: ["phuong thuc thanh toan"],
     shippingFee: ["phi van chuyen ma nguoi mua tra"],
@@ -110,7 +111,7 @@ export const FUZZY: Partial<Record<InputField, RegExp[]>> = {
   quantity: [/^so luong( [a-z0-9 ]+)?$/],
   revenue: [/^(thanh tien|doanh thu|doanh so|tong tien hang|tien hang)( (hang hoa|ban hang|san pham|dong|truoc giam gia|sau giam gia))?$/, /^tong gia ban( san pham)?$/],
   unitPrice: [/^(don gia|gia ban|gia ban le|gia uu dai|gia khuyen mai)( [a-z0-9 ]+)?$/],
-  platformFee: [/^phi (san|co dinh|dich vu|thanh toan|giao dich|hoa hong|nen tang)( [a-z0-9 ]+)?$/, /^(commission|transaction|service|payment) fee( [a-z0-9 ]+)?$/],
+  platformFee: [/^phi (san|co dinh|dich vu|thanh toan|giao dich|hoa hong|nen tang|xu ly giao dich|ha tang)( [a-z0-9 ]+)?$/, /^(commission|transaction|service|payment) fee( [a-z0-9 ]+)?$/],
   province: [/^tinh thanh( pho)?( [a-z0-9 ]+)?$/, /^thanh pho( [a-z0-9 ]+)?$/],
   payment: [/^(kenh|hinh thuc|phuong thuc|cach) thanh toan( [a-z0-9 ]+)?$/, /^payment( method| channel)?$/],
   discount: [/^(giam gia|chiet khau|khuyen mai)( [a-z0-9 ]+)?$/],

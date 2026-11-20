@@ -141,8 +141,9 @@ function looksLikeDescriptionRow(r: RawCell[], mapping: ColumnMapping): boolean 
 
 /**
  * Đưa bảng thô của sàn về cột chuẩn. Chỉ đọc đúng các cột trong `mapping` (không đọc tên/SĐT/địa chỉ người mua).
- * Cột cấp đơn (Số đơn, Số đơn hủy, Phí sàn) chỉ ghi ở dòng đầu của mỗi đơn để cộng không bị nhân lên;
- * Phí sàn chỉ tính cho đơn hợp lệ (đơn hủy/hoàn trả không mất phí).
+ * Cột cấp đơn (Số đơn, Số đơn hủy, Phí sàn) chỉ ghi ở dòng đầu của mỗi đơn để cộng không bị nhân lên.
+ * Phí sàn: đơn hủy không phát sinh phí; đơn HOÀN TRẢ vẫn bị tính phí (Shopee thu Phí Cố Định, Phí Xử Lý Giao Dịch, Phí Hạ Tầng
+ * cả với đơn trả hàng/hoàn tiền được chấp nhận "Hoàn tiền ngay"), nên giữ phí ghi trong file.
  */
 export function normalizeOrders(table: RawTable, headerRow: number, mapping: ColumnMapping, channel: string): NormalizeResult {
   const warnings: string[] = [];
@@ -274,8 +275,8 @@ export function normalizeOrders(table: RawTable, headerRow: number, mapping: Col
       [COL.netRevenue]: l.revenue === null ? null : valid ? l.revenue : 0,
       [COL.orders]: isFirst ? (isValidStatus(head.status) ? 1 : 0) : 0,
       [COL.cancelledOrders]: isFirst ? (isValidStatus(head.status) ? 0 : 1) : 0,
-      // Đơn hủy/hoàn trả không phát sinh phí sàn: bỏ cả khi file còn ghi phí ước tính cho đơn đó.
-      [COL.platformFee]: isFirst && isValidStatus(head.status) ? orderFee.get(keys[i]) ?? null : null,
+      // Đơn hủy không phát sinh phí sàn: bỏ cả khi file còn ghi phí ước tính cho đơn đó. Đơn hoàn trả vẫn mất phí (xem đầu hàm).
+      [COL.platformFee]: isFirst && head.status !== "Đã hủy" ? orderFee.get(keys[i]) ?? null : null,
       [COL.province]: l.province,
       [COL.payment]: l.payment,
       [COL.discount]: l.discount,

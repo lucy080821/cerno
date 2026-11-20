@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import type { ProfitSummary } from "@/lib/profit/order-profit";
 import type { Todo } from "@/lib/profit/todos";
 import type { CostEntry } from "@/lib/profit/catalog";
+import type { FeePayload } from "@/lib/fees/constants";
 
 export interface SummaryResponse {
   source: { id: string; rowCount: number; lastSyncedAt: string | null } | null;
@@ -11,6 +12,8 @@ export interface SummaryResponse {
   summary?: ProfitSummary;
   todos?: Todo[];
   catalog: { available: boolean; entries: CostEntry[] };
+  /** Ước tính phí sàn Shopee (cài đặt + ngành hàng từng sản phẩm). */
+  fees?: FeePayload;
 }
 
 /** Tải tổng hợp lãi từng đơn của workspace. `reload()` sau khi lưu giá vốn. */

@@ -1,11 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { parseNumber } from "@/lib/google/parse-number";
 import { costKey, parseCostPaste, type CostEntry } from "@/lib/profit/catalog";
 import type { ProductProfit } from "@/lib/profit/order-profit";
 import { count, signed, vnd } from "./format";
-import { Card, ErrorBox, Loading, NoOrders } from "./Shared";
+import { DEFAULT_FEE_SETTINGS, INFRA_FEE_VND, PROCESSING_FEE_PCT, SELLER_TYPES, type FeeSettings, type SellerType } from "@/lib/fees/constants";
+import { CategoryDialog, ratePctText } from "./CategoryDialog";
+import { Card, ErrorBox, FeeEstimateNote, Loading, NoOrders } from "./Shared";
 import { useProfitSummary } from "./useProfit";
 import styles from "./profit.module.css";
 
@@ -31,6 +33,14 @@ export function ProductsView({ initialFilter }: { initialFilter: Filter }) {
   const [paste, setPaste] = useState("");
   const [pasteOpen, setPasteOpen] = useState(false);
   const [pasteErrors, setPasteErrors] = useState<string[]>([]);
+  // Ước tính phí sàn Shopee: bản nháp cài đặt, sản phẩm đang chọn ngành, trạng thái lưu.
+  const [feeForm, setFeeForm] = useState<FeeSettings>(DEFAULT_FEE_SETTINGS);
+  const [catRow, setCatRow] = useState<RowView | null>(null);
+  const [feeSaving, setFeeSaving] = useState(false);
+  const fees = data?.fees;
+  useEffect(() => {
+    if (fees?.settings) setFeeForm(fees.settings);
+  }, [fees?.settings.enabled, fees?.settings.sellerType, fees?.settings.newSeller]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const rows = useMemo<RowView[]>(() => {
     if (!data) return [];
@@ -56,6 +66,9 @@ export function ProductsView({ initialFilter }: { initialFilter: Filter }) {
   const missingCount = rows.filter(missing).length;
   const missingOrders = data.summary?.missingCost ?? 0;
   const canEdit = data.editable && data.catalog.available;
+  const canEditFees = data.editable && !!fees?.available;
+  const chosenCount = rows.filter((r) => fees?.categories[costKey(r.key)]).length;
+  const feeFormChanged = !!fees && (feeForm.enabled !== fees.settings.enabled || feeForm.sellerType !== fees.settings.sellerType || feeForm.newSeller !== fees.settings.newSeller);
 
   const changed = Object.entries(edits).filter(([key, v]) => {
     const r = rows.find((x) => x.key === key);
@@ -95,6 +108,32 @@ export function ProductsView({ initialFilter }: { initialFilter: Filter }) {
     } finally {
       setSaving(false);
     }
+  }
+
+  /** Gọi PUT /api/fees rồi nạp lại số liệu (lãi được tính lại ở máy chủ). */
+  async function saveFees(body: { settings?: FeeSettings; upserts?: { sku: string; category: string }[]; removes?: string[] }, okText: string) {
+    setFeeSaving(true);
+    setSaveError("");
+    setMessage("");
+    try {
+      const res = await fetch("/api/fees", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) setSaveError(json.error ?? "Không lưu được cài đặt phí.");
+      else {
+        setMessage(okText);
+        await reload();
+      }
+    } catch {
+      setSaveError("Lỗi mạng, thử lại sau.");
+    } finally {
+      setFeeSaving(false);
+    }
+  }
+
+  function pickCategory(row: RowView, path: string, applyAll: boolean) {
+    setCatRow(null);
+    const targets = applyAll ? rows.filter((r) => r.key === row.key || !fees?.categories[costKey(r.key)]) : [row];
+    void saveFees({ upserts: targets.map((r) => ({ sku: r.key, category: path })) }, `Đã chọn ngành cho ${count(targets.length)} sản phẩm.`);
   }
 
   function applyPaste() {
@@ -150,6 +189,43 @@ export function ProductsView({ initialFilter }: { initialFilter: Filter }) {
           </div>
         </Card>
       )}
+      {fees && (
+        <Card title="Ước tính phí sàn Shopee" aside={fees.available ? `biểu phí từ ${fees.tableFrom.split("-").reverse().join("/")}` : undefined}>
+          <p className={styles.small} style={{ lineHeight: 1.6 }}>
+            Khi file đơn hàng Shopee không có cột phí, Cerno ước tính phí sàn: Phí Cố Định theo ngành hàng của từng sản phẩm, Phí Xử Lý Giao Dịch {PROCESSING_FEE_PCT}% và Phí Hạ Tầng {INFRA_FEE_VND.toLocaleString("vi-VN")}đ mỗi đơn (đã gồm thuế). Đơn có phí trong file thì dùng đúng phí đó. Chưa tính: miễn phí 30 ngày đầu, Voucher Xtra, đồng tài trợ mã ưu đãi, PiShip. Số ước tính được đánh dấu rõ trong các trang lãi.
+          </p>
+          {!fees.available ? (
+            <div className={styles.warn}><span>Chưa lưu được cài đặt: cần chạy migration <code>0018_shopee_fee_estimate.sql</code> trên Supabase.</span></div>
+          ) : (
+            <>
+              <div className={styles.formRow}>
+                <label className={styles.checkRow}>
+                  <input type="checkbox" checked={feeForm.enabled} disabled={!canEditFees} onChange={(e) => setFeeForm((f) => ({ ...f, enabled: e.target.checked }))} />
+                  <span>Bật ước tính phí sàn</span>
+                </label>
+                <select className={styles.input} value={feeForm.sellerType} disabled={!canEditFees} aria-label="Loại shop" onChange={(e) => setFeeForm((f) => ({ ...f, sellerType: e.target.value as SellerType }))}>
+                  {SELLER_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                </select>
+                {feeForm.sellerType === "non_mall" && (
+                  <label className={styles.checkRow}>
+                    <input type="checkbox" checked={feeForm.newSeller} disabled={!canEditFees} onChange={(e) => setFeeForm((f) => ({ ...f, newSeller: e.target.checked }))} />
+                    <span>Người bán mới (đăng sản phẩm đầu tiên từ 01/01 đến 31/05/2026): giảm Phí Cố Định 01/06 đến 31/08/2026</span>
+                  </label>
+                )}
+                {canEditFees && (
+                  <button className={`${styles.btn} ${styles.primary}`} disabled={!feeFormChanged || feeSaving} onClick={() => saveFees({ settings: feeForm }, "Đã lưu cài đặt ước tính phí sàn.")}>
+                    {feeSaving ? "Đang lưu…" : "Lưu cài đặt"}
+                  </button>
+                )}
+              </div>
+              <p className={styles.small} style={{ marginTop: 10 }}>
+                {`${count(chosenCount)} sản phẩm đã chọn ngành, ${count(rows.length - chosenCount)} chưa chọn.`} Sản phẩm chưa chọn ngành thì đơn của nó chưa được ước tính phí.
+              </p>
+            </>
+          )}
+        </Card>
+      )}
+      <FeeEstimateNote count={data.summary?.feeEstimated ?? 0} />
       {message && <div className={styles.note}>{message}</div>}
       {saveError && <ErrorBox message={saveError} />}
 
@@ -158,8 +234,8 @@ export function ProductsView({ initialFilter }: { initialFilter: Filter }) {
           <table className={styles.table}>
             <thead>
               <tr>
-                <th>Sản phẩm</th><th className={styles.r}>Đã bán</th><th className={styles.r}>Giá bán TB</th><th className={styles.r}>Giá vốn / cái</th>
-                <th className={styles.r}>Phí sàn / đơn</th><th className={styles.r}>Quảng cáo / đơn</th><th className={styles.r}>Lãi mỗi đơn</th><th className={styles.r}>Giá hòa vốn</th><th>Tình trạng</th>
+                <th style={{ minWidth: 210 }}>Sản phẩm</th><th className={styles.r}>Đã bán</th><th className={styles.r}>Giá bán TB</th><th className={styles.r}>Giá vốn / cái</th>
+                <th className={styles.r}>Phí sàn / đơn</th><th className={styles.r}>Quảng cáo / đơn</th><th className={styles.r}>Lãi mỗi đơn</th><th className={styles.r}>Giá hòa vốn</th>{fees?.available && <th>Ngành hàng tính phí</th>}<th>Tình trạng</th>
               </tr>
             </thead>
             <tbody>
@@ -167,6 +243,7 @@ export function ProductsView({ initialFilter }: { initialFilter: Filter }) {
                 const p = r.product;
                 const value = edits[r.key] ?? toInput(r.catalogCost ?? p?.unitCost ?? null);
                 const isMissing = missing(r);
+                const cat = fees?.categories[costKey(r.key)];
                 return (
                   <tr key={r.key} className={losing(r) ? styles.lossRow : ""}>
                     <td><b data-i18n-skip>{r.name}</b>{r.sku && r.sku !== r.name && <span className={styles.sub} data-i18n-skip>{r.sku}</span>}</td>
@@ -187,6 +264,22 @@ export function ProductsView({ initialFilter }: { initialFilter: Filter }) {
                     <td className={`${styles.r} ${styles.muted}`}>{p && p.orders ? vnd(p.adCost / p.orders) : "—"}</td>
                     <td className={styles.r}>{p?.profitPerOrder !== null && p?.profitPerOrder !== undefined ? <b className={p.profitPerOrder < 0 ? styles.neg : styles.pos}>{signed(p.profitPerOrder)}</b> : "—"}</td>
                     <td className={styles.r}>{vnd(p?.breakEvenPrice)}</td>
+                    {fees?.available && (
+                      <td>
+                        <div className={styles.catCell}>
+                          {cat ? (
+                            <span className={styles.catText}>
+                              <span title={cat.path} data-i18n-skip>{cat.path}</span>
+                              <b>{cat.ratePct !== null ? ratePctText(cat.ratePct) : "Không có trong biểu phí loại shop này"}</b>
+                            </span>
+                          ) : (
+                            <span className={`${styles.catText} ${styles.muted}`}>Chưa chọn</span>
+                          )}
+                          {canEditFees && <button className={styles.btn} disabled={feeSaving} onClick={() => setCatRow(r)}>{cat ? "Đổi" : "Chọn ngành"}</button>}
+                          {cat && canEditFees && <button className={styles.btn} disabled={feeSaving} aria-label={`Bỏ ngành của ${r.name}`} onClick={() => void saveFees({ removes: [r.key] }, "Đã bỏ ngành hàng.")}>Bỏ</button>}
+                        </div>
+                      </td>
+                    )}
                     <td>
                       {isMissing ? <span className={`${styles.badge} ${styles.bWarn}`}>Thiếu giá vốn</span>
                         : losing(r) ? <span className={`${styles.badge} ${styles.bNeg}`}>Lỗ mỗi đơn</span>
@@ -198,7 +291,7 @@ export function ProductsView({ initialFilter }: { initialFilter: Filter }) {
                   </tr>
                 );
               })}
-              {shown.length === 0 && <tr><td colSpan={9} className={styles.muted} style={{ textAlign: "center", padding: 28 }}>Không có sản phẩm nào.</td></tr>}
+              {shown.length === 0 && <tr><td colSpan={fees?.available ? 10 : 9} className={styles.muted} style={{ textAlign: "center", padding: 28 }}>Không có sản phẩm nào.</td></tr>}
             </tbody>
           </table>
         </div>
@@ -212,6 +305,15 @@ export function ProductsView({ initialFilter }: { initialFilter: Filter }) {
           <p className={styles.small} style={{ lineHeight: 1.6 }}>Giá vốn nhập ở đây được ghi vào cột &quot;Giá vốn&quot; của nguồn Đơn hàng đa kênh (giá mỗi cái × số lượng; đơn hủy và hoàn trả là 0), nên mọi dashboard và báo cáo đều thấy. Giá ở đây thay cho giá vốn có sẵn trong file. Áp dụng cho cả đơn cũ và các file tải lên sau này.</p>
         </Card>
       </div>
+      {catRow && fees && (
+        <CategoryDialog
+          productName={catRow.name}
+          sellerType={fees.settings.sellerType}
+          canApplyAll={rows.some((r) => r.key !== catRow.key && !fees.categories[costKey(r.key)])}
+          onPick={(path, all) => pickCategory(catRow, path, all)}
+          onClose={() => setCatRow(null)}
+        />
+      )}
     </div>
   );
 }
