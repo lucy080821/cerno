@@ -1,11 +1,15 @@
 "use client";
 
-import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useEditor } from "@/lib/editor/store";
 import { useChat } from "@/lib/editor/chat-store";
 import { buildAiContext } from "@/lib/editor/ai-context";
 import { widgetLabel } from "@/lib/editor/defaults";
 import { Icon } from "./fields";
+import { columnsWithCalc } from "@/lib/editor/calc";
+import { getRows } from "@/lib/editor/sample-data";
+import { useDataVersion } from "@/lib/editor/data-store";
+import { buildSuggestions } from "@/lib/editor/ai-suggest";
 import s from "./editor.module.css";
 import { Spinner } from "@/components/Spinner";
 import { addChartToDashboard } from "@/lib/editor/ai-chart";
@@ -86,19 +90,31 @@ export function ChatPanel() {
 
   useEffect(() => { endRef.current?.scrollIntoView({ block: "end" }); }, [messages]);
 
+  // Gợi ý theo dữ liệu thật của nguồn chính: tên/kiểu cột, giá trị phổ biến, tháng mới nhất, và chỉ đề nghị thêm cái chưa có.
+  const doc = useEditor((st) => st.doc);
+  const filters = useEditor((st) => st.doc.filters);
+  const dataVersion = useDataVersion();
   const hasForecast = selected?.config.kind === "chart" && !!selected.config.format?.forecast;
-  const suggestions = [
-    // Chart đang chọn có dự báo: gợi ý đầu tiên là nhờ AI diễn giải (số do thuật toán tính, AI chỉ giải thích).
-    hasForecast && selected ? `Giải thích dự báo của "${widgetLabel(selected)}" đang chọn: hướng đi, mùa vụ và độ tin cậy?` : "",
-    selected ? `Phân tích "${widgetLabel(selected)}" đang chọn: xu hướng và điểm đáng chú ý?` : "Tóm tắt nhanh dashboard này.",
-    "Có điểm bất thường nào trong dữ liệu không?",
-    ...(canEdit
-      ? [
-          selected ? "Tắt đường lưới và bật nhãn dữ liệu cho chart đang chọn." : "Thêm biểu đồ tròn doanh thu theo khu vực.",
-          "Chỉ xem dữ liệu quý 2 (tháng 4 đến tháng 6).",
-        ]
-      : ["Kênh/khu vực nào đóng góp nhiều nhất?"]),
-  ].filter(Boolean).slice(0, 4);
+  const suggestions = useMemo(() => {
+    const sourceId = doc.sources[0]?.id;
+    const columns = sourceId ? columnsWithCalc(doc, sourceId).map((c) => ({ name: c.name, type: c.type })) : [];
+    const rows = sourceId ? getRows(sourceId) : [];
+    return buildSuggestions({
+      columns,
+      rows,
+      widgets: doc.widgets.map((w) =>
+        w.config.kind === "chart"
+          ? { kind: "chart", chartType: w.config.chartType, dimensions: w.config.dimensions.map((d) => d.column), metrics: w.config.metrics.map((m) => m.column) }
+          : w.config.kind === "kpi"
+            ? { kind: "kpi", dimensions: [], metrics: [w.config.metric.column] }
+            : { kind: w.config.kind, dimensions: [], metrics: [] },
+      ),
+      filterColumns: filters.map((f) => f.column),
+      selected: selected ? { label: widgetLabel(selected), hasForecast } : null,
+      canEdit,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [doc.sources, doc.widgets, doc.calculatedFields, filters, selected, hasForecast, canEdit, dataVersion]);
 
   return (
     <div className={s.chat}>
