@@ -103,8 +103,10 @@ export function ChatPanel() {
   return (
     <div className={s.chat}>
       <div className={s.chatHead}>
-        <span className={s.chatScope} title="AI luôn thấy cấu trúc dashboard và số liệu đã gộp, kể cả bộ lọc đang bật">
-          {selected ? `Đang chọn: ${widgetLabel(selected)}` : "Cả dashboard"}
+        <span className={s.chatLogo} aria-hidden><Icon name="sparkle" size={16} /></span>
+        <span className={s.chatTitle} title="AI luôn thấy cấu trúc dashboard và số liệu đã gộp, kể cả bộ lọc đang bật">
+          <b>Trợ lý AI</b>
+          <span className={s.chatScope}>{selected ? `Đang chọn: ${widgetLabel(selected)}` : "Cả dashboard"}</span>
         </span>
         {messages.length > 0 && (
           <button className={s.iconBtn} title="Cuộc trò chuyện mới" onClick={clear}><Icon name="reset" size={14} /></button>
@@ -122,9 +124,12 @@ export function ChatPanel() {
             <div className={s.chatSuggest}>
               {suggestions.map((q) => <button key={q} className={s.suggestBtn} onClick={() => ask(q)}>{q}</button>)}
             </div>
-            <p className={s.hint}>
-              Chỉ số liệu đã gộp và vài dòng mẫu được gửi tới dịch vụ AI (Groq), không gửi toàn bộ dữ liệu. AI có thể sai, hãy kiểm tra lại số quan trọng.
-            </p>
+            <details className={s.chatInfo}>
+              <summary><Icon name="info" size={13} /><span>Dữ liệu gửi cho AI</span></summary>
+              <p>
+                Chỉ số liệu đã gộp và vài dòng mẫu được gửi tới dịch vụ AI (Groq), không gửi toàn bộ dữ liệu. AI có thể sai, hãy kiểm tra lại số quan trọng.
+              </p>
+            </details>
           </div>
         )}
         {messages.map((m) => (

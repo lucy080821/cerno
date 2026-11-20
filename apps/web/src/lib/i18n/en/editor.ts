@@ -65,6 +65,7 @@ export const EN_EDITOR: Dict = {
   "AI luôn thấy cấu trúc dashboard và số liệu đã gộp, kể cả bộ lọc đang bật": "The AI always sees the dashboard structure and the aggregated figures, including active filters",
   "Đang chọn: {0}": "Selected: {0}",
   "Cả dashboard": "Whole dashboard",
+  "Trợ lý AI": "AI assistant",
   "Cuộc trò chuyện mới": "New conversation",
   "Khi bật, AI có thể thêm/sửa/xoá widget, bộ lọc và thiết lập. Mọi thay đổi đều hoàn tác được.": "When on, the AI can add/edit/delete widgets, filters and settings. Every change can be undone.",
   "Cho phép AI sửa dashboard": "Let the AI edit the dashboard",

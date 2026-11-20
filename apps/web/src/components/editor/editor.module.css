@@ -1390,10 +1390,32 @@
   flex: none;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 8px 12px;
+  gap: 10px;
+  padding: 10px 12px;
   border-bottom: 1px solid var(--line);
+  background: #ffffff;
+}
+.chatLogo {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  color: #fff;
+  background: var(--brand-gradient, linear-gradient(135deg, #6d5efc, #19c3b1));
+  box-shadow: 0 2px 8px rgba(109, 94, 252, 0.3);
+}
+.chatTitle {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.3;
+}
+.chatTitle b {
+  font-size: 13.5px;
+  color: var(--text);
 }
 .chatScope {
   overflow: hidden;
@@ -1412,19 +1434,20 @@
   gap: 10px;
 }
 .chatEmpty p { margin: 0 0 10px; color: var(--muted); }
-.chatSuggest { display: grid; gap: 6px; margin-bottom: 12px; }
+.chatSuggest { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
 .suggestBtn {
-  padding: 9px 11px;
-  border: 1px solid rgba(20, 22, 43, 0.1);
-  border-radius: 10px;
+  padding: 6px 12px;
+  border: 1px solid rgba(109, 94, 252, 0.25);
+  border-radius: 16px;
   background: #ffffff;
-  box-shadow: 0 1px 2px rgba(20, 22, 43, 0.04);
   color: var(--text);
   font: inherit;
+  font-size: 12px;
+  line-height: 1.35;
   text-align: left;
   cursor: pointer;
 }
-.suggestBtn:hover { border-color: var(--accent); background: #f6f4ff; }
+.suggestBtn:hover { border-color: var(--accent); background: #f6f4ff; color: var(--accent); }
 .msg {
   max-width: 92%;
   padding: 8px 11px;
@@ -1458,6 +1481,30 @@
 .chatInput { resize: none; min-height: 40px; }
 .sendBtn { background: var(--accent); border-color: transparent; color: #fff; }
 .sendBtn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.chatInfo {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 11.5px;
+}
+.chatInfo summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+.chatInfo summary::-webkit-details-marker { display: none; }
+.chatInfo summary:hover { color: var(--text); }
+.chatInfo p {
+  margin: 6px 0 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #ffffff;
+  border: 1px solid rgba(20, 22, 43, 0.08);
+  line-height: 1.5;
+}
 
 .datePresets { display: flex; flex-wrap: wrap; gap: 4px; }
 .preset {
