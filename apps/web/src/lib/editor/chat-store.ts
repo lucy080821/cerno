@@ -2,7 +2,7 @@ import { create } from "zustand";
 import type { Dashboard } from "@dashboard/schema";
 import { applyAiActions, MAX_TOOL_CALLS_PER_TURN } from "./ai-actions";
 import { runShowChart, type ChartPreview } from "./ai-chart";
-import { wantsTools } from "./ai-intent";
+import { wantsData, wantsTools } from "./ai-intent";
 import { MAX_CONTEXT_LEVEL } from "./ai-context";
 import { tr } from "@/lib/i18n";
 import { useLang } from "@/lib/i18n/store";
@@ -166,6 +166,8 @@ export const useChat = create<ChatState>((set, get) => ({
     // Công cụ (vẽ chart, sửa dashboard) tốn ~1.800 token mỗi yêu cầu: chỉ gửi khi câu hỏi có ý định vẽ/sửa.
     const userTexts = get().messages.filter((m) => m.role === "user" && !m.error).map((m) => m.content);
     const intent = wantsTools([...userTexts, q]);
+    // Câu cần tính số liệu mới (so sánh, xếp hạng, tách theo nhóm): chỉ gửi công cụ ĐỌC (show_chart) để AI tự tính.
+    const dataIntent = !intent && wantsData([...userTexts, q]);
     // Bị báo "quá lớn" thì lần lượt: rút gọn dữ liệu gửi kèm, bỏ công cụ sửa, bỏ hết công cụ.
     let shrink = 0;
 
@@ -185,12 +187,12 @@ export const useChat = create<ChatState>((set, get) => ({
         // Vòng gửi yêu cầu: tự xử lý hạn mức token/phút (chờ ít giây), lệnh sai định dạng (thử lại 1 lần) và yêu cầu quá lớn.
         for (;;) {
           // Có công cụ đi kèm thì ngữ cảnh phải gọn hơn ngay từ đầu (công cụ + lời nhắc ~3.000 token): nếu không sẽ vượt hạn mức.
-          const baseLevel = !intent ? 0 : get().canEdit ? 2 : 1;
+          const baseLevel = intent ? (get().canEdit ? 2 : 1) : dataIntent ? 1 : 0;
           const payload = JSON.stringify({
             messages: api,
             context: await getContext(Math.min(MAX_CONTEXT_LEVEL, baseLevel + shrink)),
             tools: intent && get().canEdit && shrink < 2,
-            charts: intent && shrink < 3,
+            charts: (intent || dataIntent) && shrink < 3,
             lang: useLang.getState().lang,
           });
           res = await fetch("/api/chat", {

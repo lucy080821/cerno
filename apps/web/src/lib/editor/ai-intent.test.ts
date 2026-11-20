@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { hasToolIntent, wantsTools } from "./ai-intent";
+import { hasDataIntent, hasToolIntent, wantsData, wantsTools } from "./ai-intent";
 
 describe("hasToolIntent: câu phân tích thuần tuý không cần công cụ", () => {
   it("câu hỏi phân tích (như trong ảnh lỗi) KHÔNG cần công cụ", () => {
@@ -57,5 +57,31 @@ describe("wantsTools: câu xác nhận ngắn", () => {
   it("rỗng thì không cần công cụ", () => {
     expect(wantsTools([])).toBe(false);
     expect(wantsTools(["   "])).toBe(false);
+  });
+});
+
+describe("wantsData: câu hỏi cần AI tự tính số liệu", () => {
+  it("nhận diện câu so sánh/xếp hạng/tách theo nhóm", () => {
+    for (const q of [
+      "Compare Short and Long on Engaged views.",
+      "So sánh Shopee và TikTok Shop về Doanh thu.",
+      "Doanh thu nhiều nhất ở Kênh nào?",
+      "Lượt xem trung bình mỗi video là bao nhiêu?",
+      "Tổng đơn hủy theo tháng",
+    ]) {
+      expect(hasDataIntent(q), q).toBe(true);
+    }
+  });
+
+  it("câu không đòi số liệu thì không nhận", () => {
+    for (const q of ["Chào bạn", "Tóm tắt nhanh dashboard này.", "tại sao lượt xem giảm?"]) {
+      expect(hasDataIntent(q), q).toBe(false);
+    }
+  });
+
+  it("câu xác nhận kế thừa ý định của câu trước", () => {
+    expect(wantsData(["so sánh Short và Long", "ok làm đi"])).toBe(true);
+    expect(wantsData(["chào bạn", "ok"])).toBe(false);
+    expect(wantsData([])).toBe(false);
   });
 });

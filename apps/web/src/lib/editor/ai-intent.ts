@@ -48,3 +48,29 @@ export function wantsTools(userMessages: string[]): boolean {
   if (last.length <= 40 && CONFIRM.test(last)) return userMessages.slice(-4, -1).some(hasToolIntent);
   return false;
 }
+
+/**
+ * Từ khoá của câu hỏi cần TÍNH số liệu mới (so sánh, xếp hạng, tách theo nhóm, tổng/trung bình...). Ngữ cảnh gửi kèm chỉ
+ * có số liệu của các widget đang có và vài dòng mẫu, nên câu loại này không trả lời được nếu AI không có công cụ tự tính
+ * (show_chart, chỉ ĐỌC dữ liệu). Nghiêng về nhận diện rộng: sai thì chỉ tốn thêm token ở lượt đó.
+ */
+const DATA_WORDS = [
+  "so sánh", "đối chiếu", "xếp hạng", "top", "nhiều nhất", "ít nhất", "cao nhất", "thấp nhất", "lớn nhất", "nhỏ nhất",
+  "trung bình", "tổng", "tỷ lệ", "tỉ lệ", "phân bổ", "phân bố", "từng", "mỗi", "theo", "giữa", "bao nhiêu", "tính",
+  "compare", "versus", "vs", "rank", "ranking", "most", "least", "highest", "lowest", "average", "total", "breakdown",
+  "by", "per", "each", "how many", "how much", "calculate",
+];
+const DATA_RE = wordRe(DATA_WORDS);
+
+export function hasDataIntent(text: string): boolean {
+  return DATA_RE.test(text.replace(NOT_COMMANDS, " "));
+}
+
+/** Câu hỏi (hoặc câu xác nhận ngay sau đó) cần AI tự tính số liệu bằng công cụ đọc dữ liệu. */
+export function wantsData(userMessages: string[]): boolean {
+  const last = userMessages[userMessages.length - 1]?.trim() ?? "";
+  if (!last) return false;
+  if (hasDataIntent(last)) return true;
+  if (last.length <= 40 && CONFIRM.test(last)) return userMessages.slice(-4, -1).some(hasDataIntent);
+  return false;
+}
