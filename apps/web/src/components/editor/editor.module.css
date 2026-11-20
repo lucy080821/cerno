@@ -1414,16 +1414,17 @@
 .chatEmpty p { margin: 0 0 10px; color: var(--muted); }
 .chatSuggest { display: grid; gap: 6px; margin-bottom: 12px; }
 .suggestBtn {
-  padding: 8px 10px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--panel-2);
+  padding: 9px 11px;
+  border: 1px solid rgba(20, 22, 43, 0.1);
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(20, 22, 43, 0.04);
   color: var(--text);
   font: inherit;
   text-align: left;
   cursor: pointer;
 }
-.suggestBtn:hover { border-color: var(--accent); }
+.suggestBtn:hover { border-color: var(--accent); background: #f6f4ff; }
 .msg {
   max-width: 92%;
   padding: 8px 11px;
@@ -1441,7 +1442,7 @@
   font-size: 12px;
 }
 .msgUser { align-self: flex-end; background: var(--accent); color: #fff; }
-.msgBot { align-self: flex-start; background: var(--panel-2); border: 1px solid var(--line); }
+.msgBot { align-self: flex-start; background: #ffffff; border: 1px solid rgba(20, 22, 43, 0.1); box-shadow: 0 1px 2px rgba(20, 22, 43, 0.04); }
 .msgErr { border-color: var(--danger); color: var(--danger); }
 .typing { color: var(--muted); font-style: italic; }
 .chatForm {
@@ -1452,6 +1453,7 @@
   align-items: end;
   padding: 10px 12px;
   border-top: 1px solid var(--line);
+  background: #ffffff;
 }
 .chatInput { resize: none; min-height: 40px; }
 .sendBtn { background: var(--accent); border-color: transparent; color: #fff; }
@@ -2586,16 +2588,17 @@
    (Đặt cuối file để thắng các quy tắc chung ở trên.)
    ===================================================================================================== */
 .rightShell {
-  background: color-mix(in srgb, var(--panel) 88%, #000);
+  /* Nền xám lam rất nhạt để thẻ trắng nổi lên (trước đây trộn 12% đen vào panel trắng nên ra xám đục). */
+  background: #f4f5fa;
 }
 
 .mainTabs {
   gap: 4px;
   margin: 10px 10px 0;
   padding: 4px;
-  border: 1px solid var(--line);
+  border: 0;
   border-radius: 12px;
-  background: rgba(20, 22, 43, 0.07);
+  background: #e8eaf5;
 }
 
 .mainTab {
@@ -2608,9 +2611,9 @@
 
 .mainTabOn {
   border-bottom-color: transparent;
-  background: color-mix(in srgb, var(--accent) 30%, var(--panel-2));
-  color: var(--text);
-  box-shadow: 0 1px 0 rgba(20, 22, 43, 0.072) inset, 0 2px 8px rgba(20, 22, 43, 0.075);
+  background: #ffffff;
+  color: var(--accent);
+  box-shadow: 0 1px 3px rgba(20, 22, 43, 0.12);
 }
 
 .rightBody:not(.rightBodyChat) {
@@ -2627,7 +2630,8 @@
 .rightBody .section {
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: linear-gradient(180deg, rgba(20, 22, 43, 0.045), rgba(20, 22, 43, 0.02));
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(20, 22, 43, 0.04);
   overflow: hidden;
 }
 
@@ -2665,8 +2669,8 @@
 .rightBody .input {
   height: 32px;
   border-radius: 8px;
-  background: rgba(20, 22, 43, 0.065);
-  border-color: rgba(20, 22, 43, 0.108);
+  background: #ffffff;
+  border-color: rgba(20, 22, 43, 0.16);
   font-size: 12.5px;
   font-weight: 400;
 }
@@ -2759,7 +2763,7 @@
   gap: 4px;
   border: 1px solid var(--line);
   border-radius: 10px;
-  background: color-mix(in srgb, var(--panel) 80%, #000);
+  background: #e8eaf5;
 }
 
 .rightBody .tab {
@@ -2770,8 +2774,9 @@
 }
 
 .rightBody .tabOn {
-  background: color-mix(in srgb, var(--accent) 28%, var(--panel-2));
-  color: var(--text);
+  background: #ffffff;
+  color: var(--accent);
+  box-shadow: 0 1px 3px rgba(20, 22, 43, 0.12);
 }
 
 /* Gợi ý cuối bảng */
@@ -2796,8 +2801,14 @@
 .mainTabOn,
 .rightBody .tabOn {
   background: #ffffff;
-  color: var(--text);
-  box-shadow: 0 0 0 1px rgba(20, 22, 43, 0.126) inset, 0 2px 8px rgba(20, 22, 43, 0.09);
+  color: var(--accent);
+  box-shadow: 0 1px 3px rgba(20, 22, 43, 0.12);
+}
+
+/* Giữ màu tím khi rê chuột lên tab đang chọn (quy tắc :hover chung của .mainTab sẽ làm nó chuyển sang màu chữ thường). */
+.mainTabOn:hover,
+.rightBody .tabOn:hover {
+  color: var(--accent);
 }
 
 .rightBody .input:focus {
