@@ -86,6 +86,25 @@ export async function computeProfit(sourceId: string, fees?: FeeConfig): Promise
   return result;
 }
 
+const memberCache = new Map<string, { at: number; v: { workspaceId: string; editable: boolean } | null }>();
+const MEMBER_TTL_MS = 60_000;
+
+/**
+ * Workspace của người dùng và quyền sửa, chỉ MỘT truy vấn (trước đây hai lần nối đuôi), nhớ 60 giây theo người dùng.
+ * Chỉ để chọn workspace và hiện/ẩn nút sửa: dữ liệu vẫn được kiểm quyền bằng RLS ở các truy vấn sau, còn các route lưu
+ * kiểm lại quyền sửa không qua bộ nhớ này.
+ */
+export async function membershipOf(supabase: SupabaseClient, userId: string): Promise<{ workspaceId: string; editable: boolean } | null> {
+  const hit = memberCache.get(userId);
+  if (hit && Date.now() - hit.at < MEMBER_TTL_MS) return hit.v;
+  const { data, error } = await supabase.from("workspace_members").select("workspace_id, role").eq("user_id", userId).limit(1).maybeSingle();
+  if (error) return null;
+  const v = data ? { workspaceId: data.workspace_id as string, editable: data.role === "owner" || data.role === "editor" } : null;
+  memberCache.set(userId, { at: Date.now(), v });
+  if (memberCache.size > 2000) memberCache.delete(memberCache.keys().next().value as string);
+  return v;
+}
+
 /** Như `computeProfit` nhưng tự nạp cài đặt ước tính phí của workspace (qua RLS bằng client của người dùng). */
 export async function computeProfitFor(db: SupabaseClient, workspaceId: string, sourceId: string): Promise<{ orders: OrderProfit[]; summary: ProfitSummary; fees: FeeConfig }> {
   const fees = await loadFeeConfig(db, workspaceId);

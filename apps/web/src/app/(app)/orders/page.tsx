@@ -14,7 +14,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
   const { filter } = await searchParams;
   const initial = (FILTERS as string[]).includes(filter ?? "") ? (filter as OrderFilter) : "all";
   return (
-    <AppShell active="orders" userName={(user.user_metadata?.full_name as string | undefined) ?? user.email ?? ""} title="Đơn hàng" desc="Lãi của từng đơn sau phí sàn, giá vốn và quảng cáo. Mọi kênh gộp một bảng, đơn lỗ hiện màu đỏ.">
+    <AppShell userName={(user.user_metadata?.full_name as string | undefined) ?? user.email ?? ""} title="Đơn hàng" desc="Lãi của từng đơn sau phí sàn, giá vốn và quảng cáo. Mọi kênh gộp một bảng, đơn lỗ hiện màu đỏ.">
       <OrdersView initialFilter={initial} />
     </AppShell>
   );

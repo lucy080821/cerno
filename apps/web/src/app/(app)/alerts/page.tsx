@@ -34,7 +34,7 @@ export default async function AlertsPage() {
   const firing = rules.filter((r) => stateKey(r, now) === "firing").length;
 
   return (
-    <AppShell active="alerts" userName={name} title="Cảnh báo" desc="Nhận email khi số liệu vượt ngưỡng, thay đổi bất thường hoặc không có dữ liệu mới. Cerno kiểm tra sau mỗi lần dữ liệu cập nhật.">
+    <AppShell userName={name} title="Cảnh báo" desc="Nhận email khi số liệu vượt ngưỡng, thay đổi bất thường hoặc không có dữ liệu mới. Cerno kiểm tra sau mỗi lần dữ liệu cập nhật.">
       <div className={styles.stack}>
         {unavailable && <div className={styles.warn}><span>Chưa đọc được danh sách cảnh báo: cần chạy migration <code>0012_reports_alerts.sql</code> trên Supabase.</span></div>}
         <Card title="Cảnh báo của bạn" aside={rules.length ? `${rules.length} cảnh báo · ${firing} đang báo` : undefined}>

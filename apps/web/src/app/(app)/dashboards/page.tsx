@@ -42,7 +42,7 @@ export default async function DashboardsPage() {
   const name = (user.user_metadata?.full_name as string | undefined) ?? user.email ?? "";
 
   return (
-    <AppShell active="dashboards" userName={name} title="Dashboard" desc="Thiết kế báo cáo từ dữ liệu của bạn, quản lý nguồn dữ liệu và các dashboard được chia sẻ.">
+    <AppShell userName={name} title="Dashboard" desc="Thiết kế báo cáo từ dữ liệu của bạn, quản lý nguồn dữ liệu và các dashboard được chia sẻ.">
     <main className={styles.page}>
       <DashboardList
         dashboards={dashboards}

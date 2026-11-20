@@ -10,7 +10,7 @@ export default async function ProfitPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
   return (
-    <AppShell active="profit" userName={(user.user_metadata?.full_name as string | undefined) ?? user.email ?? ""} title="Lãi lỗ" desc="Tiền đi đâu, đơn nào lãi, đơn nào lỗ và vì sao.">
+    <AppShell userName={(user.user_metadata?.full_name as string | undefined) ?? user.email ?? ""} title="Lãi lỗ" desc="Tiền đi đâu, đơn nào lãi, đơn nào lỗ và vì sao.">
       <ProfitView />
     </AppShell>
   );

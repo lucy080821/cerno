@@ -284,3 +284,29 @@
     padding-right: 16px;
   }
 }
+
+/* Khung xương khi đang tải (thanh bên và tiêu đề). */
+.skel {
+  background: linear-gradient(90deg, rgba(128, 138, 170, 0.18), rgba(128, 138, 170, 0.32), rgba(128, 138, 170, 0.18));
+  background-size: 200% 100%;
+  animation: skel 1.4s ease-in-out infinite;
+}
+
+.skelLine {
+  display: block;
+  height: 12px;
+  width: 85%;
+  border-radius: 6px;
+}
+
+@keyframes skel {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skel {
+    animation: none;
+  }
+}

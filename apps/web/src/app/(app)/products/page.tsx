@@ -12,7 +12,7 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
   const { filter } = await searchParams;
   const initial = filter === "missing" || filter === "loss" ? filter : "all";
   return (
-    <AppShell active="products" userName={(user.user_metadata?.full_name as string | undefined) ?? user.email ?? ""} title="Sản phẩm và giá vốn" desc="Giá vốn là chìa khóa để mỗi đơn biết lời hay lỗ. Nhập một lần, Cerno tính lại mọi đơn.">
+    <AppShell userName={(user.user_metadata?.full_name as string | undefined) ?? user.email ?? ""} title="Sản phẩm và giá vốn" desc="Giá vốn là chìa khóa để mỗi đơn biết lời hay lỗ. Nhập một lần, Cerno tính lại mọi đơn.">
       <ProductsView initialFilter={initial} />
     </AppShell>
   );

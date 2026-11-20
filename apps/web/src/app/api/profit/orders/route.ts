@@ -1,8 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { loadFeeConfig } from "@/lib/server/fees";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/server/session-user";
 import { createRateLimiter } from "@/lib/server/rate-limit";
-import { computeProfitFor, findOrdersSource, workspaceOf } from "@/lib/server/profit";
+import { computeProfit, findOrdersSource, membershipOf } from "@/lib/server/profit";
 import { filterOrders, orderCounts, sortOrders, type OrderFilter, type OrderSort } from "@/lib/profit/order-profit";
 
 export const runtime = "nodejs";
@@ -19,8 +20,9 @@ export async function GET(req: NextRequest) {
   const auth = await requireUser(supabase);
   if ("response" in auth) return auth.response;
   if (limited(auth.user.id)) return NextResponse.json({ error: "Quá nhiều yêu cầu, thử lại sau ít giây." }, { status: 429 });
-  const workspaceId = await workspaceOf(supabase, auth.user.id);
-  if (!workspaceId) return NextResponse.json({ error: "Bạn chưa có workspace" }, { status: 403 });
+  const member = await membershipOf(supabase, auth.user.id);
+  if (!member) return NextResponse.json({ error: "Bạn chưa có workspace" }, { status: 403 });
+  const { workspaceId } = member;
 
   const sp = req.nextUrl.searchParams;
   const filter = (FILTERS as string[]).includes(sp.get("filter") ?? "") ? (sp.get("filter") as OrderFilter) : "all";
@@ -29,10 +31,10 @@ export async function GET(req: NextRequest) {
   const channel = (sp.get("channel") ?? "").slice(0, 60) || undefined;
   const page = Math.max(1, Math.min(10_000, Math.floor(Number(sp.get("page")) || 1)));
 
-  const source = await findOrdersSource(supabase, workspaceId);
+  const [source, fees] = await Promise.all([findOrdersSource(supabase, workspaceId), loadFeeConfig(supabase, workspaceId)]);
   if (!source) return NextResponse.json({ source: null, orders: [], total: 0, page: 1, pageSize: PAGE_SIZE, counts: null, channels: [] });
   try {
-    const { orders } = await computeProfitFor(supabase, workspaceId, source.id);
+    const { orders } = await computeProfit(source.id, fees);
     const list = sortOrders(filterOrders(orders, filter, q, channel), sort);
     return NextResponse.json(
       {

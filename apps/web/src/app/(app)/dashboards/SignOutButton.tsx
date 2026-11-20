@@ -1,18 +1,16 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import styles from "./dashboards.module.css";
 
 export function SignOutButton() {
-  const router = useRouter();
   return (
     <button
       className={styles.ghost}
       onClick={async () => {
         await createClient().auth.signOut();
-        router.push("/");
-        router.refresh();
+        // Tải lại cả trang (không chuyển trang trong app) để xoá sạch số liệu đã nhớ trong trình duyệt của người dùng cũ.
+        window.location.assign("/");
       }}
     >
       Đăng xuất

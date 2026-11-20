@@ -23,7 +23,7 @@ export default async function AccountPage() {
   const name = (user.user_metadata?.full_name as string | undefined) ?? "";
 
   return (
-    <AppShell active="account" userName={name || user.email || ""} title="Tài khoản">
+    <AppShell userName={name || user.email || ""} title="Tài khoản">
     <main className={styles.page}>
       <section className={styles.card}>
         <div className={styles.row}><span>Tên</span><strong>{name || "—"}</strong></div>

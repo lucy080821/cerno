@@ -2,9 +2,9 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/server/session-user";
 import { createRateLimiter } from "@/lib/server/rate-limit";
-import { computeProfitFor, findOrdersSource, loadCatalog, workspaceOf } from "@/lib/server/profit";
+import { computeProfit, findOrdersSource, loadCatalog, membershipOf } from "@/lib/server/profit";
 import { buildTodos } from "@/lib/profit/todos";
-import { feePayload } from "@/lib/server/fees";
+import { feePayload, loadFeeConfig } from "@/lib/server/fees";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,16 +18,17 @@ export async function GET() {
   const auth = await requireUser(supabase);
   if ("response" in auth) return auth.response;
   if (limited(auth.user.id)) return NextResponse.json({ error: "Quá nhiều yêu cầu, thử lại sau ít giây." }, { status: 429 });
-  const workspaceId = await workspaceOf(supabase, auth.user.id);
-  if (!workspaceId) return NextResponse.json({ error: "Bạn chưa có workspace" }, { status: 403 });
-  const editable = (await workspaceOf(supabase, auth.user.id, true)) === workspaceId;
+  const member = await membershipOf(supabase, auth.user.id);
+  if (!member) return NextResponse.json({ error: "Bạn chưa có workspace" }, { status: 403 });
+  const { workspaceId, editable } = member;
 
-  const [source, catalog] = await Promise.all([findOrdersSource(supabase, workspaceId), loadCatalog(supabase, workspaceId)]);
+  // Ba truy vấn độc lập chạy song song (trước đây nối đuôi nhau).
+  const [source, catalog, fees] = await Promise.all([findOrdersSource(supabase, workspaceId), loadCatalog(supabase, workspaceId), loadFeeConfig(supabase, workspaceId)]);
   if (!source) {
     return NextResponse.json({ source: null, editable, catalog: { available: catalog.available, entries: catalog.entries } }, { headers: { "cache-control": "private, no-store" } });
   }
   try {
-    const { summary, fees } = await computeProfitFor(supabase, workspaceId, source.id);
+    const { summary } = await computeProfit(source.id, fees);
     return NextResponse.json(
       { source, editable, summary, todos: buildTodos(summary), catalog: { available: catalog.available, entries: catalog.entries }, fees: feePayload(fees) },
       { headers: { "cache-control": "private, no-store" } },

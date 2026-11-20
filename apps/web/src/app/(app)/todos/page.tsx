@@ -10,7 +10,7 @@ export default async function TodosPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
   return (
-    <AppShell active="todos" userName={(user.user_metadata?.full_name as string | undefined) ?? user.email ?? ""} title="Việc cần làm" desc="Gợi ý việc nên làm để lãi mỗi đơn cao hơn, sắp xếp theo mức ảnh hưởng.">
+    <AppShell userName={(user.user_metadata?.full_name as string | undefined) ?? user.email ?? ""} title="Việc cần làm" desc="Gợi ý việc nên làm để lãi mỗi đơn cao hơn, sắp xếp theo mức ảnh hưởng.">
       <TodosView />
     </AppShell>
   );

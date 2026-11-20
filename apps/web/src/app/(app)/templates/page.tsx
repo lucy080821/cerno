@@ -17,7 +17,7 @@ export default async function TemplatesPage() {
         .order("created_at", { ascending: false })
     : { data: [] };
   return (
-    <AppShell active="templates" userName={name} title="Mẫu dashboard" desc="Chọn một mẫu theo ngành, Cerno tự ghép cột với dữ liệu của bạn rồi tạo dashboard để chỉnh tiếp.">
+    <AppShell userName={name} title="Mẫu dashboard" desc="Chọn một mẫu theo ngành, Cerno tự ghép cột với dữ liệu của bạn rồi tạo dashboard để chỉnh tiếp.">
       <main className={styles.page}>
         <TemplatesView sources={(data ?? []) as SourceRow[]} apiKey={process.env.NEXT_PUBLIC_GOOGLE_API_KEY ?? ""} appId={process.env.NEXT_PUBLIC_GOOGLE_APP_ID ?? ""} />
       </main>

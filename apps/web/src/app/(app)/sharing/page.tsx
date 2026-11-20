@@ -30,7 +30,7 @@ export default async function SharingPage() {
   const unavailable = links === null || embeds === null || invites === null;
 
   return (
-    <AppShell active="sharing" userName={name} title="Chia sẻ và nhúng" desc="Gửi link xem không cần đăng nhập, mời đồng nghiệp theo email (xem hoặc sửa), hoặc nhúng dashboard vào website.">
+    <AppShell userName={name} title="Chia sẻ và nhúng" desc="Gửi link xem không cần đăng nhập, mời đồng nghiệp theo email (xem hoặc sửa), hoặc nhúng dashboard vào website.">
       <div className={styles.stack}>
         {unavailable && <div className={styles.warn}><span>Một số thông tin chia sẻ chưa đọc được: cần chạy migration <code>0007_embed.sql</code> và <code>0008_dashboard_access.sql</code> trên Supabase.</span></div>}
         <Card title="Dashboard của bạn" aside="bấm Chia sẻ để bật link, mời người hoặc lấy mã nhúng">

@@ -31,7 +31,7 @@ export default async function ReportsPage() {
   }
 
   return (
-    <AppShell active="reports" userName={name} title="Báo cáo định kỳ" desc="Cerno gửi email tóm tắt số liệu theo lịch: chỉ số chính, nhóm tăng giảm, ảnh biểu đồ và link mở dashboard.">
+    <AppShell userName={name} title="Báo cáo định kỳ" desc="Cerno gửi email tóm tắt số liệu theo lịch: chỉ số chính, nhóm tăng giảm, ảnh biểu đồ và link mở dashboard.">
       <div className={styles.stack}>
         {unavailable && <div className={styles.warn}><span>Chưa đọc được danh sách báo cáo: cần chạy migration <code>0012_reports_alerts.sql</code> trên Supabase.</span></div>}
         <Card title="Báo cáo đang gửi" aside={subs.length ? `${subs.length} người nhận` : undefined}>

@@ -18,7 +18,7 @@ export default async function AiPage() {
   const { supabase, user, name } = await requirePageUser();
   const dashboards = await ownDashboards(supabase, await workspaceIds(supabase, user.id));
   return (
-    <AppShell active="ai" userName={name} title="Hỏi AI" desc="Hỏi bằng tiếng Việt về số liệu của bạn. AI trả lời, vẽ biểu đồ và sửa dashboard giúp bạn, mọi thay đổi đều hoàn tác được.">
+    <AppShell userName={name} title="Hỏi AI" desc="Hỏi bằng tiếng Việt về số liệu của bạn. AI trả lời, vẽ biểu đồ và sửa dashboard giúp bạn, mọi thay đổi đều hoàn tác được.">
       <div className={styles.stack}>
         <Card title="Chọn dashboard để hỏi" aside="AI đọc số liệu của dashboard đang mở">
           {dashboards.length === 0 ? (

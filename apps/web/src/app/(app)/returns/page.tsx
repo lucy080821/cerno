@@ -10,7 +10,7 @@ export default async function ReturnsPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
   return (
-    <AppShell active="returns" userName={(user.user_metadata?.full_name as string | undefined) ?? user.email ?? ""} title="Hoàn và hủy" desc="Đơn hoàn và đơn hủy làm shop mất bao nhiêu.">
+    <AppShell userName={(user.user_metadata?.full_name as string | undefined) ?? user.email ?? ""} title="Hoàn và hủy" desc="Đơn hoàn và đơn hủy làm shop mất bao nhiêu.">
       <ReturnsView />
     </AppShell>
   );

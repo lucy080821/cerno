@@ -24,7 +24,7 @@ export default async function SourcesPage() {
   const sources = (data ?? []) as SourceRow[];
 
   return (
-    <AppShell active="sources" userName={name} title="Nguồn dữ liệu" desc={`Tải file đơn hàng từ Shopee, TikTok Shop hoặc nối Google Sheets. Tối đa ${MAX_SOURCES_PER_WORKSPACE} nguồn.`}>
+    <AppShell userName={name} title="Nguồn dữ liệu" desc={`Tải file đơn hàng từ Shopee, TikTok Shop hoặc nối Google Sheets. Tối đa ${MAX_SOURCES_PER_WORKSPACE} nguồn.`}>
       <main className={styles.page}>
         <section className={sectionClass("source")}>
           <SectionHead
