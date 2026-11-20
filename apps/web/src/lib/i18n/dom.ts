@@ -105,7 +105,12 @@ export class DomTranslator {
   private walk(node: Node) {
     if (node.nodeType === Node.TEXT_NODE) return this.text(node as Text);
     if (node.nodeType !== Node.ELEMENT_NODE && node.nodeType !== Node.DOCUMENT_NODE) return;
-    if (node.nodeType === Node.ELEMENT_NODE && this.skipped(node as Element)) return;
+    if (node.nodeType === Node.ELEMENT_NODE && this.skipped(node as Element)) {
+      // Ô nhập (textarea...) không dịch nội dung nhưng placeholder/title của chính nó vẫn cần dịch.
+      const el = node as Element;
+      if (SKIP_TAGS.has(el.tagName) && !this.skipped(el.parentElement)) for (const a of ATTRS) this.attr(el, a);
+      return;
+    }
     const doc = node.ownerDocument ?? (node as Document);
     const tw = doc.createTreeWalker(node, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT);
     // Gồm cả chính phần tử gốc (thuộc tính của nó).
@@ -115,7 +120,8 @@ export class DomTranslator {
       else {
         const el = n as Element;
         if (SKIP_TAGS.has(el.tagName) || el.hasAttribute("data-i18n-skip")) {
-          // bỏ cả nhánh con
+          // bỏ cả nhánh con (thuộc tính của chính ô nhập như placeholder vẫn dịch)
+          if (SKIP_TAGS.has(el.tagName)) for (const a of ATTRS) this.attr(el, a);
           let last: Node = el;
           while (last.lastChild) last = last.lastChild;
           tw.currentNode = last;

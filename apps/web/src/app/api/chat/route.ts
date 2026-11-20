@@ -43,7 +43,7 @@ function rateLimited(ip: string): boolean {
 /** Giao diện đang ở tiếng Anh: ghi đè quy tắc "trả lời bằng tiếng Việt" ở trên (dữ liệu và tên cột vẫn giữ nguyên chữ gốc). */
 const EN_PROMPT = `
 
-LANGUAGE OVERRIDE: the user's interface is in English. Reply in English (ignore the Vietnamese-language rule above), keep column names, series names and sheet values exactly as they appear in the data, and write any chart titles or text you create in English.`;
+LANGUAGE OVERRIDE: the user's interface is in English. Reply in English (ignore the Vietnamese-language rule above), keep column names, series names and sheet values exactly as they appear in the data, and write any chart titles or text you create in English. The reply must be 100% English: translate every unit and label that comes from the data (\"lượt\" → \"views\", \"đồng\" → \"VND\", \"đơn\" → \"orders\", \"người\" → \"people\", ...) and never leave Vietnamese words in the answer. Use English number format (comma for thousands, dot for decimals: 5,513; 12.5%).`;
 
 const BASE_PROMPT = `Bạn là trợ lý phân tích dữ liệu trong một công cụ thiết kế dashboard. Người dùng hỏi về dashboard, biểu đồ và dữ liệu của họ.
 

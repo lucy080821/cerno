@@ -2771,6 +2771,16 @@
   background: rgba(20, 22, 43, 0.045);
 }
 
+.rightBody .sendBtn {
+  border-color: transparent;
+  background: var(--accent);
+  color: #fff;
+}
+
+.rightBody .sendBtn:disabled {
+  opacity: 0.55;
+}
+
 .rightBody .addBtn {
   margin-top: 2px;
   padding: 6px 10px;
@@ -3273,4 +3283,10 @@
 }
 .fcSuggest:hover {
   background: color-mix(in srgb, var(--brand-a) 22%, transparent);
+}
+
+/* Nút gửi / Thêm vào dashboard giữ màu tím khi rê chuột (đặt sau quy tắc hover chung của .smallBtn). */
+.rightBody .sendBtn:hover:not(:disabled) {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--accent) 88%, #000);
 }
