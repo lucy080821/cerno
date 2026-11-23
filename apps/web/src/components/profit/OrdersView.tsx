@@ -45,6 +45,7 @@ function OrderDetail({ o, onClose }: { o: OrderProfit; onClose: () => void }) {
     { label: "Phí sàn", value: o.fee, kind: "neg" as const },
     { label: "Giá vốn", value: o.cost, kind: "neg" as const },
     { label: "Quảng cáo", value: o.adCost, kind: "neg" as const },
+    ...(o.shipCost > 0 ? [{ label: "Ship shop chịu", value: o.shipCost, kind: "neg" as const }] : []),
     { label: "Lãi", value: 0, kind: "result" as const },
   ];
   return (
@@ -82,6 +83,7 @@ function OrderDetail({ o, onClose }: { o: OrderProfit; onClose: () => void }) {
           <tr><td>Phí sàn{o.feeEstimated && <span className={styles.muted}> (ước tính)</span>}</td><td className={`${styles.r} ${styles.neg}`}>-{vnd(o.fee)}</td></tr>
           <tr><td>Giá vốn</td><td className={`${styles.r} ${styles.neg}`}>{o.profit === null ? "?" : `-${vnd(o.cost)}`}</td></tr>
           <tr><td>Quảng cáo chia vào đơn</td><td className={`${styles.r} ${styles.neg}`}>-{vnd(o.adCost)}</td></tr>
+          {o.shipCost > 0 && <tr><td>Phí ship shop chịu<span className={styles.muted}> (ước tính)</span></td><td className={`${styles.r} ${styles.neg}`}>-{vnd(o.shipCost)}</td></tr>}
         </tbody>
       </table>
       <div className={styles.small} style={{ margin: "14px 0 6px" }}>Sản phẩm trong đơn</div>
@@ -188,7 +190,7 @@ export function OrdersView({ initialFilter }: { initialFilter: OrderFilter }) {
                     <td><b data-i18n-skip>{o.hasId ? o.id : "—"}</b><span className={styles.sub}><span data-i18n-skip>{o.channel}</span> · {o.date ?? "—"} · {o.status}</span></td>
                     <td data-i18n-skip style={{ maxWidth: 220, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{productText(o)}</td>
                     <td className={styles.r}>{vnd(o.revenue)}</td>
-                    <td className={`${styles.r} ${styles.muted}`} title={o.feeEstimated ? "Có phí sàn ước tính" : undefined}>{o.profit === null ? "—" : `${o.feeEstimated ? "≈ " : ""}${vnd(o.fee + o.cost + o.adCost)}`}</td>
+                    <td className={`${styles.r} ${styles.muted}`} title={o.feeEstimated ? "Có phí sàn ước tính" : undefined}>{o.profit === null ? "—" : `${o.feeEstimated ? "≈ " : ""}${vnd(o.fee + o.cost + o.adCost + o.shipCost)}`}</td>
                     <td className={styles.r}><ProfitCell o={o} /></td>
                     <td className={`${styles.r} ${o.margin !== null && o.margin < 0 ? styles.neg : styles.muted}`}>{pct(o.margin, 0)}</td>
                   </tr>

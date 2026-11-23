@@ -40,6 +40,8 @@ export const FEE_CHANNEL = "Shopee";
 export const MAX_CATEGORY_LENGTH = 300;
 
 export interface FeePayload {
+  /** Phí ship shop chịu (ước tính) theo kênh; available = false khi chưa chạy migration 0020. */
+  ship: { available: boolean; rates: Record<string, { perOrder: number; perReturn: number }> };
   available: boolean;
   settings: FeeSettings;
   /** Ngày hiệu lực của biểu phí đang dùng (theo loại shop). */

@@ -37,7 +37,7 @@ export function buildTodos(s: ProfitSummary): Todo[] {
       todos.push({ kind: "loss_product", priority: "high", id: `loss:${p.key}`, product: p.name, amount: p.profit, orders: p.orders, breakEvenPrice: p.breakEvenPrice, avgPrice: p.avgPrice, href: "/products" });
       continue;
     }
-    const gross = p.revenue + p.shippingIn - p.fee - p.cost;
+    const gross = p.revenue + p.shippingIn - p.fee - p.cost - p.shipCost;
     if (p.adCost > 0 && gross > 0 && p.adCost / gross >= 0.6) {
       todos.push({ kind: "ads_product", priority: "medium", id: `ads:${p.key}`, product: p.name, orders: p.orders, adPerOrder: p.adCost / p.orders, grossPerOrder: gross / p.orders, amount: -p.adCost, href: "/profit" });
     }

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { DayBars, HBars, Histogram, Waterfall } from "./charts";
 import { compact, count, pct, signed, vnd } from "./format";
 import { REASON_LABEL } from "./reasons";
-import { Card, ErrorBox, FeeEstimateNote, Kpi, Loading, MissingCostNote, NoOrders } from "./Shared";
+import { Card, ErrorBox, FeeEstimateNote, ShipEstimateNote, Kpi, Loading, MissingCostNote, NoOrders } from "./Shared";
 import { useProfitSummary } from "./useProfit";
 import styles from "./profit.module.css";
 
@@ -22,6 +22,7 @@ export function ProfitView() {
     <div className={styles.stack}>
       <MissingCostNote missing={s.missingCost} total={s.orders} />
       <FeeEstimateNote count={s.feeEstimated} />
+      <ShipEstimateNote count={s.shipEstimated} />
       <div className={styles.kpis}>
         <Kpi label="Lãi thật" value={compact(s.profit)} tone={s.profit < 0 ? "neg" : "pos"} note={`Trên ${count(s.computable)} đơn đã đủ dữ liệu`} />
         <Kpi label="Lãi trung bình mỗi đơn" value={vnd(s.avgProfit)} note={`Biên lãi ${pct(s.margin)}`} />
@@ -37,6 +38,7 @@ export function ProfitView() {
               { label: "Phí sàn", value: s.fee, kind: "neg" },
               { label: "Giá vốn", value: s.cost, kind: "neg" },
               { label: "Quảng cáo", value: s.adCost, kind: "neg" },
+              ...(s.shipCost > 0 ? [{ label: "Ship shop chịu", value: s.shipCost, kind: "neg" as const }] : []),
               { label: "Lãi thật", value: 0, kind: "result" },
             ]}
           />
@@ -47,7 +49,7 @@ export function ProfitView() {
           ) : (
             <HBars userLabels={false} rows={s.reasons.map((r) => ({ label: REASON_LABEL[r.reason], value: r.amount, text: `${count(r.orders)} đơn · ${compact(r.amount)}`, tone: "neg" as const }))} />
           )}
-          <p className={styles.small} style={{ marginTop: 14 }}>Xem từng đơn ở trang <Link href="/orders?filter=loss">Đơn hàng</Link>. Phí ship hai chiều của đơn hoàn chưa có trong file đơn hàng nên chưa được tính.</p>
+          <p className={styles.small} style={{ marginTop: 14 }}>Xem từng đơn ở trang <Link href="/orders?filter=loss">Đơn hàng</Link>. Phí ship shop chịu chỉ được tính khi bạn nhập mức trung bình ở trang Chi phí (file đơn hàng không có số này).</p>
         </Card>
       </div>
       <div className={styles.grid2}>

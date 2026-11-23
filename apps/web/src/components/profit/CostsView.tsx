@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { AdSpendCard } from "./AdSpendCard";
+import { ShippingCard } from "./ShippingCard";
 import { HBars } from "./charts";
 import { compact, count, pct, vnd } from "./format";
-import { Card, ErrorBox, FeeEstimateNote, Kpi, Loading, MissingCostNote, NoOrders } from "./Shared";
+import { Card, ErrorBox, FeeEstimateNote, ShipEstimateNote, Kpi, Loading, MissingCostNote, NoOrders } from "./Shared";
 import { useProfitSummary } from "./useProfit";
 import styles from "./profit.module.css";
 
@@ -18,21 +19,23 @@ export function CostsView() {
   const s = data.summary;
   const share = (n: number) => pct(s.revenue ? n / s.revenue : null);
   const lostAds = -(s.returnLoss + s.cancelLoss);
-  const total = s.cost + s.fee + s.adCost;
+  const total = s.cost + s.fee + s.adCost + s.shipCost;
   const products = s.products
     .filter((p) => p.profit !== null && p.revenue > 0)
-    .sort((a, b) => b.cost + b.fee + b.adCost - (a.cost + a.fee + a.adCost))
+    .sort((a, b) => b.cost + b.fee + b.adCost + b.shipCost - (a.cost + a.fee + a.adCost + a.shipCost))
     .slice(0, 30);
 
   return (
     <div className={styles.stack}>
       <MissingCostNote missing={s.missingCost} total={s.orders} />
       <FeeEstimateNote count={s.feeEstimated} />
+      <ShipEstimateNote count={s.shipEstimated} />
       <div className={styles.kpis}>
         <Kpi label="Tổng chi phí" value={compact(total)} note={`${share(total)} doanh thu thực`} />
         <Kpi label="Giá vốn" value={compact(s.cost)} note={`${share(s.cost)} doanh thu thực`} />
         <Kpi label="Phí sàn" value={compact(s.fee)} note={`${share(s.fee)} doanh thu thực`} />
         <Kpi label="Quảng cáo" value={compact(s.adCost)} note={`${share(s.adCost)} doanh thu thực`} />
+        {s.shipCost > 0 && <Kpi label="Ship shop chịu (ước tính)" value={compact(s.shipCost)} note={`${share(s.shipCost)} doanh thu thực`} />}
       </div>
       <div className={styles.grid2}>
         <Card title="Doanh thu thực đi đâu" aside={`trên ${count(s.computable)} đơn đã đủ dữ liệu`}>
@@ -42,6 +45,7 @@ export function CostsView() {
               { label: "Giá vốn", value: s.cost, text: `${compact(s.cost)} · ${share(s.cost)}`, tone: "base" as const },
               { label: "Phí sàn", value: s.fee, text: `${compact(s.fee)} · ${share(s.fee)}`, tone: "neg" as const },
               { label: "Quảng cáo", value: s.adCost, text: `${compact(s.adCost)} · ${share(s.adCost)}`, tone: "neg" as const },
+              ...(s.shipCost > 0 ? [{ label: "Ship shop chịu", value: s.shipCost, text: `${compact(s.shipCost)} · ${share(s.shipCost)}`, tone: "neg" as const }] : []),
               { label: "Lãi thật", value: Math.max(0, s.profit), text: `${compact(s.profit)} · ${share(s.profit)}`, tone: "pos" as const },
             ]}
           />
@@ -51,13 +55,14 @@ export function CostsView() {
           <ul className={styles.listPlain}>
             <li>Quảng cáo đã chi cho đơn hủy và hoàn: <b>{compact(lostAds)}</b> (đã tính vào lãi thật).</li>
             <li>Chi phí quảng cáo: nhập ở khung "Chi phí quảng cáo" bên dưới nếu file đơn hàng không có cột này.</li>
-            <li>Phí ship hai chiều và phí xử lý đơn hoàn: file đơn hàng của sàn chưa có số này.</li>
+            <li>Phí ship shop chịu (kể cả chiều hoàn) và phí xử lý đơn hoàn: file đơn hàng của sàn chưa có số này, nhập mức trung bình ở khung "Phí vận chuyển shop chịu" bên dưới.</li>
             <li>Đóng gói, nhân công, mặt bằng: chưa nhập được, sẽ có ở bản sau.</li>
             <li>Giá vốn: lấy từ trang <Link href="/products">Sản phẩm và giá vốn</Link>, sản phẩm chưa có giá vốn thì đơn đó chưa tính lãi.</li>
           </ul>
         </Card>
       </div>
       <AdSpendCard editable={data.editable} adCostInOrders={s.adCost} onChanged={() => void reload()} />
+      <ShippingCard ship={data.fees?.ship} channels={s.channels.map((c) => c.channel)} estimated={s.shipEstimated} editable={data.editable} onSaved={() => void reload()} />
       <Card title="Chi phí theo sản phẩm" aside="phí sàn và quảng cáo của đơn chia cho sản phẩm theo doanh thu">
         <div className={styles.tableWrap}>
           <table className={styles.table}>
@@ -72,7 +77,7 @@ export function CostsView() {
                   <td className={`${styles.r} ${styles.muted}`}>{vnd(p.cost)}</td>
                   <td className={`${styles.r} ${styles.muted}`}>{vnd(p.fee)}</td>
                   <td className={`${styles.r} ${styles.muted}`}>{vnd(p.adCost)}</td>
-                  <td className={styles.r}>{pct((p.cost + p.fee + p.adCost) / p.revenue, 0)}</td>
+                  <td className={styles.r}>{pct((p.cost + p.fee + p.adCost + p.shipCost) / p.revenue, 0)}</td>
                 </tr>
               ))}
               {products.length === 0 && <tr><td colSpan={6} className={styles.muted} style={{ textAlign: "center", padding: 28 }}>Chưa có sản phẩm nào đủ dữ liệu giá vốn.</td></tr>}

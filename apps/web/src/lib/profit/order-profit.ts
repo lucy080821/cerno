@@ -1,13 +1,15 @@
 import type { Cell, Row } from "@dashboard/chart-engine";
 import { COL, isValidStatus, type OrderStatus } from "@/lib/orders/canonical";
+import type { ShipEstimator } from "./shipping";
 
 /**
  * Lãi của TỪNG ĐƠN HÀNG từ nguồn "Đơn hàng đa kênh" (cột chuẩn ở lib/orders/canonical.ts). Hàm thuần, chạy ở server.
  *
- * Lãi đơn = Doanh thu thực + Phí vận chuyển khách trả − Phí sàn − Giá vốn − Chi phí quảng cáo.
+ * Lãi đơn = Doanh thu thực + Phí vận chuyển khách trả − Phí sàn − Giá vốn − Chi phí quảng cáo − Phí ship shop chịu (ƯỚC TÍNH, tuỳ chọn).
  * - Đơn hợp lệ mà có dòng chưa có giá vốn: KHÔNG tính lãi (profit = null) để không báo lãi ảo; đếm vào "thiếu giá vốn".
  * - Đơn hủy / hoàn trả: doanh thu thực, phí sàn, phí vận chuyển và giá vốn đều 0 (theo cách chuẩn hoá), nhưng chi phí quảng cáo
- *   đã chi vẫn mất, nên lãi = −quảng cáo. Phí ship hai chiều của đơn hoàn KHÔNG có trong file đơn hàng nên chưa tính.
+ *   đã chi vẫn mất, nên lãi = −quảng cáo. Phí ship shop chịu (kể cả chiều hoàn) KHÔNG có trong file đơn hàng: chỉ tính khi người
+ *   dùng nhập mức trung bình mỗi đơn (lib/profit/shipping.ts), khi đó đơn hủy = 0 và đơn hoàn = phí gửi + phí chiều hoàn.
  */
 
 export interface OrderLine {
@@ -43,6 +45,8 @@ export interface OrderProfit {
   feeEstimated: boolean;
   cost: number;
   adCost: number;
+  /** Phí ship shop chịu: số ƯỚC TÍNH theo mức trung bình người dùng nhập (0 khi chưa nhập). */
+  shipCost: number;
   /** null khi đơn hợp lệ mà còn dòng chưa có giá vốn. */
   profit: number | null;
   /** Lãi trên doanh thu thực; null khi chưa có lãi hoặc doanh thu bằng 0. */
@@ -61,11 +65,11 @@ const statusOf = (c: Cell | undefined): OrderStatus => (STATUSES.includes(c as O
 export const productKey = (sku: string | null, product: string | null): string | null => sku ?? product;
 
 /** Lý do một đơn bị lỗ, theo quy tắc dễ giải thích. Chỉ gọi khi lãi < 0. */
-export function lossReason(o: Pick<OrderProfit, "status" | "revenue" | "discount" | "shippingIn" | "fee" | "cost" | "adCost" | "profit">): LossReason {
+export function lossReason(o: Pick<OrderProfit, "status" | "revenue" | "discount" | "shippingIn" | "fee" | "cost" | "adCost" | "profit"> & { shipCost?: number }): LossReason {
   if (o.status === "Hoàn trả") return "return";
   if (o.status === "Đã hủy") return "cancel";
   const profit = o.profit ?? 0;
-  const gross = o.revenue + o.shippingIn - o.fee - o.cost; // lãi trước quảng cáo
+  const gross = o.revenue + o.shippingIn - o.fee - o.cost - (o.shipCost ?? 0); // lãi trước quảng cáo
   const listPrice = o.revenue + o.discount;
   if (o.discount > 0 && listPrice > 0 && o.discount / listPrice >= 0.15 && profit + o.discount >= 0) return "discount";
   if (gross >= 0) return "ads";
@@ -81,8 +85,9 @@ export type FeeEstimator = (o: Pick<OrderProfit, "channel" | "date" | "status" |
 /**
  * Gom các dòng sản phẩm thành đơn và tính lãi từng đơn. Thứ tự đơn giữ theo dòng đầu tiên xuất hiện.
  * `estimateFee` (tuỳ chọn): điền phí sàn ước tính cho đơn mà file không ghi phí (đánh dấu `feeEstimated`).
+ * `estimateShip` (tuỳ chọn): phí ship shop chịu theo mức trung bình mỗi đơn của kênh (`shipCost`, đã làm tròn đồng).
  */
-export function buildOrders(rows: Row[], estimateFee?: FeeEstimator): OrderProfit[] {
+export function buildOrders(rows: Row[], estimateFee?: FeeEstimator, estimateShip?: ShipEstimator): OrderProfit[] {
   const feeInFile = new Set<OrderProfit>();
   const byKey = new Map<string, OrderProfit>();
   const order: OrderProfit[] = [];
@@ -108,6 +113,7 @@ export function buildOrders(rows: Row[], estimateFee?: FeeEstimator): OrderProfi
         feeEstimated: false,
         cost: 0,
         adCost: 0,
+        shipCost: 0,
         profit: null,
         margin: null,
         valid: isValidStatus(status),
@@ -140,8 +146,9 @@ export function buildOrders(rows: Row[], estimateFee?: FeeEstimator): OrderProfi
         o.feeEstimated = true;
       }
     }
+    if (estimateShip) o.shipCost = estimateShip(o);
     if (o.valid && !o.costKnown) continue;
-    o.profit = o.revenue + o.shippingIn - o.fee - o.cost - o.adCost;
+    o.profit = o.revenue + o.shippingIn - o.fee - o.cost - o.adCost - o.shipCost;
     o.margin = o.revenue > 0 ? o.profit / o.revenue : null;
     if (o.profit < 0) o.reason = lossReason(o);
   }
@@ -178,6 +185,8 @@ export interface ProductProfit {
   cost: number;
   fee: number;
   adCost: number;
+  /** Phí ship shop chịu (ước tính) chia cho sản phẩm. */
+  shipCost: number;
   shippingIn: number;
   /** null khi còn đơn chưa có giá vốn. */
   profit: number | null;
@@ -219,10 +228,14 @@ export interface ProfitSummary {
   cancelled: number;
   /** Số đơn có phí sàn là số ước tính (không phải số trong file). */
   feeEstimated: number;
+  /** Số đơn có phí ship shop chịu là số ước tính theo mức trung bình người dùng nhập. */
+  shipEstimated: number;
   revenue: number;
   fee: number;
   cost: number;
   adCost: number;
+  /** Tổng phí ship shop chịu (ước tính) của các đơn đã tính lãi. */
+  shipCost: number;
   shippingIn: number;
   profit: number;
   lossAmount: number;
@@ -250,8 +263,8 @@ function shares(o: OrderProfit): number[] {
 
 export function summarize(orders: OrderProfit[]): ProfitSummary {
   const s: ProfitSummary = {
-    orders: orders.length, computable: 0, missingCost: 0, profitable: 0, loss: 0, thin: 0, returned: 0, cancelled: 0, feeEstimated: 0,
-    revenue: 0, fee: 0, cost: 0, adCost: 0, shippingIn: 0, profit: 0, lossAmount: 0, avgProfit: null, margin: null,
+    orders: orders.length, computable: 0, missingCost: 0, profitable: 0, loss: 0, thin: 0, returned: 0, cancelled: 0, feeEstimated: 0, shipEstimated: 0,
+    revenue: 0, fee: 0, cost: 0, adCost: 0, shipCost: 0, shippingIn: 0, profit: 0, lossAmount: 0, avgProfit: null, margin: null,
     returnLoss: 0, cancelLoss: 0,
     histogram: PROFIT_BINS.map((b) => ({ label: b.label, count: 0, negative: b.max <= 0 })),
     daily: [], channels: [], reasons: [], products: [], dateMin: null, dateMax: null,
@@ -268,6 +281,7 @@ export function summarize(orders: OrderProfit[]): ProfitSummary {
       if (!s.dateMax || d > s.dateMax) s.dateMax = d;
     }
     if (o.feeEstimated) s.feeEstimated++;
+    if (o.shipCost > 0) s.shipEstimated++;
     if (o.status === "Hoàn trả") s.returned++;
     if (o.status === "Đã hủy") s.cancelled++;
     const ch = chans.get(o.channel) ?? { orders: 0, profit: 0, computable: 0, loss: 0 };
@@ -280,7 +294,7 @@ export function summarize(orders: OrderProfit[]): ProfitSummary {
       const key = productKey(l.sku, l.product) ?? "(không rõ sản phẩm)";
       let p = prods.get(key);
       if (!p) {
-        p = { key, sku: l.sku, name: l.product ?? l.sku ?? key, quantity: 0, orders: 0, revenue: 0, cost: 0, fee: 0, adCost: 0, shippingIn: 0, profit: null, profitPerOrder: null, avgPrice: null, unitCost: null, breakEvenPrice: null, missingCostOrders: 0, costMissing: false, _orders: new Set(), _unknown: false };
+        p = { key, sku: l.sku, name: l.product ?? l.sku ?? key, quantity: 0, orders: 0, revenue: 0, cost: 0, fee: 0, adCost: 0, shipCost: 0, shippingIn: 0, profit: null, profitPerOrder: null, avgPrice: null, unitCost: null, breakEvenPrice: null, missingCostOrders: 0, costMissing: false, _orders: new Set(), _unknown: false };
         prods.set(key, p);
       }
       if (!o.valid) return;
@@ -295,6 +309,7 @@ export function summarize(orders: OrderProfit[]): ProfitSummary {
       p.cost += l.cost ?? 0;
       p.fee += o.fee * sh[i];
       p.adCost += o.adCost * sh[i];
+      p.shipCost += o.shipCost * sh[i];
       p.shippingIn += o.shippingIn * sh[i];
     });
 
@@ -308,6 +323,7 @@ export function summarize(orders: OrderProfit[]): ProfitSummary {
     s.fee += o.fee;
     s.cost += o.cost;
     s.adCost += o.adCost;
+    s.shipCost += o.shipCost;
     s.shippingIn += o.shippingIn;
     ch.computable++;
     ch.profit += o.profit;
@@ -346,7 +362,7 @@ export function summarize(orders: OrderProfit[]): ProfitSummary {
     .map(({ _orders, _unknown, ...p }) => {
       const orders = _orders.size;
       const known = p.missingCostOrders === 0 && !_unknown && orders > 0;
-      const profit = known ? p.revenue + p.shippingIn - p.fee - p.cost - p.adCost : null;
+      const profit = known ? p.revenue + p.shippingIn - p.fee - p.cost - p.adCost - p.shipCost : null;
       return {
         ...p,
         orders,
@@ -355,7 +371,7 @@ export function summarize(orders: OrderProfit[]): ProfitSummary {
         profitPerOrder: profit !== null && orders ? profit / orders : null,
         avgPrice: p.quantity > 0 ? p.revenue / p.quantity : null,
         unitCost: known && p.quantity > 0 ? p.cost / p.quantity : null,
-        breakEvenPrice: known && p.quantity > 0 ? (p.cost + p.fee + p.adCost - p.shippingIn) / p.quantity : null,
+        breakEvenPrice: known && p.quantity > 0 ? (p.cost + p.fee + p.adCost + p.shipCost - p.shippingIn) / p.quantity : null,
       };
     })
     .sort((a, b) => b.revenue - a.revenue);

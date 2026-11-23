@@ -6,7 +6,7 @@ import { ORDERS_SHEET_NAME, ORDERS_SPREADSHEET_ID } from "@/lib/orders/canonical
 import { applyCatalogCosts, catalogMap, costKey, type CostEntry } from "@/lib/profit/catalog";
 import { buildOrders, summarize, type OrderProfit, type ProfitSummary } from "@/lib/profit/order-profit";
 import { getSourceMeta, getSourceRows, invalidateSourceCache } from "@/lib/server/row-cache";
-import { loadFeeConfig, makeFeeEstimator, type FeeConfig } from "@/lib/server/fees";
+import { loadFeeConfig, makeFeeEstimator, makeShipCostEstimator, type FeeConfig } from "@/lib/server/fees";
 import { writeSourceRows } from "@/lib/server/source-write";
 import { inWorkspaceQueue } from "@/lib/server/workspace-queue";
 
@@ -78,7 +78,7 @@ export async function computeProfit(sourceId: string, fees?: FeeConfig): Promise
   const key = `${sourceId}|${meta.version}|${fees?.signature ?? "none"}`;
   const hit = computed.get(key);
   if (hit) return hit;
-  const orders = buildOrders(await getSourceRows(sourceId, meta), fees ? makeFeeEstimator(fees) : undefined);
+  const orders = buildOrders(await getSourceRows(sourceId, meta), fees ? makeFeeEstimator(fees) : undefined, fees ? makeShipCostEstimator(fees) : undefined);
   const result = { orders, summary: summarize(orders) };
   for (const k of computed.keys()) if (k.startsWith(`${sourceId}|`)) computed.delete(k);
   computed.set(key, result);

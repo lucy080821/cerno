@@ -76,3 +76,13 @@ export function FeeEstimateNote({ count }: { count: number }) {
     </div>
   );
 }
+
+/** Nhắc khi có đơn dùng phí ship shop chịu ước tính (mức trung bình người dùng nhập). */
+export function ShipEstimateNote({ count }: { count: number }) {
+  if (!count) return null;
+  return (
+    <div className={styles.note}>
+      <b>{count.toLocaleString("vi-VN")}</b> đơn đang trừ phí ship shop chịu theo mức trung bình bạn nhập, không phải số thật của từng đơn. Chỉnh ở trang <Link href="/costs">Chi phí</Link>.
+    </div>
+  );
+}
