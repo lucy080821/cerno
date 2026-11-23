@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { badgeText, channelLine, initialsOf, shopName, usageRatio } from "./sidebar";
+import { avatarUrlOf, badgeText, channelLine, initialsOf, shopName, usageRatio } from "./sidebar";
 
 describe("thanh bên", () => {
   it("tên cửa hàng bỏ hậu tố workspace cá nhân", () => {
@@ -27,5 +27,17 @@ describe("thanh bên", () => {
     expect(badgeText(0)).toBeNull();
     expect(badgeText(5)).toBe("5");
     expect(badgeText(150)).toBe("99+");
+  });
+  it("ảnh đại diện chỉ nhận ảnh https của Google", () => {
+    const g = "https://lh3.googleusercontent.com/a/ACg8ocK=s96-c";
+    expect(avatarUrlOf({ avatar_url: g })).toBe(g);
+    expect(avatarUrlOf({ picture: g })).toBe(g);
+    expect(avatarUrlOf({ avatar_url: "https://evil.example.com/x.png", picture: g })).toBe(g);
+    expect(avatarUrlOf({ avatar_url: "http://lh3.googleusercontent.com/a" })).toBeNull();
+    expect(avatarUrlOf({ avatar_url: "https://googleusercontent.com.evil.com/a" })).toBeNull();
+    expect(avatarUrlOf({ avatar_url: "javascript:alert(1)" })).toBeNull();
+    expect(avatarUrlOf({ avatar_url: 5 })).toBeNull();
+    expect(avatarUrlOf(null)).toBeNull();
+    expect(avatarUrlOf({})).toBeNull();
   });
 });

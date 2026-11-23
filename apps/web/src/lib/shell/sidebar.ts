@@ -19,6 +19,24 @@ export function initialsOf(name: string): string {
   return (first + last).toLocaleUpperCase("vi-VN");
 }
 
+/** Máy chủ ảnh đại diện của Google. Chỉ nhận ảnh từ đây: `user_metadata` do người dùng tự sửa được, không để nó trỏ tới địa chỉ tuỳ ý. */
+const AVATAR_HOSTS = /(^|\.)(googleusercontent\.com|ggpht\.com)$/i;
+
+/** Ảnh đại diện Google của tài khoản đăng nhập (`avatar_url` hoặc `picture` trong user_metadata); không hợp lệ thì null. */
+export function avatarUrlOf(metadata: Record<string, unknown> | null | undefined): string | null {
+  for (const key of ["avatar_url", "picture"]) {
+    const v = metadata?.[key];
+    if (typeof v !== "string" || v.length > 500) continue;
+    try {
+      const u = new URL(v);
+      if (u.protocol === "https:" && AVATAR_HOSTS.test(u.hostname)) return u.toString();
+    } catch {
+      // không phải địa chỉ hợp lệ
+    }
+  }
+  return null;
+}
+
 /** Dòng kênh bán dưới tên cửa hàng: tối đa 3 kênh nhiều đơn nhất, còn lại gộp "+N". Rỗng = chưa có dữ liệu đơn hàng. */
 export function channelLine(channels: { channel: string; orders: number }[]): string {
   const names = [...channels].sort((a, b) => b.orders - a.orders).map((c) => c.channel).filter((c) => c && c.trim());

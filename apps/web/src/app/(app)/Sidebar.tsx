@@ -15,6 +15,23 @@ import styles from "./shell.module.css";
  * số cảnh báo, gói) tải nền từ /api/shell/sidebar, không chặn việc mở trang. Bản đã tải được nhớ ở module để hiện ngay lần sau.
  */
 let cache: { at: number; data: SidebarData } | null = null;
+
+/** Ảnh đại diện Google; chưa có hoặc tải lỗi (bị chặn, hết hạn) thì hiện chữ viết tắt như trước. */
+function ShopAvatar({ url, initials }: { url: string | null; initials: string }) {
+  const [failed, setFailed] = useState(false);
+  useEffect(() => setFailed(false), [url]);
+  return (
+    <span className={styles.shopAvatar} aria-hidden data-i18n-skip>
+      {url && !failed ? (
+        // Ảnh Google đôi khi từ chối khi có Referer: gửi không kèm.
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={url} alt="" referrerPolicy="no-referrer" onError={() => setFailed(true)} />
+      ) : (
+        initials
+      )}
+    </span>
+  );
+}
 const FRESH_MS = 30_000;
 
 export function Sidebar() {
@@ -50,7 +67,7 @@ export function Sidebar() {
       <Link href="/account" className={styles.shop}>
         {sb ? (
           <>
-            <span className={styles.shopAvatar} aria-hidden data-i18n-skip>{initialsOf(sb.shop)}</span>
+            <ShopAvatar url={sb.avatar} initials={initialsOf(sb.shop)} />
             <span className={styles.shopText}>
               <b data-i18n-skip>{sb.shop}</b>
               {sb.channels ? <span data-i18n-skip>{sb.channels}</span> : <span>Chưa có dữ liệu đơn hàng</span>}

@@ -7,6 +7,8 @@ import { computeProfitFor, findOrdersSource } from "./profit";
 
 export interface SidebarData {
   shop: string;
+  /** Ảnh đại diện Google của người đăng nhập; null thì hiện chữ viết tắt. */
+  avatar: string | null;
   channels: string;
   todos: number;
   alertsFiring: number;
@@ -30,9 +32,9 @@ async function attempt<T>(label: string, fn: () => Promise<T>, fallback: T): Pro
  * Số liệu cho thanh bên của các trang sau đăng nhập (đọc qua RLS bằng client của người dùng): tên cửa hàng, các kênh có
  * đơn, số việc cần làm, số cảnh báo đang báo, gói và số nguồn đã dùng. Lãi từng đơn dùng chung bộ nhớ đệm của computeProfit.
  */
-export async function loadSidebar(supabase: SupabaseClient, userId: string, userName: string): Promise<SidebarData> {
+export async function loadSidebar(supabase: SupabaseClient, userId: string, userName: string, avatar: string | null = null): Promise<SidebarData> {
   const base: SidebarData = {
-    shop: shopName(null, userName), channels: "", todos: 0, alertsFiring: 0,
+    shop: shopName(null, userName), avatar, channels: "", todos: 0, alertsFiring: 0,
     plan: "free", planLabel: PLAN_LIMITS.free.label, sources: 0, maxSources: MAX_SOURCES_PER_WORKSPACE,
   };
   const mem = await attempt("workspace", async () => {
