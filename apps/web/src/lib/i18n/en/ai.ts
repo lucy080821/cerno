@@ -76,4 +76,11 @@ export const EN_AI: Dict = {
   "Đang tính lãi kênh {0}…": "Calculating profit for channel {0}…",
   "Đang tính lãi theo {0}…": "Calculating profit by {0}…",
   "Đang tính lãi kênh {0} theo {1}…": "Calculating profit for channel {0} by {1}…",
+
+  // Biểu đồ và thẻ KPI trong khung chat
+  "Đang vẽ biểu đồ…": "Drawing the chart…",
+  "Đang dựng thẻ KPI…": "Building KPI cards…",
+  "Chỉ hiện {0}/{1} nhóm.": "Showing {0} of {1} groups.",
+  "Vẽ biểu đồ doanh thu và lãi theo ngày trong 30 ngày gần nhất.": "Draw a chart of revenue and profit by day for the last 30 days.",
+  "Hiện thẻ KPI: tổng doanh thu thực, lãi, số đơn và tỷ lệ hủy tháng này.": "Show KPI cards: net revenue, profit, order count and cancellation rate this month.",
 };

@@ -20,6 +20,8 @@
   flex-direction: column;
   padding: 12px;
   gap: 10px;
+  background: #dde2f4;
+  border-color: rgba(61, 68, 104, 0.12);
 }
 
 .newBtn {
@@ -41,7 +43,7 @@
 }
 
 .histNote {
-  color: var(--muted);
+  color: #4a5478;
   font-size: 13px;
   line-height: 1.5;
   padding: 10px 8px;
@@ -53,9 +55,15 @@
   border-radius: 8px;
 }
 
-.histItem:hover,
-.histActive {
-  background: rgba(109, 94, 252, 0.09);
+.histItem:hover {
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.histActive,
+.histActive:hover {
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(20, 22, 43, 0.1);
+  font-weight: 600;
 }
 
 .histMain {
@@ -95,7 +103,7 @@
 }
 
 .histActions button:hover {
-  background: rgba(20, 22, 43, 0.08);
+  background: rgba(20, 22, 43, 0.1);
   color: var(--text);
 }
 
@@ -135,7 +143,7 @@
 .scroll {
   flex: 1;
   overflow-y: auto;
-  padding: 20px 24px;
+  padding: 32px 40px 24px;
 }
 
 .center {
@@ -145,8 +153,8 @@
 }
 
 .emptyBox {
-  max-width: 680px;
-  margin: 6vh auto 0;
+  max-width: 820px;
+  margin: 8vh auto 0;
   text-align: center;
 }
 
@@ -186,11 +194,11 @@
 }
 
 .msgs {
-  max-width: 820px;
+  max-width: 1000px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 26px;
 }
 
 .userMsg {
@@ -199,25 +207,26 @@
 }
 
 .userMsg > div {
-  max-width: 82%;
-  background: rgba(109, 94, 252, 0.1);
-  border-radius: 14px 14px 4px 14px;
-  padding: 10px 14px;
-  line-height: 1.55;
+  max-width: 78%;
+  background: rgba(109, 94, 252, 0.12);
+  border-radius: 18px 18px 6px 18px;
+  padding: 13px 20px;
+  font-size: 15px;
+  line-height: 1.6;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
 
 .aiMsg {
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 16px 18px;
-  background: var(--surface);
+  border: 0;
+  border-radius: 18px;
+  padding: 24px 30px 18px;
+  background: var(--surface-2, #eef0f7);
 }
 
 .report {
-  font-size: 14.5px;
-  line-height: 1.65;
+  font-size: 15px;
+  line-height: 1.75;
   overflow-wrap: anywhere;
 }
 
@@ -226,7 +235,7 @@
 }
 
 .rTitle {
-  font-size: 17px;
+  font-size: 18px;
   font-weight: 700;
   margin-bottom: 4px;
 }
@@ -243,7 +252,7 @@
   font-size: 13px;
   letter-spacing: 0.04em;
   color: var(--brand-a);
-  margin-top: 4px;
+  margin-top: 8px;
 }
 
 .rItem {
@@ -261,21 +270,93 @@
   flex-wrap: wrap;
   gap: 12px;
   align-items: center;
-  margin-top: 12px;
-  padding-top: 10px;
-  border-top: 1px solid var(--line);
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(20, 22, 43, 0.08);
   color: var(--muted);
   font-size: 12px;
 }
 
 .aiFoot button {
   border: 1px solid var(--line);
-  background: var(--surface);
-  border-radius: 6px;
-  padding: 3px 9px;
+  background: #fff;
+  border-radius: 999px;
+  padding: 4px 12px;
   cursor: pointer;
   font-size: 12px;
   color: var(--text);
+}
+
+/* Biểu đồ và thẻ KPI AI vẽ ngay trong tin trả lời (chỉ khi người dùng yêu cầu). */
+.visuals {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.vCard {
+  margin: 0;
+  background: #fff;
+  border: 1px solid rgba(20, 22, 43, 0.1);
+  border-radius: 14px;
+  padding: 14px 18px 10px;
+}
+
+.vTitle {
+  font-weight: 700;
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.vNote {
+  color: var(--muted);
+  font-size: 12px;
+  margin: 4px 0 2px;
+}
+
+.vLoading {
+  display: grid;
+  place-items: center;
+  height: 230px;
+}
+
+.kpiGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 12px;
+}
+
+.kpiCard {
+  background: #fff;
+  border: 1px solid rgba(20, 22, 43, 0.1);
+  border-radius: 14px;
+  padding: 16px 18px;
+  min-width: 0;
+}
+
+.kpiLabel {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.kpiValue {
+  margin-top: 8px;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.kpiUnit {
+  margin-left: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: 0;
 }
 
 .working {
@@ -311,17 +392,41 @@
 }
 
 .composer {
-  border-top: 1px solid var(--line);
-  padding: 12px 16px 10px;
+  width: 100%;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 6px 40px 16px;
   background: var(--surface);
+}
+
+.composerCard {
+  background: #fff;
+  border: 1px solid rgba(20, 22, 43, 0.14);
+  border-radius: 20px;
+  box-shadow: 0 2px 12px rgba(20, 22, 43, 0.08);
+}
+
+.composerCard:focus-within {
+  border-color: var(--brand-a);
+  box-shadow: 0 2px 14px rgba(109, 94, 252, 0.18);
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 12px 10px 14px;
+  border-top: 1px solid var(--line);
 }
 
 .srcRow {
   display: flex;
+  flex: 1;
+  min-width: 0;
   flex-wrap: wrap;
   align-items: center;
   gap: 6px;
-  margin-bottom: 8px;
 }
 
 .pickerWrap {
@@ -427,35 +532,31 @@
   padding: 0 4px;
 }
 
-.inputRow {
-  display: flex;
-  gap: 10px;
-  align-items: flex-end;
-}
-
 .input {
-  flex: 1;
+  display: block;
+  width: 100%;
+  min-height: 64px;
   resize: none;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 10px 12px;
+  border: 0;
+  border-radius: 20px 20px 0 0;
+  padding: 16px 20px 8px;
   font: inherit;
-  font-size: 14.5px;
-  line-height: 1.5;
+  font-size: 15px;
+  line-height: 1.55;
   color: var(--text);
-  background: var(--surface);
-  max-height: 160px;
+  background: transparent;
+  max-height: 200px;
 }
 
 .input:focus {
-  outline: 2px solid rgba(109, 94, 252, 0.4);
-  border-color: var(--brand-a);
+  outline: none;
 }
 
 .sendBtn {
   border: 0;
   border-radius: 12px;
-  padding: 11px 20px;
+  flex: none;
+  padding: 9px 22px;
   background: var(--brand-gradient);
   color: #fff;
   font-weight: 600;
@@ -474,7 +575,8 @@
 .fine {
   color: var(--muted);
   font-size: 11.5px;
-  margin-top: 6px;
+  margin-top: 8px;
+  text-align: center;
 }
 
 @media (max-width: 860px) {
@@ -500,6 +602,12 @@
   }
   .scroll {
     padding: 14px;
+  }
+  .composer {
+    padding: 6px 12px 12px;
+  }
+  .aiMsg {
+    padding: 16px 18px 14px;
   }
   .picker {
     width: min(340px, 86vw);
@@ -547,6 +655,26 @@
 
 .dockWrap .scroll {
   padding: 14px;
+}
+
+.dockWrap .composer {
+  padding: 6px 12px 12px;
+}
+
+.dockWrap .kpiGrid {
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+}
+
+.dockWrap .kpiValue {
+  font-size: 21px;
+}
+
+.dockWrap .aiMsg {
+  padding: 14px 16px 12px;
+}
+
+.dockWrap .history {
+  background: var(--surface);
 }
 
 .dockWrap .sugs {

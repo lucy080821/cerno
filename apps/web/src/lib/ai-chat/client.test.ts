@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { visualsOf } from "./visual";
 import { defaultSelection, parseEvent, reportBlocks, splitLines, toggleSource, type SourceOption } from "./client";
 
 const src = (id: string, spreadsheet_id = "abc"): SourceOption => ({ id, name: id, sheet_name: id, spreadsheet_id, row_count: 1, last_synced_at: null });
@@ -51,5 +52,26 @@ describe("chọn nguồn", () => {
     for (const id of ["1", "2", "3", "4", "5", "6"]) s = toggleSource(s, id);
     expect(s).toEqual(["1", "2", "3", "4", "5"]);
     expect(toggleSource(s, "3")).toEqual(["1", "2", "4", "5"]);
+  });
+});
+
+describe("hình (biểu đồ / thẻ KPI) trong luồng", () => {
+  const chart = { kind: "chart", chartType: "bar", title: "Doanh thu", dimLabels: ["Kênh"], metricLabels: ["Tổng"], rows: [{ keys: ["Shopee"], values: [5] }], groups: 1 };
+  it("đọc sự kiện visual hợp lệ", () => {
+    expect(parseEvent(JSON.stringify({ t: "visual", visual: chart }))).toMatchObject({ t: "visual", visual: { kind: "chart", title: "Doanh thu" } });
+    expect(parseEvent(JSON.stringify({ t: "visual", visual: { kind: "kpi", cards: [{ label: "Lãi", value: 1, text: "1 đồng" }] } }))).toMatchObject({ t: "visual", visual: { kind: "kpi" } });
+  });
+  it("bỏ hình sai cấu trúc thay vì làm hỏng luồng", () => {
+    expect(parseEvent(JSON.stringify({ t: "visual", visual: { ...chart, chartType: "scatter" } }))).toBeNull();
+    expect(parseEvent(JSON.stringify({ t: "visual", visual: { ...chart, rows: [{ keys: ["a"], values: ["x"] }] } }))).toBeNull();
+    expect(parseEvent(JSON.stringify({ t: "visual", visual: { kind: "kpi", cards: [] } }))).toBeNull();
+    expect(parseEvent(JSON.stringify({ t: "visual" }))).toBeNull();
+  });
+  it("visualsOf lấy hình từ meta của tin đã lưu, bỏ phần hỏng, tối đa 3 hình", () => {
+    const bad = { kind: "chart" };
+    const list = visualsOf({ visuals: [chart, bad, chart, chart, chart] });
+    expect(list).toHaveLength(3);
+    expect(visualsOf({})).toEqual([]);
+    expect(visualsOf({ visuals: "x" })).toEqual([]);
   });
 });

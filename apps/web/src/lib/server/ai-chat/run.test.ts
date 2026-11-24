@@ -149,4 +149,48 @@ describe("runChat", () => {
     await collect(runChat({ ...input, lang: "en" }, { caller, tools }));
     expect(seen[0].system).toContain("write the whole answer in English");
   });
+
+  it("TIẾT KIỆM TOKEN: câu hỏi thường không nhận công cụ vẽ hình lẫn lời nhắc vẽ; câu đòi biểu đồ mới nhận", async () => {
+    const plain = setup([{ text: "BÁO CÁO: ok" }]);
+    await collect(runChat(input, { caller: plain.caller, tools }));
+    expect(plain.seen[0].tools?.map((t) => t.function.name)).not.toContain("show_chart");
+    expect(plain.seen[0].system).not.toContain("BIỂU ĐỒ VÀ THẺ KPI");
+
+    const asked = setup([{ text: "ok" }]);
+    await collect(runChat({ ...input, question: "Vẽ biểu đồ doanh thu theo kênh" }, { caller: asked.caller, tools }));
+    expect(asked.seen[0].tools?.map((t) => t.function.name)).toEqual(expect.arrayContaining(["show_chart", "show_kpi"]));
+    expect(asked.seen[0].system).toContain("BIỂU ĐỒ VÀ THẺ KPI");
+  });
+
+  it("vẽ biểu đồ: phát sự kiện visual, đưa vào meta của câu trả lời cuối, model chỉ nhận số liệu rút gọn", async () => {
+    const { caller, seen } = setup([
+      { calls: [{ name: "show_chart", args: { source: "s1", chart_type: "bar", title: "Doanh thu theo kênh", group_by: [{ column: "Kênh" }], metrics: [{ column: "Doanh thu", agg: "sum" }] } }] },
+      { text: "Shopee dẫn đầu với 400.000 đồng." },
+    ]);
+    const ev = await collect(runChat({ ...input, question: "Vẽ biểu đồ doanh thu theo kênh" }, { caller, tools }));
+    const vis = ev.filter((e) => e.t === "visual");
+    expect(vis).toHaveLength(1);
+    const final = ev.at(-1) as Extract<RunEvent, { t: "final" }>;
+    expect(final.meta.visuals).toHaveLength(1);
+    expect(final.meta.visuals![0]).toMatchObject({ kind: "chart", title: "Doanh thu theo kênh" });
+    expect((seen[1].messages.at(-1) as { content: string }).content).toContain("Đã hiển thị biểu đồ");
+  });
+
+  it("model gọi công cụ vẽ khi người dùng KHÔNG yêu cầu thì bị từ chối, không có hình", async () => {
+    const { caller, seen } = setup([
+      { calls: [{ name: "show_chart", args: { source: "s1", chart_type: "bar", group_by: [{ column: "Kênh" }], metrics: [{ column: "Doanh thu", agg: "sum" }] } }] },
+      { text: "BÁO CÁO: bằng chữ" },
+    ]);
+    const ev = await collect(runChat(input, { caller, tools }));
+    expect(ev.some((e) => e.t === "visual")).toBe(false);
+    expect((seen[1].messages.at(-1) as { content: string }).content).toMatch(/^LỖI/);
+    expect((ev.at(-1) as Extract<RunEvent, { t: "final" }>).meta.visuals).toBeUndefined();
+  });
+
+  it("tối đa 3 hình mỗi câu trả lời", async () => {
+    const call = { name: "show_kpi", args: { source: "s1", metrics: [{ column: "Doanh thu", agg: "sum" }] } };
+    const { caller } = setup([{ calls: [call, call, call, call] }, { text: "ok" }]);
+    const ev = await collect(runChat({ ...input, question: "Hiện thẻ KPI doanh thu" }, { caller, tools }));
+    expect(ev.filter((e) => e.t === "visual")).toHaveLength(3);
+  });
 });

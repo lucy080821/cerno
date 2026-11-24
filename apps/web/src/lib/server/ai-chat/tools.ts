@@ -1,9 +1,11 @@
-import { formatDay, compileCalcFields, type CalcFieldDef, type QueryResult, type QuerySpec, type RowFilter } from "@dashboard/chart-engine";
+import { formatDay, compileCalcFields, CHART_SPECS, hasEnoughFields, type AggregatedRow, type CalcFieldDef, type MetricKind, type QueryResult, type QuerySpec, type RowFilter } from "@dashboard/chart-engine";
 import { FieldBinding, normalizeText, z } from "@dashboard/schema";
 import { summarize, type OrderProfit, type ProfitSummary } from "@/lib/profit/order-profit";
 import { isIsoDay } from "@/lib/profit/period";
 import type { ToolDef } from "../ai/types";
+import { MAX_VISUAL_ROWS, VISUAL_CHART_TYPES, type KpiCard, type Visual } from "@/lib/ai-chat/visual";
 import type { SourceInfo } from "./sources";
+import { SHOW_CHART_DEF, SHOW_KPI_DEF, VISUAL_TOOL_NAMES } from "./visual";
 
 /**
  * Công cụ để AI TỰ TRA CỨU số liệu thay vì đoán: mọi con số trong câu trả lời phải đến từ các công cụ này. Chỉ ĐỌC, không sửa gì.
@@ -24,6 +26,8 @@ export interface ToolDeps {
   query: (sourceId: string, spec: QuerySpec) => Promise<QueryResult>;
   /** Có khi nguồn đơn hàng được chọn; `range` null = toàn bộ thời gian. */
   profit?: (source: SourceInfo, range: { from: string; to: string } | null) => Promise<ProfitData>;
+  /** Ngôn ngữ giao diện: số trên thẻ KPI được định dạng theo kiểu Việt hoặc kiểu Anh. */
+  lang?: "vi" | "en";
 }
 
 export interface ToolResult {
@@ -32,6 +36,8 @@ export interface ToolResult {
   content: string;
   /** Dòng trạng thái ngắn cho người dùng ("Đang tính doanh thu theo kênh..."). */
   status: string;
+  /** Hình (biểu đồ / thẻ KPI) hiện cho người dùng trong tin trả lời; chỉ các công cụ show_* mới có. */
+  visual?: Visual;
 }
 
 const MAX_CONTENT_CHARS = 9000;
@@ -142,10 +148,12 @@ export const PROFIT_REPORT_DEF: ToolDef = {
   },
 };
 
-export function toolDefs(sources: SourceInfo[]): ToolDef[] {
+/** `visual`: chỉ true ở lượt người dùng đang yêu cầu hình (xem `wantsVisual`), để các lượt khác không tốn thêm token cho hai công cụ vẽ. */
+export function toolDefs(sources: SourceInfo[], opts: { visual?: boolean } = {}): ToolDef[] {
   if (!sources.length) return [];
   const defs = [QUERY_DATA_DEF, COLUMN_INFO_DEF, SAMPLE_ROWS_DEF];
   if (sources.some((s) => s.kind === "orders")) defs.push(PROFIT_REPORT_DEF);
+  if (opts.visual) defs.push(SHOW_CHART_DEF, SHOW_KPI_DEF);
   return defs;
 }
 
@@ -168,9 +176,10 @@ const Metric = z.object({
   name: z.string().max(80).optional(),
 });
 
+const GroupArg = z.object({ column: z.string().max(100), grain: z.enum(["day", "week", "month", "quarter", "year", "month_of_year", "weekday", "hour", "hour_of_day"]).optional() });
 const QueryArgs = z.object({
   source: z.string().max(100),
-  group_by: z.array(z.object({ column: z.string().max(100), grain: z.enum(["day", "week", "month", "quarter", "year", "month_of_year", "weekday", "hour", "hour_of_day"]).optional() })).max(2).optional(),
+  group_by: z.array(GroupArg).max(2).optional(),
   metrics: z.array(Metric).min(1).max(5),
   filters: z.array(Filter).max(8).optional(),
   order_by: z.union([z.string().max(100), z.number()]).optional(),
@@ -238,7 +247,23 @@ function toRowFilters(source: SourceInfo, filters: FilterArg[] | undefined): Row
 
 const AGG_VI: Record<string, string> = { sum: "Tổng", avg: "Trung bình", count: "Số dòng", min: "Nhỏ nhất", max: "Lớn nhất", count_distinct: "Số giá trị khác nhau" };
 
-async function queryData(raw: unknown, sources: SourceInfo[], deps: ToolDeps): Promise<ToolResult> {
+/** Số liệu thô của một truy vấn gộp, để công cụ vẽ hình dựng biểu đồ/thẻ từ CÙNG kết quả (không tính lại). */
+interface QueryCapture {
+  source: SourceInfo;
+  dims: FieldBinding[];
+  labels: string[];
+  kinds: MetricKind[] | undefined;
+  /** Mọi nhóm đã sắp xếp (chưa cắt theo limit). */
+  rows: AggregatedRow[];
+  /** Tổng chung, đúng cả với trung bình/đếm khác biệt. Không có dòng nào khớp thì undefined. */
+  total: number[] | undefined;
+  groups: number;
+  matched: number;
+  dateDim: boolean;
+  units: Array<string | null>;
+}
+
+async function queryData(raw: unknown, sources: SourceInfo[], deps: ToolDeps, capture?: (c: QueryCapture) => void): Promise<ToolResult> {
   const a = QueryArgs.parse(raw);
   const source = findSource(sources, a.source);
   const calc: CalcFieldDef[] = [];
@@ -324,6 +349,7 @@ async function queryData(raw: unknown, sources: SourceInfo[], deps: ToolDeps): P
   if (result.truncated) out.warning = "Số nhóm quá lớn nên bị cắt bớt; hãy thu hẹp bằng bộ lọc.";
   const units = bindings.map((b, i) => (calc.some((c) => c.name === b.column) ? null : source.columns.find((c) => c.name === b.column)?.unit ?? (b.aggregation === "count" || b.aggregation === "count_distinct" ? "dòng/giá trị" : null)));
   if (units.some(Boolean)) out.units = units;
+  capture?.({ source, dims, labels, kinds: result.table.metricKinds, rows, total: overall.table.rows[0]?.values, groups: result.groups, matched: result.matched, dateDim, units });
   // Tỷ trọng của từng nhóm trong tổng (chỉ với số đo cộng được): AI khỏi tự chia.
   if (dims.length) {
     const shares = labels.map((_, i) => {
@@ -533,11 +559,106 @@ async function profitReport(raw: unknown, sources: SourceInfo[], deps: ToolDeps)
   return { ok: true, content: JSON.stringify(out), status: `Đang tính lãi${a.channel ? ` kênh ${a.channel}` : ""}${by !== "none" ? ` theo ${by === "channel" ? "kênh" : by === "product" ? "sản phẩm" : by === "day" ? "ngày" : by === "month" ? "tháng" : "lý do lỗ"}` : ""}…` };
 }
 
+/* ------------------------------ show_chart / show_kpi ------------------------------ */
+
+const CHART_DEFAULT_ROWS = 12;
+const CHART_MAX_ROWS = 40;
+
+const ShowChartArgs = QueryArgs.extend({
+  chart_type: z.enum(VISUAL_CHART_TYPES),
+  title: z.string().max(120).optional(),
+  group_by: z.array(GroupArg).min(1).max(2),
+  limit: z.number().int().min(1).max(CHART_MAX_ROWS).optional(),
+});
+const ShowKpiArgs = z.object({
+  source: z.string().max(100),
+  title: z.string().max(120).optional(),
+  metrics: z.array(Metric).min(1).max(4),
+  filters: z.array(Filter).max(8).optional(),
+});
+
+const fmtNum = (v: number, lang: "vi" | "en") => new Intl.NumberFormat(lang === "en" ? "en-US" : "vi-VN", { maximumFractionDigits: 2 }).format(v);
+const cell = (k: unknown): string | number | null => (k === null || k === undefined ? null : typeof k === "number" || typeof k === "string" ? k : String(k));
+const finite = (n: number | undefined): number => (typeof n === "number" && Number.isFinite(n) ? r2(n) : 0);
+
+/** Bảng rút gọn cho model nhận xét (không trả cả JSON dài): tối đa MAX_VISUAL_ROWS dòng. */
+function tableText(labels: string[], dimNames: string[], rows: Array<{ keys: unknown[]; values: number[] }>, total: Array<string | number | null> | undefined): string {
+  const head = `Cột: ${[...dimNames, ...labels].join(" | ")}`;
+  const lines = rows.slice(0, MAX_VISUAL_ROWS).map((r) => `${r.keys.map((k) => (k === null ? "(trống)" : String(k))).join(" / ")}: ${r.values.map((v) => num(v)).join(" | ")}`);
+  const more = rows.length > MAX_VISUAL_ROWS ? `\n…(còn ${rows.length - MAX_VISUAL_ROWS} dòng)` : "";
+  return `${head}\n${lines.join("\n")}${more}${total ? `\nTổng chung: ${total.join(" | ")}` : ""}`;
+}
+
+async function showChart(raw: unknown, sources: SourceInfo[], deps: ToolDeps): Promise<ToolResult> {
+  const a = ShowChartArgs.parse(raw);
+  const type = a.chart_type;
+  const specDims = a.group_by.length;
+  const spec = CHART_SPECS[type];
+  const clamped = { dims: a.group_by.slice(0, spec.dims[1]), metrics: a.metrics.slice(0, spec.metrics[1]) };
+  if (!hasEnoughFields(type, clamped.dims.length, clamped.metrics.length)) throw new ToolError(`Biểu đồ ${type} cần ít nhất 1 cột nhóm và 1 số đo.`);
+  // Có 2 chiều thì chiều thứ hai tách thành nhiều đường/cột nên chỉ dùng số đo đầu tiên.
+  const metrics = clamped.dims.length === 2 ? clamped.metrics.slice(0, 1) : clamped.metrics;
+  const limit = a.limit ?? CHART_DEFAULT_ROWS;
+  let cap: QueryCapture | undefined;
+  await queryData({ source: a.source, group_by: clamped.dims, metrics, filters: a.filters, order_by: a.order_by, order: a.order, limit: CHART_MAX_ROWS }, sources, deps, (c) => (cap = c));
+  if (!cap) throw new ToolError("Không tính được số liệu cho biểu đồ.");
+  const c: QueryCapture = cap;
+  if (c.rows.length === 0) throw new ToolError("Không có dữ liệu khớp điều kiện nên không vẽ được biểu đồ. Hãy bỏ bớt bộ lọc hoặc đổi khoảng ngày.");
+  // Chuỗi thời gian dài hơn limit: lấy các mốc GẦN NHẤT (dữ liệu đã sắp theo thời gian tăng dần), còn lại lấy các nhóm đứng đầu.
+  const shown = c.dateDim ? c.rows.slice(-limit) : c.rows.slice(0, limit);
+  const dimLabels = c.dims.map((d) => (d.grain ? `${d.column} (${d.grain})` : d.column));
+  const title = a.title?.trim() || `${c.labels[0]}${dimLabels.length ? ` theo ${dimLabels[0]}` : ""}`;
+  const visual: Visual = {
+    kind: "chart",
+    chartType: type,
+    title,
+    dimLabels: c.dims.map((d) => d.column),
+    metricLabels: c.labels,
+    rows: shown.map((r) => ({ keys: r.keys.map(cell), values: r.values.map((v) => finite(v)) })),
+    ...(c.kinds?.some((k) => k === "date") ? { metricKinds: c.kinds as Array<"date" | "number"> } : {}),
+    groups: c.groups,
+  };
+  const note = specDims > clamped.dims.length || metrics.length < a.metrics.length ? " (loại biểu đồ này chỉ dùng được một phần số đo/chiều đã yêu cầu)" : "";
+  const cut = c.groups > shown.length ? ` Chỉ hiện ${shown.length}/${c.groups} nhóm.` : "";
+  return {
+    ok: true,
+    status: "Đang vẽ biểu đồ…",
+    visual,
+    content: `Đã hiển thị biểu đồ "${title}" cho người dùng trong khung chat${note}.${cut} Số liệu để bạn nhận xét (đừng chép lại cả bảng):\n${tableText(c.labels, dimLabels, shown, c.total?.map((v) => num(v)))}`,
+  };
+}
+
+async function showKpi(raw: unknown, sources: SourceInfo[], deps: ToolDeps): Promise<ToolResult> {
+  const a = ShowKpiArgs.parse(raw);
+  let cap: QueryCapture | undefined;
+  await queryData({ source: a.source, metrics: a.metrics, filters: a.filters }, sources, deps, (c) => (cap = c));
+  if (!cap) throw new ToolError("Không tính được số liệu cho thẻ KPI.");
+  const c: QueryCapture = cap;
+  const lang = deps.lang ?? "vi";
+  const cards: KpiCard[] = c.labels.map((label, i) => {
+    const v = c.total?.[i];
+    // Không dòng nào khớp: trung bình/nhỏ nhất... không có nghĩa, hiện "—" thay vì số 0 dễ gây hiểu lầm.
+    const value = c.matched > 0 && typeof v === "number" && Number.isFinite(v) ? r2(v) : null;
+    const unit = c.units[i];
+    const text = value === null ? "—" : c.kinds?.[i] === "date" ? formatDay(value) : `${fmtNum(value, lang)}${unit ? ` ${unit}` : ""}`;
+    return { label, value, text };
+  });
+  const title = a.title?.trim() || undefined;
+  return {
+    ok: true,
+    status: "Đang dựng thẻ KPI…",
+    visual: { kind: "kpi", title, cards },
+    content: `Đã hiển thị ${cards.length} thẻ KPI cho người dùng trong khung chat (${c.matched} dòng khớp). Giá trị: ${cards.map((k) => `${k.label} = ${k.text}`).join("; ")}. Chỉ nhận xét ngắn, đừng chép lại.`,
+  };
+}
+
 /* ------------------------------ chạy công cụ ------------------------------ */
 
 const clip = (s: string) => (s.length > MAX_CONTENT_CHARS ? `${s.slice(0, MAX_CONTENT_CHARS)}…(đã cắt bớt; hãy thu hẹp bằng bộ lọc hoặc giảm limit)` : s);
 
 /** Chạy một công cụ do AI gọi. Không bao giờ ném lỗi: lỗi trả về dạng "LỖI: ..." để AI sửa tham số rồi gọi lại. */
+export { VISUAL_TOOL_NAMES };
+
 export async function runTool(name: string, rawArgs: string, sources: SourceInfo[], deps: ToolDeps): Promise<ToolResult> {
   let args: unknown;
   try {
@@ -551,6 +672,8 @@ export async function runTool(name: string, rawArgs: string, sources: SourceInfo
     else if (name === "column_info") res = await columnInfo(args, sources, deps);
     else if (name === "sample_rows") res = await sampleRows(args, sources, deps);
     else if (name === "profit_report") res = await profitReport(args, sources, deps);
+    else if (name === "show_chart") res = await showChart(args, sources, deps);
+    else if (name === "show_kpi") res = await showKpi(args, sources, deps);
     else return fail(`Không có công cụ "${name}".`, "Công cụ không tồn tại.");
     return { ...res, content: clip(res.content) };
   } catch (e) {

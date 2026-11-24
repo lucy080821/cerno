@@ -9,6 +9,8 @@ import {
   defaultSelection, isOrdersSource, MAX_SOURCES, parseEvent, reportBlocks, sourceLabel, splitLines, toggleSource,
   type ChatSummary, type Msg, type SourceOption,
 } from "@/lib/ai-chat/client";
+import { visualsOf, type Visual } from "@/lib/ai-chat/visual";
+import { Visuals } from "./ChatVisual";
 import styles from "./ai.module.css";
 
 const SAVED_KEY = "cerno.ai.sources";
@@ -20,6 +22,8 @@ const SUGGESTIONS = [
   "Chi phí quảng cáo có đang ăn hết lãi không?",
   "Tỷ lệ hủy và hoàn trả theo từng kênh, kênh nào đáng lo nhất?",
   "Top 10 sản phẩm bán chạy nhất và biên lãi của từng sản phẩm.",
+  "Vẽ biểu đồ doanh thu và lãi theo ngày trong 30 ngày gần nhất.",
+  "Hiện thẻ KPI: tổng doanh thu thực, lãi, số đơn và tỷ lệ hủy tháng này.",
 ];
 
 const readSaved = (): string[] => {
@@ -87,6 +91,7 @@ export function AiChat({ variant = "page", context, listenAsk = true, onClose }:
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [draft, setDraft] = useState("");
+  const [visuals, setVisuals] = useState<Visual[]>([]);
   const [status, setStatus] = useState("");
   const [error, setError] = useState<{ message: string; question: string } | null>(null);
   const [loadingChat, setLoadingChat] = useState(false);
@@ -114,7 +119,7 @@ export function AiChat({ variant = "page", context, listenAsk = true, onClose }:
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ block: "end" });
-  }, [messages, draft, status, error]);
+  }, [messages, draft, status, error, visuals]);
 
   useEffect(() => () => abortRef.current?.abort(), []);
 
@@ -125,6 +130,7 @@ export function AiChat({ variant = "page", context, listenAsk = true, onClose }:
     setActiveId(null);
     setMessages([]);
     setDraft("");
+    setVisuals([]);
     setStatus("");
     setError(null);
     setBusy(false);
@@ -138,6 +144,7 @@ export function AiChat({ variant = "page", context, listenAsk = true, onClose }:
     abortRef.current?.abort();
     setBusy(false);
     setDraft("");
+    setVisuals([]);
     setStatus("");
     setError(null);
     setHistoryOpen(false);
@@ -185,6 +192,7 @@ export function AiChat({ variant = "page", context, listenAsk = true, onClose }:
     setInput("");
     setError(null);
     setDraft("");
+    setVisuals([]);
     setStatus("");
     setBusy(true);
     setMessages((cur) => [...cur, { id: `tmp-${Date.now()}`, role: "user", content: question, meta: {}, createdAt: new Date().toISOString() }]);
@@ -220,14 +228,17 @@ export function AiChat({ variant = "page", context, listenAsk = true, onClose }:
           } else if (ev.t === "status") setStatus(ev.v);
           else if (ev.t === "text") setDraft((d) => d + ev.v);
           else if (ev.t === "reset") setDraft("");
+          else if (ev.t === "visual") setVisuals((cur) => [...cur, ev.visual]);
           else if (ev.t === "done") {
             finished = true;
             setDraft("");
+            setVisuals([]);
             setStatus("");
             setMessages((cur) => [...cur, ev.message]);
           } else if (ev.t === "error") {
             finished = true;
             setDraft("");
+            setVisuals([]);
             setStatus("");
             setError({ message: ev.message, question });
           }
@@ -240,6 +251,7 @@ export function AiChat({ variant = "page", context, listenAsk = true, onClose }:
     } finally {
       setBusy(false);
       setDraft("");
+      setVisuals([]);
       setStatus("");
       void refreshChats();
     }
@@ -320,6 +332,7 @@ export function AiChat({ variant = "page", context, listenAsk = true, onClose }:
                   <div key={m.id} className={styles.userMsg}><div data-i18n-skip>{m.content}</div></div>
                 ) : (
                   <article key={m.id} className={styles.aiMsg}>
+                    <Visuals items={visualsOf(m.meta)} />
                     <Report text={m.content} />
                     <footer className={styles.aiFoot}>
                       <button type="button" onClick={() => void copy(m)}>{copied === m.id ? "Đã sao chép" : "Sao chép"}</button>
@@ -331,6 +344,7 @@ export function AiChat({ variant = "page", context, listenAsk = true, onClose }:
               )}
               {busy && (
                 <article className={styles.aiMsg}>
+                  <Visuals items={visuals} />
                   {draft ? <Report text={draft} /> : null}
                   <div className={styles.working}><Spinner size={16} label="" /><span>{status || "AI đang tra cứu số liệu…"}</span></div>
                 </article>
@@ -347,41 +361,7 @@ export function AiChat({ variant = "page", context, listenAsk = true, onClose }:
         </div>
 
         <div className={styles.composer}>
-          <div className={styles.srcRow}>
-            <div className={styles.pickerWrap}>
-              <button type="button" className={styles.srcBtn} onClick={() => setPickerOpen((o) => !o)} aria-expanded={pickerOpen}>
-                Nguồn dữ liệu ({selected.length}/{MAX_SOURCES}) ▾
-              </button>
-              {pickerOpen && (
-                <>
-                  <div className={styles.backdrop} onClick={() => setPickerOpen(false)} />
-                  <div className={styles.picker} role="listbox">
-                    {sources === null ? <div className={styles.histNote}><Spinner size={18} label="Đang tải…" /></div> : sources.length === 0 ? (
-                      <div className={styles.histNote}>Chưa có nguồn dữ liệu. <Link href="/sources">Thêm nguồn</Link></div>
-                    ) : sources.map((s) => {
-                      const on = selected.includes(s.id);
-                      const full = !on && selected.length >= MAX_SOURCES;
-                      return (
-                        <label key={s.id} className={`${styles.pickItem} ${full ? styles.pickOff : ""}`}>
-                          <input type="checkbox" checked={on} disabled={full} onChange={() => pick(s.id)} />
-                          <span className={styles.pickName} data-i18n-skip>{sourceLabel(s)}</span>
-                          <span className={styles.pickKind}>{isOrdersSource(s) ? "Đơn hàng" : "Google Sheet"}</span>
-                        </label>
-                      );
-                    })}
-                    <div className={styles.pickHint}>{`Chọn tối đa ${MAX_SOURCES} nguồn. AI chỉ đọc số liệu, không sửa dữ liệu.`}</div>
-                  </div>
-                </>
-              )}
-            </div>
-            {selected.map((id) => byId.get(id)).filter((s): s is SourceOption => !!s).map((s) => (
-              <span key={s.id} className={styles.chip}>
-                <span data-i18n-skip>{sourceLabel(s)}</span>
-                <button type="button" aria-label="Bỏ nguồn này" onClick={() => pick(s.id)}>×</button>
-              </span>
-            ))}
-          </div>
-          <div className={styles.inputRow}>
+          <div className={styles.composerCard}>
             <textarea
               ref={taRef}
               className={styles.input}
@@ -397,11 +377,47 @@ export function AiChat({ variant = "page", context, listenAsk = true, onClose }:
                 }
               }}
             />
-            {busy ? (
-              <button type="button" className={`${styles.sendBtn} ${styles.stopBtn}`} onClick={stop}>Dừng</button>
-            ) : (
-              <button type="button" className={styles.sendBtn} onClick={() => void send(input)} disabled={!input.trim()}>Gửi</button>
-            )}
+            <div className={styles.toolbar}>
+            <div className={styles.srcRow}>
+              <div className={styles.pickerWrap}>
+                <button type="button" className={styles.srcBtn} onClick={() => setPickerOpen((o) => !o)} aria-expanded={pickerOpen}>
+                  Nguồn dữ liệu ({selected.length}/{MAX_SOURCES}) ▾
+                </button>
+                {pickerOpen && (
+                  <>
+                    <div className={styles.backdrop} onClick={() => setPickerOpen(false)} />
+                    <div className={styles.picker} role="listbox">
+                      {sources === null ? <div className={styles.histNote}><Spinner size={18} label="Đang tải…" /></div> : sources.length === 0 ? (
+                        <div className={styles.histNote}>Chưa có nguồn dữ liệu. <Link href="/sources">Thêm nguồn</Link></div>
+                      ) : sources.map((s) => {
+                        const on = selected.includes(s.id);
+                        const full = !on && selected.length >= MAX_SOURCES;
+                        return (
+                          <label key={s.id} className={`${styles.pickItem} ${full ? styles.pickOff : ""}`}>
+                            <input type="checkbox" checked={on} disabled={full} onChange={() => pick(s.id)} />
+                            <span className={styles.pickName} data-i18n-skip>{sourceLabel(s)}</span>
+                            <span className={styles.pickKind}>{isOrdersSource(s) ? "Đơn hàng" : "Google Sheet"}</span>
+                          </label>
+                        );
+                      })}
+                      <div className={styles.pickHint}>{`Chọn tối đa ${MAX_SOURCES} nguồn. AI chỉ đọc số liệu, không sửa dữ liệu.`}</div>
+                    </div>
+                  </>
+                )}
+              </div>
+              {selected.map((id) => byId.get(id)).filter((s): s is SourceOption => !!s).map((s) => (
+                <span key={s.id} className={styles.chip}>
+                  <span data-i18n-skip>{sourceLabel(s)}</span>
+                  <button type="button" aria-label="Bỏ nguồn này" onClick={() => pick(s.id)}>×</button>
+                </span>
+              ))}
+            </div>
+              {busy ? (
+                <button type="button" className={`${styles.sendBtn} ${styles.stopBtn}`} onClick={stop}>Dừng</button>
+              ) : (
+                <button type="button" className={styles.sendBtn} onClick={() => void send(input)} disabled={!input.trim()}>Gửi</button>
+              )}
+            </div>
           </div>
           <div className={styles.fine}>Enter để gửi, Shift+Enter để xuống dòng. Số liệu do AI tra từ dữ liệu của bạn, hãy đối chiếu trước khi ra quyết định lớn.</div>
         </div>

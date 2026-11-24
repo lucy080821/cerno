@@ -1,4 +1,5 @@
 import { describeSources, type SourceInfo } from "./sources";
+import { VISUAL_RULES } from "./visual";
 
 /**
  * Lời nhắc hệ thống của trang Hỏi AI. Mục tiêu: câu trả lời CHI TIẾT, CHÍNH XÁC, trình bày như BÁO CÁO bằng chữ thuần (không markdown).
@@ -73,7 +74,8 @@ export function cleanPageContext(raw: string | undefined | null): string {
   return (raw ?? "").replace(/[<>\r\n\t]+/g, " ").replace(/\s{2,}/g, " ").trim().slice(0, 300);
 }
 
-export function buildSystemPrompt(args: { sources: SourceInfo[]; lang: "vi" | "en"; now?: Date; pageContext?: string }): string {
+/** `visual`: người dùng đang yêu cầu biểu đồ/thẻ KPI, thêm đoạn hướng dẫn dùng show_chart/show_kpi (không thêm thì không tốn token). */
+export function buildSystemPrompt(args: { sources: SourceInfo[]; lang: "vi" | "en"; now?: Date; pageContext?: string; visual?: boolean }): string {
   const today = todayVn(args.now);
   const page = cleanPageContext(args.pageContext);
   const pageBlock = page
@@ -87,7 +89,7 @@ Hôm nay là ${today.text} (${today.iso}), giờ Việt Nam. Các từ "hôm nay
 ${describeSources(args.sources)}
 </nguon_du_lieu>
 ${pageBlock}
-${RULES}
+${RULES}${args.visual ? `\n\n${VISUAL_RULES}` : ""}
 
 ${args.lang === "en" ? FORMAT_EN : FORMAT_VI}`;
 }

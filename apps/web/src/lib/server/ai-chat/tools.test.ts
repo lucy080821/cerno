@@ -197,3 +197,64 @@ describe("chạy công cụ an toàn", () => {
     expect(r.content.length).toBeLessThan(9300);
   });
 });
+
+describe("show_chart / show_kpi", () => {
+  it("chỉ có trong danh sách công cụ khi bật visual", () => {
+    expect(toolDefs([sheet]).map((d) => d.function.name)).not.toContain("show_chart");
+    const on = toolDefs([sheet], { visual: true }).map((d) => d.function.name);
+    expect(on).toEqual(expect.arrayContaining(["show_chart", "show_kpi"]));
+  });
+
+  it("vẽ biểu đồ cột theo kênh: trả hình + bảng rút gọn cho model", async () => {
+    const r = await call("show_chart", { source: "s1", chart_type: "bar", title: "Doanh thu theo kênh", group_by: [{ column: "Kênh" }], metrics: [{ column: "Doanh thu", agg: "sum" }] });
+    expect(r.ok).toBe(true);
+    expect(r.visual).toMatchObject({ kind: "chart", chartType: "bar", title: "Doanh thu theo kênh", dimLabels: ["Kênh"], groups: 3 });
+    const v = r.visual as { rows: Array<{ keys: unknown[]; values: number[] }> };
+    expect(v.rows[0]).toEqual({ keys: ["Shopee"], values: [400_000] });
+    expect(r.content).toContain("Đã hiển thị biểu đồ");
+    expect(r.content).toContain("Tổng chung: 1000000");
+  });
+
+  it("chuỗi thời gian dài hơn limit thì giữ các mốc GẦN NHẤT, theo thứ tự thời gian", async () => {
+    const r = await call("show_chart", { source: "s1", chart_type: "line", group_by: [{ column: "Ngày", grain: "month" }], metrics: [{ column: "Doanh thu", agg: "sum" }], limit: 1 });
+    expect(r.ok).toBe(true);
+    const v = r.visual as { rows: Array<{ keys: unknown[]; values: number[] }>; groups: number };
+    expect(v.groups).toBe(2);
+    expect(v.rows).toEqual([{ keys: ["2026-11"], values: [600_000] }]);
+  });
+
+  it("biểu đồ tròn chỉ nhận 1 chiều và 1 số đo: số đo thừa bị bỏ", async () => {
+    const r = await call("show_chart", { source: "s1", chart_type: "pie", group_by: [{ column: "Kênh" }], metrics: [{ column: "Doanh thu", agg: "sum" }, { column: "Số đơn", agg: "sum" }] });
+    expect(r.ok).toBe(true);
+    expect((r.visual as { metricLabels: string[] }).metricLabels).toHaveLength(1);
+  });
+
+  it("không có dữ liệu khớp, cột sai hoặc thiếu chiều thì báo LỖI để model sửa", async () => {
+    const none = await call("show_chart", { source: "s1", chart_type: "bar", group_by: [{ column: "Kênh" }], metrics: [{ column: "Doanh thu", agg: "sum" }], filters: [{ column: "Kênh", values: ["Không có"] }] });
+    expect(none.ok).toBe(false);
+    expect(none.content).toMatch(/^LỖI/);
+    expect(none.visual).toBeUndefined();
+    const badCol = await call("show_chart", { source: "s1", chart_type: "bar", group_by: [{ column: "Xyz" }], metrics: [{ column: "Doanh thu", agg: "sum" }] });
+    expect(badCol.content).toMatch(/^LỖI/);
+    const noDim = await call("show_chart", { source: "s1", chart_type: "bar", group_by: [], metrics: [{ column: "Doanh thu", agg: "sum" }] });
+    expect(noDim.ok).toBe(false);
+  });
+
+  it("thẻ KPI: giá trị đã định dạng theo kiểu Việt/Anh kèm đơn vị, tổng đúng cả với trung bình", async () => {
+    const r = await call("show_kpi", { source: "s1", title: "Tháng 10 và 11", metrics: [{ column: "Doanh thu", agg: "sum", name: "Tổng doanh thu" }, { column: "Số đơn", agg: "sum" }, { column: "Doanh thu", agg: "avg", name: "Doanh thu trung bình" }] });
+    expect(r.ok).toBe(true);
+    const v = r.visual as { cards: Array<{ label: string; value: number | null; text: string }>; title?: string };
+    expect(v.title).toBe("Tháng 10 và 11");
+    expect(v.cards.map((c) => c.value)).toEqual([1_000_000, 10, 250_000]);
+    expect(v.cards[0].text).toBe("1.000.000 đồng");
+    expect(v.cards[1].text).toBe("10 đơn");
+    const en = await runTool("show_kpi", JSON.stringify({ source: "s1", metrics: [{ column: "Doanh thu", agg: "sum" }] }), [sheet], { ...deps, lang: "en" });
+    expect((en.visual as { cards: Array<{ text: string }> }).cards[0].text).toBe("1,000,000 đồng");
+  });
+
+  it("thẻ KPI không có dòng nào khớp: giá trị trống, không ném lỗi", async () => {
+    const r = await call("show_kpi", { source: "s1", metrics: [{ column: "Doanh thu", agg: "avg" }], filters: [{ column: "Kênh", values: ["Không có"] }] });
+    expect(r.ok).toBe(true);
+    expect((r.visual as { cards: Array<{ value: number | null; text: string }> }).cards[0]).toMatchObject({ value: null, text: "—" });
+  });
+});

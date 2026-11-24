@@ -1,3 +1,5 @@
+import { parseVisual, type Visual } from "./visual";
+
 /** Phần thuần của trang Hỏi AI phía trình duyệt: đọc luồng NDJSON, chia báo cáo chữ thuần thành khối để vẽ, nhãn nguồn. */
 
 export interface ChatSummary {
@@ -20,6 +22,7 @@ export type StreamEvent =
   | { t: "status"; v: string }
   | { t: "text"; v: string }
   | { t: "reset" }
+  | { t: "visual"; visual: Visual }
   | { t: "done"; message: Msg }
   | { t: "error"; message: string; status?: number; retryAfter?: number };
 
@@ -40,6 +43,10 @@ export function parseEvent(line: string): StreamEvent | null {
         return typeof e.v === "string" ? { t: e.t, v: e.v } : null;
       case "reset":
         return { t: "reset" };
+      case "visual": {
+        const v = parseVisual(e.visual);
+        return v ? { t: "visual", visual: v } : null;
+      }
       case "done": {
         const m = e.message as Msg | undefined;
         return m && typeof m.content === "string" ? { t: "done", message: m } : null;
