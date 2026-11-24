@@ -547,3 +547,5 @@
 .catCell { display: flex; flex-direction: column; gap: 8px; }
 .catLine { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .catPlatform { flex: 0 0 82px; font-size: 12px; font-weight: 700; color: var(--muted); }
+
+.platformTag { display: inline-block; padding: 2px 9px; border-radius: 999px; background: rgba(109, 94, 252, 0.1); color: var(--brand-a, #6d5efc); font-size: 12px; font-weight: 700; white-space: nowrap; }

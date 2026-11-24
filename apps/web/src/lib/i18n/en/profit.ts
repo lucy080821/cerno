@@ -332,4 +332,12 @@ export const EN_PROFIT: Dict = {
   "Chưa xác định ngành: dùng mức mặc định {0}%": "Category not determined: using the default rate of {0}%",
   "Không áp dụng (không bán trên Shopee hay TikTok Shop)": "Not applicable (not sold on Shopee or TikTok Shop)",
   "(theo biểu phí Shopee, TikTok Shop hoặc tỷ lệ bạn nhập) vì file đơn hàng không có phí. Số thật nằm ở báo cáo thu nhập hoặc đối soát của sàn. Bật hoặc chỉnh ở trang": "(from the Shopee or TikTok Shop fee table, or the rates you entered) because the order file has no fee. The real figure is in the marketplace's income or reconciliation report. Turn it on or adjust it on the",
+  // Bảng ngành hàng theo sàn
+  "Chưa có sản phẩm bán trên Shopee hoặc TikTok Shop.": "No products sold on Shopee or TikTok Shop yet.",
+  "Hiển thị 300 dòng đầu trong {0} dòng. Chọn một sàn ở trên để thu hẹp.": "Showing the first 300 of {0} rows. Pick a marketplace above to narrow it down.",
+  "Mức phí": "Rate",
+  "Nguồn": "Source",
+  "Sàn": "Marketplace",
+  "{0} dòng · mỗi dòng là một sản phẩm trên một sàn": "{0} rows · each row is one product on one marketplace",
+  "{0}% (mặc định)": "{0}% (default)",
 };

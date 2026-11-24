@@ -39,6 +39,7 @@ export function ProductsView({ initialFilter }: { initialFilter: Filter }) {
   // Ước tính phí sàn (Shopee, TikTok Shop): bản nháp cài đặt, sản phẩm + sàn đang chọn ngành, trạng thái lưu.
   const [feeForm, setFeeForm] = useState<FeeSettings>(DEFAULT_FEE_SETTINGS);
   const [affiliateText, setAffiliateText] = useState("");
+  const [catPlatform, setCatPlatform] = useState<"all" | FeePlatform>("all");
   const [catTarget, setCatTarget] = useState<{ row: RowView; platform: FeePlatform } | null>(null);
   const [feeSaving, setFeeSaving] = useState(false);
   const fees = data?.fees;
@@ -70,6 +71,7 @@ export function ProductsView({ initialFilter }: { initialFilter: Filter }) {
   const missing = (r: RowView) => !!r.product && r.product.costMissing && r.catalogCost === null;
   const losing = (r: RowView) => r.product?.profit !== null && r.product?.profit !== undefined && r.product.profit < 0;
   const shown = rows.filter((r) => (filter === "missing" ? missing(r) : filter === "loss" ? losing(r) : true));
+  const catRows = rows.flatMap((r) => FEE_PLATFORMS.filter((pl) => (catPlatform === "all" || catPlatform === pl) && soldOn(r, pl) && !!r.product).map((pl) => ({ row: r, platform: pl })));
   const missingCount = rows.filter(missing).length;
   const missingOrders = data.summary?.missingCost ?? 0;
   const canEdit = data.editable && data.catalog.available;
@@ -306,7 +308,7 @@ export function ProductsView({ initialFilter }: { initialFilter: Filter }) {
             <thead>
               <tr>
                 <th style={{ minWidth: 210 }}>Sản phẩm</th><th className={styles.r}>Đã bán</th><th className={styles.r}>Giá bán TB</th><th className={styles.r}>Giá vốn / cái</th>
-                <th className={styles.r}>Phí sàn / đơn</th><th className={styles.r}>Quảng cáo / đơn</th><th className={styles.r}>Lãi mỗi đơn</th><th className={styles.r}>Giá hòa vốn</th>{fees?.available && <th style={{ minWidth: 380 }}>Ngành hàng tính phí</th>}<th>Tình trạng</th>
+                <th className={styles.r}>Phí sàn / đơn</th><th className={styles.r}>Quảng cáo / đơn</th><th className={styles.r}>Lãi mỗi đơn</th><th className={styles.r}>Giá hòa vốn</th><th>Tình trạng</th>
               </tr>
             </thead>
             <tbody>
@@ -334,41 +336,6 @@ export function ProductsView({ initialFilter }: { initialFilter: Filter }) {
                     <td className={`${styles.r} ${styles.muted}`}>{p && p.orders ? vnd(p.adCost / p.orders) : "—"}</td>
                     <td className={styles.r}>{p?.profitPerOrder !== null && p?.profitPerOrder !== undefined ? <b className={p.profitPerOrder < 0 ? styles.neg : styles.pos}>{signed(p.profitPerOrder)}</b> : "—"}</td>
                     <td className={styles.r}>{vnd(p?.breakEvenPrice)}</td>
-                    {fees?.available && (
-                      <td className={styles.catCell}>
-                        {FEE_PLATFORMS.filter((pl) => soldOn(r, pl)).map((pl) => {
-                          const chosen = catOf(r, pl);
-                          const guess = guessOf(r, pl);
-                          const cat = chosen ?? guess;
-                          const usable = pl === "Shopee" || fees.multiPlatform;
-                          return (
-                            <div key={pl} className={styles.catLine}>
-                              <span className={styles.catPlatform}>{pl}</span>
-                              <span className={styles.catName}>
-                                {cat ? (
-                                  <>
-                                    <span className={styles.catPath} title={cat.path} data-i18n-skip>{cat.path}</span>
-                                    <span className={styles.muted}>{cat.ratePct !== null ? ratePctText(cat.ratePct) : "Không có trong biểu phí"}</span>
-                                    <span className={`${styles.badge} ${guess ? styles.bWarn : styles.bPos}`}>{guess ? "Tự nhận diện" : "Đã chọn"}</span>
-                                  </>
-                                ) : pl === "TikTok Shop" ? (
-                                  <span className={styles.muted}>{`Chưa xác định ngành: dùng mức mặc định ${TIKTOK_DEFAULT_RATE_PCT[fees.settings.tiktokSellerType]}%`}</span>
-                                ) : (
-                                  <span className={styles.muted}>Chưa xác định được ngành</span>
-                                )}
-                              </span>
-                              {canEditFees && usable && (
-                                <span className={styles.actions}>
-                                  <button className={styles.btn} disabled={feeSaving} onClick={() => setCatTarget({ row: r, platform: pl })}>{cat ? "Đổi" : "Chọn ngành"}</button>
-                                  {chosen && fees.platforms[pl].categories[costKey(r.key)] && <button className={styles.btn} disabled={feeSaving} aria-label={`Bỏ ngành của ${r.name}`} onClick={() => void saveFees({ platform: pl, removes: [r.key] }, "Đã bỏ ngành hàng.")}>Bỏ</button>}
-                                </span>
-                              )}
-                            </div>
-                          );
-                        })}
-                        {!FEE_PLATFORMS.some((pl) => soldOn(r, pl)) && <span className={styles.muted}>Không áp dụng (không bán trên Shopee hay TikTok Shop)</span>}
-                      </td>
-                    )}
                     <td>
                       {isMissing ? <span className={`${styles.badge} ${styles.bWarn}`}>Thiếu giá vốn</span>
                         : losing(r) ? <span className={`${styles.badge} ${styles.bNeg}`}>Lỗ mỗi đơn</span>
@@ -380,11 +347,58 @@ export function ProductsView({ initialFilter }: { initialFilter: Filter }) {
                   </tr>
                 );
               })}
-              {shown.length === 0 && <tr><td colSpan={fees?.available ? 10 : 9} className={styles.muted} style={{ textAlign: "center", padding: 28 }}>Không có sản phẩm nào.</td></tr>}
+              {shown.length === 0 && <tr><td colSpan={9} className={styles.muted} style={{ textAlign: "center", padding: 28 }}>Không có sản phẩm nào.</td></tr>}
             </tbody>
           </table>
         </div>
       </Card>
+
+      {fees?.available && (
+        <Card title="Ngành hàng tính phí" aside={`${count(catRows.length)} dòng · mỗi dòng là một sản phẩm trên một sàn`}>
+          <div className={styles.toolbar}>
+            {([["all", "Tất cả"], ...FEE_PLATFORMS.map((pl) => [pl, pl])] as ["all" | FeePlatform, string][]).map(([k, label]) => (
+              <button key={k} className={`${styles.chip} ${catPlatform === k ? styles.chipOn : ""}`} onClick={() => setCatPlatform(k)}>{label}</button>
+            ))}
+          </div>
+          <div className={styles.tableWrap}>
+            <table className={styles.table}>
+              <thead>
+                <tr><th style={{ minWidth: 190 }}>Sản phẩm</th><th>Sàn</th><th style={{ minWidth: 320 }}>Ngành hàng</th><th className={styles.r}>Mức phí</th><th>Nguồn</th><th /></tr>
+              </thead>
+              <tbody>
+                {catRows.slice(0, 300).map(({ row: r, platform: pl }) => {
+                  const chosen = catOf(r, pl);
+                  const guess = guessOf(r, pl);
+                  const cat = chosen ?? guess;
+                  const usable = pl === "Shopee" || fees.multiPlatform;
+                  const dflt = pl === "TikTok Shop" ? TIKTOK_DEFAULT_RATE_PCT[fees.settings.tiktokSellerType] : null;
+                  return (
+                    <tr key={`${r.key}|${pl}`}>
+                      <td><b data-i18n-skip>{r.name}</b>{r.sku && r.sku !== r.name && <span className={styles.sub} data-i18n-skip>{r.sku}</span>}</td>
+                      <td><span className={styles.platformTag}>{pl}</span></td>
+                      <td>{cat ? <span title={cat.path} data-i18n-skip>{cat.path}</span> : <span className={styles.muted}>Chưa xác định được ngành</span>}</td>
+                      <td className={styles.r}>
+                        {cat ? (cat.ratePct !== null ? ratePctText(cat.ratePct) : <span className={styles.muted}>Không có trong biểu phí</span>) : dflt !== null ? <span className={styles.muted}>{`${dflt}% (mặc định)`}</span> : "—"}
+                      </td>
+                      <td>{cat ? <span className={`${styles.badge} ${guess ? styles.bWarn : styles.bPos}`}>{guess ? "Tự nhận diện" : "Đã chọn"}</span> : <span className={styles.muted}>—</span>}</td>
+                      <td className={styles.actions}>
+                        {canEditFees && usable && (
+                          <>
+                            <button className={styles.btn} disabled={feeSaving} onClick={() => setCatTarget({ row: r, platform: pl })}>{cat ? "Đổi" : "Chọn ngành"}</button>
+                            {chosen && fees.platforms[pl].categories[costKey(r.key)] && <button className={styles.btn} disabled={feeSaving} aria-label={`Bỏ ngành của ${r.name}`} onClick={() => void saveFees({ platform: pl, removes: [r.key] }, "Đã bỏ ngành hàng.")}>Bỏ</button>}
+                          </>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+                {catRows.length === 0 && <tr><td colSpan={6} className={styles.muted} style={{ textAlign: "center", padding: 28 }}>Chưa có sản phẩm bán trên Shopee hoặc TikTok Shop.</td></tr>}
+              </tbody>
+            </table>
+          </div>
+          {catRows.length > 300 && <p className={styles.small} style={{ marginTop: 10 }}>{`Hiển thị 300 dòng đầu trong ${count(catRows.length)} dòng. Chọn một sàn ở trên để thu hẹp.`}</p>}
+        </Card>
+      )}
 
       <div className={styles.grid2}>
         <Card title="Giá hòa vốn là gì?">
