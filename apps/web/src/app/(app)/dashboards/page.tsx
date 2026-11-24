@@ -1,12 +1,9 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { AppShell } from "../AppShell";
-import type { SourceRow } from "./SourceItem";
-import { DashboardList } from "./DashboardList";
-import { SectionHead, sectionClass } from "./SectionHead";
+import type { SourceRow } from "../sources/types";
+import { DashboardList, type SharedDashboard } from "./DashboardList";
 import type { DashboardRow } from "@/lib/dashboards/api";
-import styles from "./dashboards.module.css";
 
 export const dynamic = "force-dynamic";
 
@@ -37,52 +34,19 @@ export default async function DashboardsPage() {
   const dashboards = (dash ?? []) as DashboardRow[];
 
   const { data: sharedRows } = await supabase.rpc("shared_dashboards");
-  const shared = (sharedRows ?? []) as Array<{ id: string; name: string; updated_at: string; role: "viewer" | "editor" }>;
+  const shared = (sharedRows ?? []) as SharedDashboard[];
 
   const name = (user.user_metadata?.full_name as string | undefined) ?? user.email ?? "";
 
   return (
-    <AppShell userName={name} title="Dashboard" desc="Thiết kế báo cáo từ dữ liệu của bạn, quản lý nguồn dữ liệu và các dashboard được chia sẻ.">
-    <main className={styles.page}>
+    <AppShell userName={name} title="Dashboard">
       <DashboardList
         dashboards={dashboards}
+        shared={shared}
         sources={sources}
         apiKey={process.env.NEXT_PUBLIC_GOOGLE_API_KEY ?? ""}
         appId={process.env.NEXT_PUBLIC_GOOGLE_APP_ID ?? ""}
       />
-
-      {shared.length > 0 && (
-        <section className={sectionClass("shared")}>
-          <SectionHead kind="shared" title="Được chia sẻ với bạn" count={shared.length}
-            desc="Dashboard của người khác mời bạn xem hoặc chỉnh sửa." />
-          <ul className={styles.list}>
-            {shared.map((d) => (
-              <li key={d.id} className={styles.item}>
-                <div className={styles.itemTop}>
-                  <div>
-                    <Link href={d.role === "editor" ? `/editor/${d.id}` : `/d/${d.id}`} className={styles.dashName}>{d.name}</Link>
-                    <div className={styles.muted}>
-                      {d.role === "editor" ? "Bạn được sửa" : "Chỉ xem"} · sửa lần cuối: {new Date(d.updated_at).toLocaleString("vi-VN")}
-                    </div>
-                  </div>
-                  <div className={styles.row}>
-                    <Link href={d.role === "editor" ? `/editor/${d.id}` : `/d/${d.id}`} className={styles.ghost}>Mở</Link>
-                  </div>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      <p className={styles.notice}>
-        Nguồn dữ liệu ({sources.length}) nay nằm ở trang riêng: <Link href="/sources">Nguồn dữ liệu</Link>. Mẫu dashboard theo ngành có ở trang <Link href="/templates">Mẫu dashboard</Link>.
-      </p>
-
-      <footer className={styles.legalFoot}>
-        <Link href="/privacy">Quyền riêng tư</Link> · <Link href="/terms">Điều khoản</Link>
-      </footer>
-    </main>
     </AppShell>
   );
 }

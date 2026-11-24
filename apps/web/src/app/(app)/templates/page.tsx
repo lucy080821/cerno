@@ -1,4 +1,4 @@
-import type { SourceRow } from "../dashboards/SourceItem";
+import type { SourceRow } from "../sources/types";
 import { AppShell } from "../AppShell";
 import { requirePageUser, workspaceIds } from "../page-user";
 import { TemplatesView } from "./TemplatesView";

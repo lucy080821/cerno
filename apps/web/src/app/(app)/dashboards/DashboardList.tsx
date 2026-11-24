@@ -9,26 +9,36 @@ import {
   renameDashboard,
   type DashboardRow,
 } from "@/lib/dashboards/api";
-import { SectionHead, sectionClass } from "./SectionHead";
 import { useDialog } from "@/components/ui/DialogProvider";
 
 import { createBlankDashboard, createDemoDashboard } from "@/lib/editor/defaults";
 import { clearDraft, loadDraft } from "@/lib/editor/io";
 import { Spinner } from "@/components/Spinner";
 import { TEMPLATES, type TemplateEntry } from "@/content/templates";
+import { vnDateTime } from "@/lib/format/vn-time";
 import type { TemplateSource } from "@/lib/templates/source";
 import { TemplateGallery } from "./TemplateGallery";
 import { TemplateMapDialog } from "./TemplateMapDialog";
 import styles from "./dashboards.module.css";
+import s from "../sources/sources.module.css";
+
+export interface SharedDashboard {
+  id: string;
+  name: string;
+  updated_at: string;
+  role: "viewer" | "editor";
+}
 
 interface Props {
   dashboards: DashboardRow[];
+  shared: SharedDashboard[];
   sources: TemplateSource[];
   apiKey: string;
   appId: string;
 }
 
-export function DashboardList({ dashboards, sources, apiKey, appId }: Props) {
+/** Trang Dashboard: danh sách dashboard của bạn và dashboard được chia sẻ, dạng bảng quản trị cùng phong cách trang Nguồn dữ liệu. */
+export function DashboardList({ dashboards, shared, sources, apiKey, appId }: Props) {
   const dialog = useDialog();
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -104,33 +114,32 @@ export function DashboardList({ dashboards, sources, apiKey, appId }: Props) {
   };
 
   return (
-    <section className={sectionClass("dash")}>
+    <div className={s.page}>
       {(busy || opening) && (
         <div className={styles.overlay}>
           <Spinner size={36} label={opening ? "Đang mở dashboard…" : "Đang xử lý…"} />
         </div>
       )}
-      <SectionHead
-        kind="dash"
-        title="Dashboard của bạn"
-        count={dashboards.length}
-        desc="Các trang báo cáo bạn thiết kế. Mọi thay đổi trong editor tự lưu lên tài khoản, mở lại ở trình duyệt nào cũng thấy."
-        actions={
-          <>
-            <button className={styles.ghost} disabled={busy} onClick={() => setShowGallery((v) => !v)}>Từ mẫu theo ngành</button>
-            <button className={styles.ghost} disabled={busy} onClick={() => create("demo")}>Từ dashboard mẫu</button>
-            <button className={styles.primary} disabled={busy} onClick={() => create("blank")}>+ Dashboard trống</button>
-          </>
-        }
-      />
+
+      <header className={s.head}>
+        <div>
+          <h2 className={s.title}>Dashboard</h2>
+          <p className={s.lead}>Các trang báo cáo bạn thiết kế từ dữ liệu của mình. Mọi thay đổi trong editor tự lưu lên tài khoản, mở lại ở trình duyệt nào cũng thấy.</p>
+        </div>
+        <div className={s.headActions}>
+          <button className={s.btn} disabled={busy} onClick={() => setShowGallery((v) => !v)}>Từ mẫu theo ngành</button>
+          <button className={s.btn} disabled={busy} onClick={() => create("demo")}>Từ dashboard mẫu</button>
+          <button className={`${s.btn} ${s.btnPrimary}`} disabled={busy} onClick={() => create("blank")}>+ Dashboard trống</button>
+        </div>
+      </header>
 
       {hasDraft && (
-        <p className={styles.notice}>
+        <p className={s.noteInfo}>
           Trình duyệt này còn một bản nháp chưa lên tài khoản.{" "}
           <button className={styles.linkBtn} disabled={busy} onClick={importDraft}>Chuyển bản nháp lên tài khoản</button>
         </p>
       )}
-      {msg && <p className={styles.warn} role="alert">{msg}</p>}
+      {msg && <p className={s.noteErr} role="alert">{msg}</p>}
 
       {(showGallery || dashboards.length === 0) && <TemplateGallery entries={TEMPLATES} onPick={setPicked} />}
 
@@ -138,27 +147,84 @@ export function DashboardList({ dashboards, sources, apiKey, appId }: Props) {
         <TemplateMapDialog entry={picked} sources={sources} apiKey={apiKey} appId={appId} onClose={() => setPicked(null)} />
       )}
 
-      {dashboards.length === 0 ? (
-        <p className={styles.empty}>Chưa có dashboard nào. Chọn một mẫu ở trên hoặc tạo dashboard trống để bắt đầu.</p>
-      ) : (
-        <ul className={styles.list}>
-          {dashboards.map((d) => (
-            <li key={d.id} className={styles.item}>
-              <div className={styles.itemTop}>
-                <div>
-                  <Link href={`/editor/${d.id}`} className={styles.dashName}>{d.name}</Link>
-                  <div className={styles.muted}>Sửa lần cuối: {new Date(d.updated_at).toLocaleString("vi-VN")}</div>
-                </div>
-                <div className={styles.row}>
-                  <Link href={`/editor/${d.id}`} className={styles.ghost}>Mở</Link>
-                  <button className={styles.ghost} disabled={busy} onClick={() => rename(d)}>Đổi tên</button>
-                  <button className={styles.ghost} disabled={busy} onClick={() => remove(d)}>Xoá</button>
-                </div>
-              </div>
-            </li>
-          ))}
-        </ul>
+      <section className={s.panel}>
+        <div className={s.panelHead}>
+          <h3>Dashboard của bạn</h3>
+          <span className={s.panelNote}>{`${dashboards.length} mục`}</span>
+        </div>
+        <div className={s.tableWrap}>
+          <table className={`${s.table} ${s.tableMid}`}>
+            <thead>
+              <tr>
+                <th>Tên dashboard</th>
+                <th>Sửa lần cuối</th>
+                <th className={s.actionsHead}>Thao tác</th>
+              </tr>
+            </thead>
+            <tbody>
+              {dashboards.length === 0 ? (
+                <tr>
+                  <td colSpan={3} className={s.emptyCell}>
+                    <b>Chưa có dashboard nào</b>
+                    <span>Chọn một mẫu ở trên hoặc tạo dashboard trống để bắt đầu.</span>
+                  </td>
+                </tr>
+              ) : (
+                dashboards.map((d) => (
+                  <tr key={d.id} className={s.row}>
+                    <td className={s.name}><Link href={`/editor/${d.id}`} className={s.link} data-i18n-skip>{d.name}</Link></td>
+                    <td className={s.when}>{vnDateTime(d.updated_at)}</td>
+                    <td className={s.actions}>
+                      <Link href={`/editor/${d.id}`} className={s.btn}>Mở</Link>
+                      <button className={s.btn} disabled={busy} onClick={() => rename(d)}>Đổi tên</button>
+                      <button className={`${s.btn} ${s.btnDanger}`} disabled={busy} onClick={() => remove(d)}>Xoá</button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      {shared.length > 0 && (
+        <section className={s.panel}>
+          <div className={s.panelHead}>
+            <h3>Được chia sẻ với bạn</h3>
+            <span className={s.panelNote}>{`${shared.length} mục`}</span>
+          </div>
+          <div className={s.tableWrap}>
+            <table className={`${s.table} ${s.tableMid}`}>
+              <thead>
+                <tr>
+                  <th>Tên dashboard</th>
+                  <th>Quyền của bạn</th>
+                  <th>Sửa lần cuối</th>
+                  <th className={s.actionsHead}>Thao tác</th>
+                </tr>
+              </thead>
+              <tbody>
+                {shared.map((d) => {
+                  const href = d.role === "editor" ? `/editor/${d.id}` : `/d/${d.id}`;
+                  return (
+                    <tr key={d.id} className={s.row}>
+                      <td className={s.name}><Link href={href} className={s.link} data-i18n-skip>{d.name}</Link></td>
+                      <td><span className={s.type}>{d.role === "editor" ? "Được sửa" : "Chỉ xem"}</span></td>
+                      <td className={s.when}>{vnDateTime(d.updated_at)}</td>
+                      <td className={s.actions}><Link href={href} className={s.btn}>Mở</Link></td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </section>
       )}
-    </section>
+
+      <p className={s.foot}>
+        Nguồn dữ liệu quản lý ở <Link href="/sources">Nguồn dữ liệu</Link>, mẫu theo ngành ở <Link href="/templates">Mẫu dashboard</Link>.
+        {" "}<Link href="/privacy">Quyền riêng tư</Link> · <Link href="/terms">Điều khoản</Link>
+      </p>
+    </div>
   );
 }

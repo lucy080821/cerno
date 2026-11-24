@@ -101,8 +101,8 @@ export function ConnectSheet({ apiKey, appId }: { apiKey: string; appId: string 
 
   return (
     <div className={styles.connect}>
-      <button className={styles.primary} onClick={choose} disabled={busy || notConfigured}>
-        + Chọn Google Sheet
+      <button className={styles.ghost} onClick={choose} disabled={busy || notConfigured}>
+        Chọn Google Sheet
       </button>
       {notConfigured && (
         <p className={styles.warn}>Thiếu NEXT_PUBLIC_GOOGLE_API_KEY / NEXT_PUBLIC_GOOGLE_APP_ID.</p>

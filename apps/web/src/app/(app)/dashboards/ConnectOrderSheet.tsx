@@ -28,7 +28,7 @@ const nf = new Intl.NumberFormat("vi-VN");
  * Nối một tab Google Sheet làm nguồn đơn hàng của MỘT kênh. Luồng: chọn Sheet (Google Picker) → chọn tab → máy chủ đọc tab, nhận diện
  * cột và xem trước (chưa lưu gì) → người dùng kiểm tra/sửa → Nối và đồng bộ. Từ đó Cerno tự đọc lại Sheet mỗi 2 giờ (hoặc bấm Cập nhật).
  */
-export function ConnectOrderSheet({ apiKey, appId, label = "+ Nối Google Sheet đơn hàng", onDone }: { apiKey: string; appId: string; label?: string; onDone?: () => void }) {
+export function ConnectOrderSheet({ apiKey, appId, label = "Nối Google Sheet đơn hàng", onDone }: { apiKey: string; appId: string; label?: string; onDone?: () => void }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [picked, setPicked] = useState<PickedSheet | null>(null);
