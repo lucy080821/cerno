@@ -1,6 +1,6 @@
 import { normalizeText } from "@dashboard/schema";
-import type { SellerType } from "./constants";
-import { categoryList, categoryRate, type FeeCategory } from "./shopee";
+import type { FeePlatform, SellerType } from "./constants";
+import { categoryList, categoryRate, type FeeCategory } from "./tables";
 
 /**
  * Tự nhận diện ngành hàng trong biểu Phí Cố Định của Shopee từ TÊN sản phẩm, để người bán không phải chọn tay từng sản phẩm.
@@ -15,7 +15,7 @@ import { categoryList, categoryRate, type FeeCategory } from "./shopee";
  */
 
 /** Đổi khi thay thuật toán hoặc bảng cụm từ: là một phần khoá bộ nhớ đệm tính lãi (lib/server/fees.ts). */
-export const MATCH_VERSION = 1;
+export const MATCH_VERSION = 2;
 export const MIN_SCORE = 0.5;
 
 export type MatchSource = "alias" | "name";
@@ -24,15 +24,29 @@ export interface CategoryGuess extends FeeCategory {
 }
 
 /** Cụm từ đã bỏ dấu (khớp theo ranh giới từ) → đường dẫn ngành. Chỉ liệt kê cụm mà việc đoán theo từ không ra đúng ngành. */
-export const ALIASES: { phrases: string[]; path: string }[] = [
-  { phrases: ["ao thun", "ao phong", "t shirt", "tshirt"], path: "Thời Trang Nam › Áo › Khác" },
-  { phrases: ["binh giu nhiet", "binh nuoc", "binh dung nuoc"], path: "Nhà cửa & Đời sống › Bộ đồ bàn ăn › Bình nước" },
-  { phrases: ["den ban", "den led", "den hoc", "den ngu", "den trang tri"], path: "Nhà cửa & Đời sống › Đèn" },
-];
+export interface Alias {
+  phrases: string[];
+  path: string;
+}
+export const ALIASES: Record<FeePlatform, Alias[]> = {
+  Shopee: [
+    { phrases: ["ao thun", "ao phong", "t shirt", "tshirt"], path: "Thời Trang Nam › Áo › Khác" },
+    { phrases: ["binh giu nhiet", "binh nuoc", "binh dung nuoc"], path: "Nhà cửa & Đời sống › Bộ đồ bàn ăn › Bình nước" },
+    { phrases: ["den ban", "den led", "den hoc", "den ngu", "den trang tri"], path: "Nhà cửa & Đời sống › Đèn" },
+  ],
+  "TikTok Shop": [
+    { phrases: ["ao thun", "ao phong", "t shirt", "tshirt"], path: "Trang phục nam & Đồ lót › Áo nam › Áo thun" },
+    { phrases: ["binh giu nhiet", "binh nuoc", "binh dung nuoc"], path: "Đồ dùng nhà bếp › Bộ đồ uống › Bình nước" },
+    { phrases: ["den ban", "den led", "den hoc", "den ngu", "den trang tri"], path: "Sửa chữa nhà cửa › Đèn & hệ thống chiếu sáng › Bóng đèn, đèn tuýp & dải đèn" },
+  ],
+};
 
 const STOP = new Set(["cho", "va", "khac", "phu", "kien", "cua", "the", "loai", "bo", "cai", "chiec", "co", "voi", "de", "dung", "hang", "chinh", "khong", "mau", "combo", "set", "size", "new", "hot", "sale"]);
 /** Ngành cấp 1 chuyên biệt: chỉ chọn khi tên sản phẩm nhắc tới chính ngành cấp 1 đó. */
-const NICHE_L1 = new Set(["me be", "mo to xe may", "phu tung phu kien xe co gioi", "cameras flycam", "o to", "thoi trang tre em tre so sinh"]);
+const NICHE_L1: Record<FeePlatform, Set<string>> = {
+  Shopee: new Set(["me be", "mo to xe may", "phu tung phu kien xe co gioi", "cameras flycam", "o to", "thoi trang tre em tre so sinh"]),
+  "TikTok Shop": new Set(["da qua su dung", "san pham truc tuyen", "thoi trang hoi giao", "dat ve phieu giam gia", "bo suu tap", "o to xe may", "tre so sinh thai san", "thoi trang tre em", "do dung cho thu cung", "sach tap chi am thanh"]),
+};
 
 const fold = (s: string): string => normalizeText(s);
 const VI_MARKS = /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i;
@@ -63,12 +77,13 @@ interface Feat {
   folded: Mode;
 }
 
-const FEATS = new Map<SellerType, Feat[]>();
-function feats(type: SellerType): Feat[] {
-  let f = FEATS.get(type);
+const FEATS = new Map<string, Feat[]>();
+function feats(platform: FeePlatform, type: SellerType): Feat[] {
+  const fk = `${platform}\u0000${type}`;
+  let f = FEATS.get(fk);
   if (f) return f;
   f = [];
-  for (const c of categoryList(type)) {
+  for (const c of categoryList(platform, type)) {
     const segs = c.path.split(" › ");
     const leaf = segs[segs.length - 1];
     const mode = (strict: boolean): Mode => ({
@@ -78,9 +93,9 @@ function feats(type: SellerType): Feat[] {
     });
     const strict = mode(true);
     if (!strict.alts.length) continue; // "Khác"...
-    f.push({ cat: { path: c.path, ratePct: c.ratePct }, niche: NICHE_L1.has(words(segs[0], false).join(" ")), strict, folded: mode(false) });
+    f.push({ cat: { path: c.path, ratePct: c.ratePct }, niche: NICHE_L1[platform].has(words(segs[0], false).join(" ")), strict, folded: mode(false) });
   }
-  FEATS.set(type, f);
+  FEATS.set(fk, f);
   return f;
 }
 
@@ -109,23 +124,23 @@ function score(p: string[], m: Mode, niche: boolean): number {
 const CACHE = new Map<string, CategoryGuess | null>();
 
 /** Đoán ngành hàng của một sản phẩm theo tên. null nếu không đủ tin cậy. */
-export function suggestCategory(type: SellerType, productName: string | null | undefined): CategoryGuess | null {
+export function suggestCategory(platform: FeePlatform, type: SellerType, productName: string | null | undefined): CategoryGuess | null {
   const name = (productName ?? "").trim();
   if (!name) return null;
-  const key = `${type}\u0000${name}`;
+  const key = `${platform}\u0000${type}\u0000${name}`;
   const hit = CACHE.get(key);
   if (hit !== undefined) return hit;
-  const result = compute(type, name);
+  const result = compute(platform, type, name);
   if (CACHE.size > 5000) CACHE.clear();
   CACHE.set(key, result);
   return result;
 }
 
-function compute(type: SellerType, name: string): CategoryGuess | null {
+function compute(platform: FeePlatform, type: SellerType, name: string): CategoryGuess | null {
   const norm = ` ${words(name, false).join(" ")} `;
-  for (const a of ALIASES) {
+  for (const a of ALIASES[platform]) {
     if (a.phrases.some((ph) => norm.includes(` ${ph} `))) {
-      const ratePct = categoryRate(type, a.path);
+      const ratePct = categoryRate(platform, type, a.path);
       if (ratePct !== null) return { path: a.path, ratePct, source: "alias" };
     }
   }
@@ -134,7 +149,7 @@ function compute(type: SellerType, name: string): CategoryGuess | null {
   if (!p.length) return null;
   let top: { f: Feat; s: number }[] = [];
   let topScore = 0;
-  for (const f of feats(type)) {
+  for (const f of feats(platform, type)) {
     const s = score(p, strict ? f.strict : f.folded, f.niche);
     if (s < MIN_SCORE) continue;
     if (s > topScore + 0.01) {

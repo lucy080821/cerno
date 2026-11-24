@@ -2,10 +2,13 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { parseNumber } from "@/lib/google/parse-number";
-import { costKey, parseCostPaste, type CostEntry } from "@/lib/profit/catalog";
+import { costKey, parentKeys, parseCostPaste, type CostEntry } from "@/lib/profit/catalog";
 import type { ProductProfit } from "@/lib/profit/order-profit";
 import { count, signed, vnd } from "./format";
-import { DEFAULT_FEE_SETTINGS, FEE_CHANNEL, INFRA_FEE_VND, PROCESSING_FEE_PCT, SELLER_TYPES, type FeeSettings, type SellerType } from "@/lib/fees/constants";
+import {
+  DEFAULT_FEE_SETTINGS, FEE_PLATFORMS, INFRA_FEE_VND, MAX_AFFILIATE_PCT, PROCESSING_FEE_PCT, SELLER_TYPES, TIKTOK_DEFAULT_RATE_PCT, TIKTOK_PROCESSING_VND, TIKTOK_TRANSACTION_PCT,
+  type FeePlatform, type FeeSettings, type SellerType,
+} from "@/lib/fees/constants";
 import { CategoryDialog, ratePctText } from "./CategoryDialog";
 import { autoCategoryCount, Card, ErrorBox, FeeEstimateNote, Loading, NoOrders } from "./Shared";
 import { useProfitSummary } from "./useProfit";
@@ -33,14 +36,18 @@ export function ProductsView({ initialFilter }: { initialFilter: Filter }) {
   const [paste, setPaste] = useState("");
   const [pasteOpen, setPasteOpen] = useState(false);
   const [pasteErrors, setPasteErrors] = useState<string[]>([]);
-  // Ước tính phí sàn Shopee: bản nháp cài đặt, sản phẩm đang chọn ngành, trạng thái lưu.
+  // Ước tính phí sàn (Shopee, TikTok Shop): bản nháp cài đặt, sản phẩm + sàn đang chọn ngành, trạng thái lưu.
   const [feeForm, setFeeForm] = useState<FeeSettings>(DEFAULT_FEE_SETTINGS);
-  const [catRow, setCatRow] = useState<RowView | null>(null);
+  const [affiliateText, setAffiliateText] = useState("");
+  const [catTarget, setCatTarget] = useState<{ row: RowView; platform: FeePlatform } | null>(null);
   const [feeSaving, setFeeSaving] = useState(false);
   const fees = data?.fees;
   useEffect(() => {
-    if (fees?.settings) setFeeForm(fees.settings);
-  }, [fees?.settings.enabled, fees?.settings.sellerType, fees?.settings.newSeller]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (fees?.settings) {
+      setFeeForm(fees.settings);
+      setAffiliateText(fees.settings.tiktokAffiliatePct ? String(fees.settings.tiktokAffiliatePct) : "");
+    }
+  }, [fees?.settings.enabled, fees?.settings.sellerType, fees?.settings.newSeller, fees?.settings.tiktokSellerType, fees?.settings.tiktokAffiliatePct]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const rows = useMemo<RowView[]>(() => {
     if (!data) return [];
@@ -67,14 +74,27 @@ export function ProductsView({ initialFilter }: { initialFilter: Filter }) {
   const missingOrders = data.summary?.missingCost ?? 0;
   const canEdit = data.editable && data.catalog.available;
   const canEditFees = data.editable && !!fees?.available;
-  // Ngành hàng chỉ có nghĩa với sản phẩm bán trên Shopee (chỉ Shopee có biểu phí để ước tính); sản phẩm chưa có đơn vẫn coi là áp dụng.
-  const sold = (r: RowView) => !r.product || r.product.channels.includes(FEE_CHANNEL);
-  const shopeeRows = rows.filter(sold);
-  const chosenCount = shopeeRows.filter((r) => fees?.categories[costKey(r.key)]).length;
-  // Sản phẩm chưa được người bán chọn ngành nhưng Cerno đã tự nhận diện từ tên (đã dùng để ước tính phí, người bán chỉ cần lướt qua).
-  const autoRows = shopeeRows.filter((r) => !fees?.categories[costKey(r.key)] && fees?.suggestions[costKey(r.key)]);
-  const autoCount = autoRows.length;
-  const feeFormChanged = !!fees && (feeForm.enabled !== fees.settings.enabled || feeForm.sellerType !== fees.settings.sellerType || feeForm.newSeller !== fees.settings.newSeller);
+  // Ngành hàng chỉ có nghĩa với sản phẩm bán trên sàn đó (chỉ Shopee và TikTok Shop có biểu phí để ước tính); sản phẩm chưa có đơn vẫn coi là áp dụng.
+  const soldOn = (r: RowView, p: FeePlatform) => !r.product || r.product.channels.includes(p);
+  const catOf = (r: RowView, p: FeePlatform) => fees?.platforms[p].categories[costKey(r.key)];
+  const guessOf = (r: RowView, p: FeePlatform) => (catOf(r, p) ? undefined : fees?.platforms[p].suggestions[costKey(r.key)]);
+  // Với mỗi sàn: sản phẩm đã chọn ngành, và sản phẩm Cerno đã tự nhận diện từ tên (đã dùng để ước tính phí, người bán chỉ cần lướt qua).
+  const stats = (p: FeePlatform) => {
+    const list = rows.filter((r) => soldOn(r, p));
+    const chosen = list.filter((r) => catOf(r, p)).length;
+    const auto = list.filter((r) => guessOf(r, p));
+    return { total: list.length, chosen, auto, unknown: list.length - chosen - auto.length };
+  };
+  const shopeeStats = stats("Shopee");
+  const tiktokStats = stats("TikTok Shop");
+  const autoCount = shopeeStats.auto.length + tiktokStats.auto.length;
+  const affiliateValue = affiliateText.trim() === "" ? 0 : parseNumber(affiliateText);
+  const affiliateOk = affiliateValue !== null && affiliateValue >= 0 && affiliateValue <= MAX_AFFILIATE_PCT;
+  const formToSave: FeeSettings = { ...feeForm, tiktokAffiliatePct: affiliateOk ? (affiliateValue as number) : feeForm.tiktokAffiliatePct };
+  const feeFormChanged =
+    !!fees &&
+    (formToSave.enabled !== fees.settings.enabled || formToSave.sellerType !== fees.settings.sellerType || formToSave.newSeller !== fees.settings.newSeller ||
+      formToSave.tiktokSellerType !== fees.settings.tiktokSellerType || formToSave.tiktokAffiliatePct !== fees.settings.tiktokAffiliatePct);
 
   const changed = Object.entries(edits).filter(([key, v]) => {
     const r = rows.find((x) => x.key === key);
@@ -117,7 +137,7 @@ export function ProductsView({ initialFilter }: { initialFilter: Filter }) {
   }
 
   /** Gọi PUT /api/fees rồi nạp lại số liệu (lãi được tính lại ở máy chủ). */
-  async function saveFees(body: { settings?: FeeSettings; upserts?: { sku: string; category: string }[]; removes?: string[] }, okText: string) {
+  async function saveFees(body: { settings?: FeeSettings; platform?: FeePlatform; upserts?: { sku: string; category: string }[]; removes?: string[] }, okText: string) {
     setFeeSaving(true);
     setSaveError("");
     setMessage("");
@@ -136,20 +156,20 @@ export function ProductsView({ initialFilter }: { initialFilter: Filter }) {
     }
   }
 
-  function pickCategory(row: RowView, path: string, applyAll: boolean) {
-    setCatRow(null);
-    const targets = applyAll ? rows.filter((r) => r.key === row.key || (sold(r) && !fees?.categories[costKey(r.key)])) : [row];
-    void saveFees({ upserts: targets.map((r) => ({ sku: r.key, category: path })) }, `Đã chọn ngành cho ${count(targets.length)} sản phẩm.`);
+  function pickCategory(row: RowView, platform: FeePlatform, path: string, applyAll: boolean) {
+    setCatTarget(null);
+    const targets = applyAll ? rows.filter((r) => r.key === row.key || (soldOn(r, platform) && !catOf(r, platform))) : [row];
+    void saveFees({ platform, upserts: targets.map((r) => ({ sku: r.key, category: path })) }, `Đã chọn ngành cho ${count(targets.length)} sản phẩm.`);
   }
 
   /** Người bán xác nhận ngành Cerno đã tự nhận diện: lưu thành ngành đã chọn (từ đó không còn đánh dấu "tự nhận diện"). */
-  function confirmAuto(list: RowView[]) {
-    const upserts = list.flatMap((r) => {
-      const g = fees?.suggestions[costKey(r.key)];
+  function confirmAuto(platform: FeePlatform) {
+    const upserts = rows.flatMap((r) => {
+      const g = soldOn(r, platform) ? guessOf(r, platform) : undefined;
       return g ? [{ sku: r.key, category: g.path }] : [];
     });
     if (!upserts.length) return;
-    void saveFees({ upserts }, `Đã xác nhận ngành hàng cho ${count(upserts.length)} sản phẩm.`);
+    void saveFees({ platform, upserts }, `Đã xác nhận ngành hàng cho ${count(upserts.length)} sản phẩm.`);
   }
 
   function applyPaste() {
@@ -162,7 +182,12 @@ export function ProductsView({ initialFilter }: { initialFilter: Filter }) {
     for (const it of items) {
       const key = byKey.get(costKey(it.sku));
       if (key) next[key] = String(it.unitCost);
-      else unknown++;
+      else {
+        // Mã gốc (AO-001) áp dụng cho mọi biến thể (AO-001-AE, AO-001_DO) đang có trong đơn hàng.
+        const kids = rows.filter((r) => parentKeys(r.key).includes(costKey(it.sku)));
+        for (const r of kids) next[r.key] = String(it.unitCost);
+        if (!kids.length) unknown++;
+      }
     }
     setEdits(next);
     setMessage(`Đã điền ${count(items.length - unknown)} giá vốn từ dữ liệu dán. Bấm "Lưu giá vốn" để áp dụng.${unknown ? ` ${count(unknown)} mã không có trong đơn hàng nên bị bỏ qua.` : ""}`);
@@ -206,20 +231,26 @@ export function ProductsView({ initialFilter }: { initialFilter: Filter }) {
         </Card>
       )}
       {fees && (
-        <Card title="Ước tính phí sàn Shopee" aside={fees.available ? `biểu phí từ ${fees.tableFrom.split("-").reverse().join("/")}` : undefined}>
+        <Card title="Ước tính phí sàn" aside={fees.available ? `Shopee từ ${fees.platforms.Shopee.tableFrom.split("-").reverse().join("/")} · TikTok Shop từ ${fees.platforms["TikTok Shop"].tableFrom.split("-").reverse().join("/")}` : undefined}>
           <p className={styles.small} style={{ lineHeight: 1.6 }}>
-            Khi file đơn hàng Shopee không có cột phí, Cerno ước tính phí sàn: Phí Cố Định theo ngành hàng của từng sản phẩm, Phí Xử Lý Giao Dịch {PROCESSING_FEE_PCT}% và Phí Hạ Tầng {INFRA_FEE_VND.toLocaleString("vi-VN")}đ mỗi đơn (đã gồm thuế). Đơn có phí trong file thì dùng đúng phí đó. Chưa tính: miễn phí 30 ngày đầu, Voucher Xtra, đồng tài trợ mã ưu đãi, PiShip. Số ước tính được đánh dấu rõ trong các trang lãi.
+            Khi file đơn hàng của Shopee hoặc TikTok Shop không có cột phí, Cerno ước tính phí sàn. Shopee: Phí Cố Định theo ngành hàng của từng sản phẩm, Phí Xử Lý Giao Dịch {PROCESSING_FEE_PCT}% và Phí Hạ Tầng {INFRA_FEE_VND.toLocaleString("vi-VN")}đ mỗi đơn (đã gồm thuế). TikTok Shop: Phí Hoa Hồng Nền Tảng theo ngành hàng, Phí Giao Dịch {TIKTOK_TRANSACTION_PCT}% và Phí Xử Lý Đơn Hàng {TIKTOK_PROCESSING_VND.toLocaleString("vi-VN")}đ mỗi đơn (đã gồm thuế). Đơn có phí trong file thì dùng đúng phí đó. Số ước tính được đánh dấu rõ trong các trang lãi. Lazada và Tiki chưa có biểu phí để nhập sẵn: bạn tự nhập tỷ lệ ở trang Chi phí.
           </p>
           {!fees.available ? (
             <div className={styles.warn}><span>Chưa lưu được cài đặt: cần chạy migration <code>0018_shopee_fee_estimate.sql</code> trên Supabase.</span></div>
           ) : (
             <>
+              {!fees.multiPlatform && (
+                <div className={styles.warn}><span>Để ước tính phí TikTok Shop và chọn ngành hàng riêng cho từng sàn, cần chạy migration <code>0021_multi_platform_fees.sql</code> trên Supabase.</span></div>
+              )}
               <div className={styles.formRow}>
                 <label className={styles.checkRow}>
                   <input type="checkbox" checked={feeForm.enabled} disabled={!canEditFees} onChange={(e) => setFeeForm((f) => ({ ...f, enabled: e.target.checked }))} />
                   <span>Bật ước tính phí sàn</span>
                 </label>
-                <select className={styles.input} value={feeForm.sellerType} disabled={!canEditFees} aria-label="Loại shop" onChange={(e) => setFeeForm((f) => ({ ...f, sellerType: e.target.value as SellerType }))}>
+              </div>
+              <div className={styles.formRow}>
+                <b>Shopee</b>
+                <select className={styles.input} value={feeForm.sellerType} disabled={!canEditFees} aria-label="Loại shop Shopee" onChange={(e) => setFeeForm((f) => ({ ...f, sellerType: e.target.value as SellerType }))}>
                   {SELLER_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
                 </select>
                 {feeForm.sellerType === "non_mall" && (
@@ -228,21 +259,37 @@ export function ProductsView({ initialFilter }: { initialFilter: Filter }) {
                     <span>Người bán mới (đăng sản phẩm đầu tiên từ 01/01 đến 31/05/2026): giảm Phí Cố Định 01/06 đến 31/08/2026</span>
                   </label>
                 )}
-                {canEditFees && (
-                  <button className={`${styles.btn} ${styles.primary}`} disabled={!feeFormChanged || feeSaving} onClick={() => saveFees({ settings: feeForm }, "Đã lưu cài đặt ước tính phí sàn.")}>
+              </div>
+              <div className={styles.formRow}>
+                <b>TikTok Shop</b>
+                <select className={styles.input} value={feeForm.tiktokSellerType} disabled={!canEditFees || !fees.multiPlatform} aria-label="Loại shop TikTok Shop" onChange={(e) => setFeeForm((f) => ({ ...f, tiktokSellerType: e.target.value as SellerType }))}>
+                  <option value="non_mall">Shop thường (nhà bán hàng tiêu chuẩn)</option>
+                  <option value="mall">TikTok Shop Mall</option>
+                </select>
+                <label className={styles.checkRow}>
+                  <span>Hoa hồng affiliate trung bình (% giá trị sản phẩm)</span>
+                  <input className={`${styles.input} ${styles.costInput}`} inputMode="decimal" placeholder="0" aria-label="Hoa hồng affiliate trung bình" value={affiliateText} disabled={!canEditFees || !fees.multiPlatform} onChange={(e) => setAffiliateText(e.target.value)} />
+                </label>
+              </div>
+              {!affiliateOk && <p className={styles.neg} role="alert">Hoa hồng affiliate phải là số từ 0 đến {MAX_AFFILIATE_PCT}.</p>}
+              {canEditFees && (
+                <div className={styles.formRow}>
+                  <button className={`${styles.btn} ${styles.primary}`} disabled={!feeFormChanged || feeSaving || !affiliateOk} onClick={() => saveFees({ settings: formToSave }, "Đã lưu cài đặt ước tính phí sàn.")}>
                     {feeSaving ? "Đang lưu…" : "Lưu cài đặt"}
                   </button>
-                )}
-              </div>
+                </div>
+              )}
               <p className={styles.small} style={{ marginTop: 10 }}>
-                {`${count(chosenCount)} sản phẩm Shopee đã chọn ngành, ${count(autoCount)} tự nhận diện, ${count(shopeeRows.length - chosenCount - autoCount)} chưa xác định được ngành.`} Sản phẩm chưa có ngành thì đơn của nó chưa được ước tính phí.
+                {`Shopee: ${count(shopeeStats.chosen)} sản phẩm đã chọn ngành, ${count(shopeeStats.auto.length)} tự nhận diện, ${count(shopeeStats.unknown)} chưa xác định được ngành (đơn của chúng chưa được ước tính phí). `}
+                {`TikTok Shop: ${count(tiktokStats.chosen)} đã chọn ngành, ${count(tiktokStats.auto.length)} tự nhận diện, ${count(tiktokStats.unknown)} chưa xác định (tính theo mức phí mặc định ${TIKTOK_DEFAULT_RATE_PCT[feeForm.tiktokSellerType]}%).`}
               </p>
               {fees.settings.enabled && autoCount > 0 && (
                 <div className={styles.note} style={{ marginTop: 10, display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
                   <span style={{ flex: 1, minWidth: 240 }}>
-                    Cerno đã tự nhận diện ngành hàng cho <b>{count(autoCount)}</b> sản phẩm Shopee từ tên sản phẩm và đã dùng để ước tính phí, bạn không cần xác nhận từng sản phẩm. Lướt qua cột Ngành hàng bên dưới: ngành nào chưa đúng thì bấm Đổi (ngành khác thì phí cố định khác).
+                    Cerno đã tự nhận diện ngành hàng cho <b>{count(autoCount)}</b> sản phẩm từ tên sản phẩm và đã dùng để ước tính phí, bạn không cần xác nhận từng sản phẩm. Lướt qua cột Ngành hàng bên dưới: ngành nào chưa đúng thì bấm Đổi (ngành khác thì mức phí khác).
                   </span>
-                  {canEditFees && <button className={styles.btn} disabled={feeSaving} onClick={() => confirmAuto(autoRows)}>Xác nhận tất cả</button>}
+                  {canEditFees && shopeeStats.auto.length > 0 && <button className={styles.btn} disabled={feeSaving} onClick={() => confirmAuto("Shopee")}>Xác nhận tất cả (Shopee)</button>}
+                  {canEditFees && tiktokStats.auto.length > 0 && <button className={styles.btn} disabled={feeSaving} onClick={() => confirmAuto("TikTok Shop")}>Xác nhận tất cả (TikTok Shop)</button>}
                 </div>
               )}
             </>
@@ -259,7 +306,7 @@ export function ProductsView({ initialFilter }: { initialFilter: Filter }) {
             <thead>
               <tr>
                 <th style={{ minWidth: 210 }}>Sản phẩm</th><th className={styles.r}>Đã bán</th><th className={styles.r}>Giá bán TB</th><th className={styles.r}>Giá vốn / cái</th>
-                <th className={styles.r}>Phí sàn / đơn</th><th className={styles.r}>Quảng cáo / đơn</th><th className={styles.r}>Lãi mỗi đơn</th><th className={styles.r}>Giá hòa vốn</th>{fees?.available && (<><th style={{ minWidth: 260 }}>Ngành hàng</th><th className={styles.r}>Phí cố định</th><th /></>)}<th>Tình trạng</th>
+                <th className={styles.r}>Phí sàn / đơn</th><th className={styles.r}>Quảng cáo / đơn</th><th className={styles.r}>Lãi mỗi đơn</th><th className={styles.r}>Giá hòa vốn</th>{fees?.available && <th style={{ minWidth: 380 }}>Ngành hàng tính phí</th>}<th>Tình trạng</th>
               </tr>
             </thead>
             <tbody>
@@ -267,9 +314,6 @@ export function ProductsView({ initialFilter }: { initialFilter: Filter }) {
                 const p = r.product;
                 const value = edits[r.key] ?? toInput(r.catalogCost ?? p?.unitCost ?? null);
                 const isMissing = missing(r);
-                const chosen = fees?.categories[costKey(r.key)];
-                const guess = chosen ? undefined : fees?.suggestions[costKey(r.key)];
-                const cat = chosen ?? guess;
                 return (
                   <tr key={r.key} className={losing(r) ? styles.lossRow : ""}>
                     <td><b data-i18n-skip>{r.name}</b>{r.sku && r.sku !== r.name && <span className={styles.sub} data-i18n-skip>{r.sku}</span>}</td>
@@ -291,29 +335,39 @@ export function ProductsView({ initialFilter }: { initialFilter: Filter }) {
                     <td className={styles.r}>{p?.profitPerOrder !== null && p?.profitPerOrder !== undefined ? <b className={p.profitPerOrder < 0 ? styles.neg : styles.pos}>{signed(p.profitPerOrder)}</b> : "—"}</td>
                     <td className={styles.r}>{vnd(p?.breakEvenPrice)}</td>
                     {fees?.available && (
-                      <>
-                        <td className={styles.catName}>
-                          {!sold(r) ? (
-                            <span className={styles.muted}>Không áp dụng (không bán trên Shopee)</span>
-                          ) : cat ? (
-                            <>
-                              <span className={styles.catPath} title={cat.path} data-i18n-skip>{cat.path}</span>
-                              <span className={`${styles.badge} ${guess ? styles.bWarn : styles.bPos}`}>{guess ? "Tự nhận diện" : "Đã chọn"}</span>
-                            </>
-                          ) : (
-                            <span className={styles.muted}>Chưa xác định được ngành</span>
-                          )}
-                        </td>
-                        <td className={styles.r}>{sold(r) && cat ? (cat.ratePct !== null ? ratePctText(cat.ratePct) : "Không có trong biểu phí") : "—"}</td>
-                        <td className={styles.actions}>
-                          {sold(r) && canEditFees && (
-                            <>
-                              <button className={styles.btn} disabled={feeSaving} onClick={() => setCatRow(r)}>{cat ? "Đổi" : "Chọn ngành"}</button>
-                              {chosen && <button className={styles.btn} disabled={feeSaving} aria-label={`Bỏ ngành của ${r.name}`} onClick={() => void saveFees({ removes: [r.key] }, "Đã bỏ ngành hàng.")}>Bỏ</button>}
-                            </>
-                          )}
-                        </td>
-                      </>
+                      <td className={styles.catCell}>
+                        {FEE_PLATFORMS.filter((pl) => soldOn(r, pl)).map((pl) => {
+                          const chosen = catOf(r, pl);
+                          const guess = guessOf(r, pl);
+                          const cat = chosen ?? guess;
+                          const usable = pl === "Shopee" || fees.multiPlatform;
+                          return (
+                            <div key={pl} className={styles.catLine}>
+                              <span className={styles.catPlatform}>{pl}</span>
+                              <span className={styles.catName}>
+                                {cat ? (
+                                  <>
+                                    <span className={styles.catPath} title={cat.path} data-i18n-skip>{cat.path}</span>
+                                    <span className={styles.muted}>{cat.ratePct !== null ? ratePctText(cat.ratePct) : "Không có trong biểu phí"}</span>
+                                    <span className={`${styles.badge} ${guess ? styles.bWarn : styles.bPos}`}>{guess ? "Tự nhận diện" : "Đã chọn"}</span>
+                                  </>
+                                ) : pl === "TikTok Shop" ? (
+                                  <span className={styles.muted}>{`Chưa xác định ngành: dùng mức mặc định ${TIKTOK_DEFAULT_RATE_PCT[fees.settings.tiktokSellerType]}%`}</span>
+                                ) : (
+                                  <span className={styles.muted}>Chưa xác định được ngành</span>
+                                )}
+                              </span>
+                              {canEditFees && usable && (
+                                <span className={styles.actions}>
+                                  <button className={styles.btn} disabled={feeSaving} onClick={() => setCatTarget({ row: r, platform: pl })}>{cat ? "Đổi" : "Chọn ngành"}</button>
+                                  {chosen && fees.platforms[pl].categories[costKey(r.key)] && <button className={styles.btn} disabled={feeSaving} aria-label={`Bỏ ngành của ${r.name}`} onClick={() => void saveFees({ platform: pl, removes: [r.key] }, "Đã bỏ ngành hàng.")}>Bỏ</button>}
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })}
+                        {!FEE_PLATFORMS.some((pl) => soldOn(r, pl)) && <span className={styles.muted}>Không áp dụng (không bán trên Shopee hay TikTok Shop)</span>}
+                      </td>
                     )}
                     <td>
                       {isMissing ? <span className={`${styles.badge} ${styles.bWarn}`}>Thiếu giá vốn</span>
@@ -326,7 +380,7 @@ export function ProductsView({ initialFilter }: { initialFilter: Filter }) {
                   </tr>
                 );
               })}
-              {shown.length === 0 && <tr><td colSpan={fees?.available ? 12 : 9} className={styles.muted} style={{ textAlign: "center", padding: 28 }}>Không có sản phẩm nào.</td></tr>}
+              {shown.length === 0 && <tr><td colSpan={fees?.available ? 10 : 9} className={styles.muted} style={{ textAlign: "center", padding: 28 }}>Không có sản phẩm nào.</td></tr>}
             </tbody>
           </table>
         </div>
@@ -340,13 +394,14 @@ export function ProductsView({ initialFilter }: { initialFilter: Filter }) {
           <p className={styles.small} style={{ lineHeight: 1.6 }}>Giá vốn nhập ở đây được ghi vào cột &quot;Giá vốn&quot; của nguồn Đơn hàng đa kênh (giá mỗi cái × số lượng; đơn hủy và hoàn trả là 0), nên mọi dashboard và báo cáo đều thấy. Giá ở đây thay cho giá vốn có sẵn trong file. Áp dụng cho cả đơn cũ và các file tải lên sau này.</p>
         </Card>
       </div>
-      {catRow && fees && (
+      {catTarget && fees && (
         <CategoryDialog
-          productName={catRow.name}
-          sellerType={fees.settings.sellerType}
-          canApplyAll={rows.some((r) => r.key !== catRow.key && sold(r) && !fees.categories[costKey(r.key)])}
-          onPick={(path, all) => pickCategory(catRow, path, all)}
-          onClose={() => setCatRow(null)}
+          productName={catTarget.row.name}
+          platform={catTarget.platform}
+          sellerType={fees.platforms[catTarget.platform].sellerType}
+          canApplyAll={rows.some((r) => r.key !== catTarget.row.key && soldOn(r, catTarget.platform) && !catOf(r, catTarget.platform))}
+          onPick={(path, all) => pickCategory(catTarget.row, catTarget.platform, path, all)}
+          onClose={() => setCatTarget(null)}
         />
       )}
     </div>

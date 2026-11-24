@@ -20,7 +20,7 @@ export const UPLOAD_ID_PREFIX = "upload:";
 export const isUploadId = (spreadsheetId: string | null | undefined): boolean => !!spreadsheetId && spreadsheetId.startsWith(UPLOAD_ID_PREFIX);
 
 /** Kênh bán. "Khác" dành cho sổ bán hàng tự ghi hoặc sàn chưa có trong danh sách. */
-export const CHANNELS = ["Shopee", "TikTok Shop", "Lazada", "Facebook", "Khác"] as const;
+export const CHANNELS = ["Shopee", "TikTok Shop", "Lazada", "Tiki", "Facebook", "Khác"] as const;
 export type Channel = (typeof CHANNELS)[number];
 
 /** Trạng thái đã chuẩn hoá. Hai trạng thái cuối không tính vào doanh thu thực và số đơn. */

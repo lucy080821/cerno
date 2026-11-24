@@ -543,3 +543,7 @@
   gap: 14px;
   margin-top: 10px;
 }
+
+.catCell { display: flex; flex-direction: column; gap: 8px; }
+.catLine { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.catPlatform { flex: 0 0 82px; font-size: 12px; font-weight: 700; color: var(--muted); }

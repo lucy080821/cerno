@@ -1,6 +1,7 @@
 import {
   INFRA_FEE_FROM, INFRA_FEE_VND, NEW_SELLER_CUT_POINTS, NEW_SELLER_FROM, NEW_SELLER_THRESHOLD_PCT, NEW_SELLER_TO, PROCESSING_FEE_PCT,
-  type FeeSettings,
+  TIKTOK_DEFAULT_RATE_PCT, TIKTOK_PROCESSING_FROM, TIKTOK_PROCESSING_VND, TIKTOK_TRANSACTION_PCT,
+  type FeeSettings, type ManualFeeRate,
 } from "./constants";
 
 /** Ước tính phí sàn Shopee của một đơn. Hàm thuần, có test. Kết quả chỉ là ƯỚC TÍNH, giao diện phải nói rõ. */
@@ -53,4 +54,64 @@ export function estimateOrderFee(input: FeeEstimateInput): FeeEstimate | null {
   const infra = !d || d >= INFRA_FEE_FROM ? INFRA_FEE_VND : 0;
   const r = Math.round;
   return { fixed: r(fixed), processing: r(processing), infra, total: r(fixed) + r(processing) + infra };
+}
+
+/* ---------- TikTok Shop ---------- */
+
+export interface TiktokFeeInput {
+  date: string | null;
+  /** Đơn đã hoàn trả (đã giao rồi hoàn tiền): vẫn bị thu Phí Xử Lý, không còn hoa hồng/Phí Giao Dịch (giả định). */
+  returned: boolean;
+  /** `ratePct` null = ngành không có trong bảng → dùng mức mặc định của loại shop. */
+  lines: FeeLineInput[];
+  buyerShipping: number;
+  settings: Pick<FeeSettings, "tiktokSellerType" | "tiktokAffiliatePct">;
+}
+
+export interface TiktokFeeEstimate {
+  commission: number;
+  transaction: number;
+  processing: number;
+  affiliate: number;
+  total: number;
+  /** Số dòng phải dùng mức mặc định vì ngành chưa rõ. */
+  defaulted: number;
+}
+
+/**
+ * Ước tính phí TikTok Shop của một đơn (hàm thuần, có test):
+ * - Hoa hồng nền tảng = Σ giá trị dòng × mức phí ngành (ngành chưa rõ: mức mặc định 14% / Mall 16%).
+ * - Phí Giao Dịch = 6% × (giá trị sản phẩm + phí ship khách trả). Công thức chính thức còn cộng chiết khấu của nền tảng: file đơn
+ *   không có cột này nên bỏ qua (ước tính hơi thấp khi đơn có voucher của TikTok).
+ * - Phí Xử Lý Đơn Hàng 3.000đ mỗi đơn từ 27/10/2025.
+ * - Affiliate = giá trị sản phẩm × tỷ lệ người bán nhập (0 nếu không dùng).
+ * Đơn hoàn trả: chỉ còn Phí Xử Lý. Đơn hủy do nơi gọi loại trước.
+ */
+export function estimateTiktokFee(input: TiktokFeeInput): TiktokFeeEstimate | null {
+  if (input.lines.length === 0) return null;
+  const gross = input.lines.reduce((n, l) => n + Math.max(0, l.gross), 0);
+  if (gross <= 0) return null;
+  const d = day(input.date);
+  const processing = !d || d >= TIKTOK_PROCESSING_FROM ? TIKTOK_PROCESSING_VND : 0;
+  if (input.returned) return { commission: 0, transaction: 0, processing, affiliate: 0, total: processing, defaulted: 0 };
+  const dflt = TIKTOK_DEFAULT_RATE_PCT[input.settings.tiktokSellerType];
+  let defaulted = 0;
+  const commission = input.lines.reduce((n, l) => {
+    if (l.ratePct === null) defaulted++;
+    return n + (Math.max(0, l.gross) * (l.ratePct ?? dflt)) / 100;
+  }, 0);
+  const transaction = ((gross + Math.max(0, input.buyerShipping)) * TIKTOK_TRANSACTION_PCT) / 100;
+  const affiliate = (gross * Math.max(0, input.settings.tiktokAffiliatePct)) / 100;
+  const r = Math.round;
+  return { commission: r(commission), transaction: r(transaction), processing, affiliate: r(affiliate), total: r(commission) + r(transaction) + processing + r(affiliate), defaulted };
+}
+
+/* ---------- Kênh tự nhập tỷ lệ (Lazada, Tiki...) ---------- */
+
+/** Phí = (hoa hồng % + thanh toán %) × giá trị sản phẩm + phí cố định mỗi đơn. Đơn hoàn trả: chỉ phí cố định (giả định). */
+export function estimateManualFee(rate: ManualFeeRate, lines: { gross: number }[], returned: boolean): number | null {
+  const gross = lines.reduce((n, l) => n + Math.max(0, l.gross), 0);
+  if (gross <= 0) return null;
+  const pct = returned ? 0 : ((rate.commissionPct + rate.paymentPct) * gross) / 100;
+  return Math.round(pct + rate.perOrder);
 }

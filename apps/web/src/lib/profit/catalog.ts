@@ -21,6 +21,36 @@ export const MAX_UNIT_COST = 1_000_000_000;
 
 export const costKey = (s: string) => s.trim().toLowerCase();
 
+/**
+ * Các khoá "cha" của một mã SKU biến thể: bỏ dần phần đuôi sau dấu "-" hoặc "_" ("ao-001-ae" → "ao-001"). Shopee thường ghi SKU
+ * theo phân loại (AO-001-AE) còn TikTok Shop ghi SKU gốc (AO-001): nhờ vậy giá vốn và ngành hàng nhập cho mã gốc áp dụng cho mọi
+ * biến thể. Khoá cha phải dài ít nhất 3 ký tự và tối đa 3 lần bỏ đuôi, để không khớp nhầm với mã quá ngắn.
+ */
+export function parentKeys(key: string): string[] {
+  const out: string[] = [];
+  let k = costKey(key);
+  for (let i = 0; i < 3; i++) {
+    const cut = Math.max(k.lastIndexOf("-"), k.lastIndexOf("_"));
+    if (cut < 3) break;
+    k = k.slice(0, cut);
+    out.push(k);
+  }
+  return out;
+}
+
+/** Khoá của mục khớp với `key`: khoá đúng trước, rồi lần lượt các khoá cha; undefined nếu không có. */
+export function matchedKey<T>(m: Map<string, T>, key: string): string | undefined {
+  const exact = costKey(key);
+  if (m.has(exact)) return exact;
+  return parentKeys(key).find((p) => m.has(p));
+}
+
+/** Tra theo khoá đúng trước, rồi lần lượt các khoá cha. */
+export function findByKey<T>(m: Map<string, T>, key: string): T | undefined {
+  const k = matchedKey(m, key);
+  return k === undefined ? undefined : m.get(k);
+}
+
 export function catalogMap(entries: CostEntry[]): Map<string, number> {
   const m = new Map<string, number>();
   for (const e of entries) if (e.sku.trim() && Number.isFinite(e.unitCost) && e.unitCost >= 0) m.set(costKey(e.sku), e.unitCost);
@@ -30,15 +60,19 @@ export function catalogMap(entries: CostEntry[]): Map<string, number> {
 const num = (c: Cell | undefined): number | null => (typeof c === "number" && Number.isFinite(c) ? c : null);
 const str = (c: Cell | undefined): string | null => (typeof c === "string" && c.trim() !== "" ? c.trim() : null);
 
-/** Áp bảng giá vốn vào các dòng. Trả về bản sao (không sửa mảng gốc) và số dòng đã đổi. */
-export function applyCatalogCosts(rows: Row[], catalog: Map<string, number>): { rows: Row[]; changed: number } {
+/**
+ * Áp bảng giá vốn vào các dòng. Trả về bản sao (không sửa mảng gốc) và số dòng đã đổi. `only` (tuỳ chọn): chỉ áp cho dòng mà mục
+ * khớp trong bảng nằm trong tập khoá này (dùng khi chỉ vừa sửa vài SKU; biến thể có giá riêng không bị mã gốc đè lên).
+ */
+export function applyCatalogCosts(rows: Row[], catalog: Map<string, number>, only?: Set<string>): { rows: Row[]; changed: number } {
   if (catalog.size === 0) return { rows, changed: 0 };
   let changed = 0;
   const out = rows.map((r) => {
     const key = productKey(str(r[COL.sku]), str(r[COL.product]));
     if (!key) return r;
-    const unit = catalog.get(costKey(key));
-    if (unit === undefined) return r;
+    const hit = matchedKey(catalog, key);
+    if (hit === undefined || (only && !only.has(hit))) return r;
+    const unit = catalog.get(hit) as number;
     const qty = num(r[COL.quantity]);
     const valid = isValidStatus((r[COL.status] as OrderStatus) ?? "Hoàn thành");
     const cost = !valid ? 0 : qty === null ? null : Math.round(unit * qty);

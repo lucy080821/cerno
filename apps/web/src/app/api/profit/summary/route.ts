@@ -4,7 +4,6 @@ import { requireUser } from "@/lib/server/session-user";
 import { createRateLimiter } from "@/lib/server/rate-limit";
 import { computeProfit, findOrdersSource, loadCatalog, membershipOf } from "@/lib/server/profit";
 import { buildTodos } from "@/lib/profit/todos";
-import { FEE_CHANNEL } from "@/lib/fees/constants";
 import { feePayload, loadFeeConfig } from "@/lib/server/fees";
 
 export const runtime = "nodejs";
@@ -31,7 +30,7 @@ export async function GET() {
   try {
     const { summary } = await computeProfit(source.id, fees);
     return NextResponse.json(
-      { source, editable, summary, todos: buildTodos(summary), catalog: { available: catalog.available, entries: catalog.entries }, fees: feePayload(fees, summary.products.filter((p) => p.channels.includes(FEE_CHANNEL)).map((p) => ({ key: p.key, name: p.name }))) },
+      { source, editable, summary, todos: buildTodos(summary), catalog: { available: catalog.available, entries: catalog.entries }, fees: feePayload(fees, summary.products.map((p) => ({ key: p.key, name: p.name, channels: p.channels }))) },
       { headers: { "cache-control": "private, no-store" } },
     );
   } catch (e) {

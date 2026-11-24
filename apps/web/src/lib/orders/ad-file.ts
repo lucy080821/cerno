@@ -86,6 +86,7 @@ export function adChannelOf(raw: string): string | null {
   if (n.includes("shopee")) return "Shopee";
   if (n.includes("tiktok") || n.includes("tik tok")) return "TikTok Shop";
   if (n.includes("lazada")) return "Lazada";
+  if (/\btiki\b/.test(n)) return "Tiki";
   if (/(facebook|^fb$|meta|instagram)/.test(n)) return "Facebook";
   return null;
 }

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { AdSpendCard } from "./AdSpendCard";
+import { ManualFeeCard } from "./ManualFeeCard";
 import { ShippingCard } from "./ShippingCard";
 import { HBars } from "./charts";
 import { compact, count, pct, vnd } from "./format";
@@ -62,6 +63,7 @@ export function CostsView() {
         </Card>
       </div>
       <AdSpendCard editable={data.editable} adCostInOrders={s.adCost} onChanged={() => void reload()} />
+      <ManualFeeCard manual={data.fees?.manual} channels={s.channels.map((c) => c.channel)} editable={data.editable} onSaved={() => void reload()} />
       <ShippingCard ship={data.fees?.ship} channels={s.channels.map((c) => c.channel)} estimated={s.shipEstimated} editable={data.editable} onSaved={() => void reload()} />
       <Card title="Chi phí theo sản phẩm" aside="phí sàn và quảng cáo của đơn chia cho sản phẩm theo doanh thu">
         <div className={styles.tableWrap}>

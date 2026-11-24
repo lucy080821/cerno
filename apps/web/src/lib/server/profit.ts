@@ -171,9 +171,9 @@ export async function saveCosts(args: {
     if (!src) return { saved: upserts.length, removed: removes.length, updatedRows: 0 };
     const catalog = await loadCatalog(admin, workspaceId);
     // Chỉ áp cho những sản phẩm vừa lưu: sản phẩm khác giữ nguyên.
-    const touched = new Map([...catalog.map].filter(([k]) => upserts.some((u) => costKey(u.sku) === k)));
+    const touched = new Set(upserts.map((u) => costKey(u.sku)));
     const rows = await loadOrderRows(src.id);
-    const { rows: next, changed } = applyCatalogCosts(rows, touched);
+    const { rows: next, changed } = applyCatalogCosts(rows, catalog.map, touched);
     if (changed > 0) await commitOrderRows(admin, src.id, next);
     return { saved: upserts.length, removed: removes.length, updatedRows: changed };
   });
