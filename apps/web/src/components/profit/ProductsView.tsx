@@ -71,7 +71,6 @@ export function ProductsView({ initialFilter }: { initialFilter: Filter }) {
   const missing = (r: RowView) => !!r.product && r.product.costMissing && r.catalogCost === null;
   const losing = (r: RowView) => r.product?.profit !== null && r.product?.profit !== undefined && r.product.profit < 0;
   const shown = rows.filter((r) => (filter === "missing" ? missing(r) : filter === "loss" ? losing(r) : true));
-  const catRows = rows.flatMap((r) => FEE_PLATFORMS.filter((pl) => (catPlatform === "all" || catPlatform === pl) && soldOn(r, pl) && !!r.product).map((pl) => ({ row: r, platform: pl })));
   const missingCount = rows.filter(missing).length;
   const missingOrders = data.summary?.missingCost ?? 0;
   const canEdit = data.editable && data.catalog.available;
@@ -87,6 +86,7 @@ export function ProductsView({ initialFilter }: { initialFilter: Filter }) {
     const auto = list.filter((r) => guessOf(r, p));
     return { total: list.length, chosen, auto, unknown: list.length - chosen - auto.length };
   };
+  const catRows = rows.flatMap((r) => FEE_PLATFORMS.filter((pl) => (catPlatform === "all" || catPlatform === pl) && soldOn(r, pl) && !!r.product).map((pl) => ({ row: r, platform: pl })));
   const shopeeStats = stats("Shopee");
   const tiktokStats = stats("TikTok Shop");
   const autoCount = shopeeStats.auto.length + tiktokStats.auto.length;
