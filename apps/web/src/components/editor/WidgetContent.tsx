@@ -22,6 +22,8 @@ import {
   themeColors,
   titleCss,
   computeCompare,
+  computeChartCompare,
+  type ChartCompareResult,
   formatGrowth,
   type AggregatedTable,
   type RowFilter,
@@ -404,6 +406,25 @@ function KpiView({ widget, rows, allRows, filters, theme, mobile, calc, remote, 
  * Huy hiệu nhỏ ở góc chart đang bật dự báo: nói thẳng đây là dự báo, sai số kiểm chứng ngược (backtest) bao nhiêu,
  * hoặc vì sao chưa dự báo được. Rê chuột để đọc giải thích đầy đủ.
  */
+/** Huy hiệu so sánh kỳ: cho biết đang so với kỳ nào, hoặc vì sao chưa vẽ được (thiếu bộ lọc ngày, không có dữ liệu kỳ kia...). */
+function CompareBadge({ res, remote, stacked }: { res: ChartCompareResult | null; remote: boolean; stacked: boolean }) {
+  const lang = useLang((st) => st.lang);
+  const t = (text: string) => tr(text, lang);
+  let text: string;
+  let ok = false;
+  if (remote) text = "So sánh kỳ: chưa hỗ trợ nguồn lớn";
+  else if (!res) return null;
+  else if (res.ok) {
+    ok = true;
+    text = res.to === "prev_year" ? "So với cùng kỳ năm ngoái" : "So với kỳ trước";
+  } else text = res.reason === "no_range" ? "So sánh kỳ: cần bộ lọc khoảng ngày" : res.reason === "no_data" ? "So sánh kỳ: không có dữ liệu kỳ so sánh" : "So sánh kỳ: cần chiều ngày gom theo kỳ";
+  return (
+    <span className={`${s.fcBadge} ${ok ? "" : s.fcBadgeOff}`} style={stacked ? { top: 30 } : undefined} title={ok && res?.ok ? `${t("Kỳ hiện tại")}: ${res.cur.from} → ${res.cur.to}. ${t("Kỳ so sánh")}: ${res.prev.from} → ${res.prev.to}.` : undefined}>
+      {text}
+    </span>
+  );
+}
+
 function ForecastBadge({ info }: { info: ForecastInfo }) {
   const lang = useLang((st) => st.lang);
   // Chuỗi trong `title` (thuộc tính) là một câu ghép nên dịch từng câu rồi mới ghép.
@@ -490,6 +511,13 @@ function WidgetContentInner({ widget, theme, mobile }: { widget: Widget; theme: 
     };
   }, [previewing, pickColumn, widget.id]);
 
+  // So sánh kỳ trên chart (đường/vùng/cột): tính tại máy từ dòng chưa lọc + bộ lọc đang áp; nguồn lớn chưa hỗ trợ.
+  const compareRes = useMemo<ChartCompareResult | null>(
+    () => (cfg.kind !== "chart" || !cfg.format?.compare || isRemote ? null : computeChartCompare(allRows, rowFilters, widget.id, cfg, calc)),
+    [cfg, isRemote, allRows, rowFilters, widget.id, calc],
+  );
+  const compareData = compareRes?.ok ? compareRes : null;
+
   const option = useMemo(() => {
     if (cfg.kind !== "chart" || cfg.chartType === "table") return null;
     if (isRemote) {
@@ -497,8 +525,8 @@ function WidgetContentInner({ widget, theme, mobile }: { widget: Widget; theme: 
         ? buildChartOptionFromTable(cfg, remote.data.table, theme, previewing ? highlight : [])
         : null;
     }
-    return buildChartOption(cfg, rows, theme, previewing ? highlight : [], calc);
-  }, [cfg, rows, theme, highlight, previewing, calc, isRemote, remote.data]);
+    return buildChartOption(cfg, rows, theme, previewing ? highlight : [], calc, compareData);
+  }, [cfg, rows, theme, highlight, previewing, calc, isRemote, remote.data, compareData]);
 
   // Huy hiệu dự báo ("Dự báo · sai số ~7%"): chỉ tính khi chart bật dự báo (chạy lại thuật toán trên bảng đã gộp).
   // Chưa bật mà chart đủ điều kiện (đường/vùng, có cấp gom ngày, đủ điểm) thì gợi ý "Thêm dự báo" (chỉ khi đang sửa).
@@ -564,6 +592,7 @@ function WidgetContentInner({ widget, theme, mobile }: { widget: Widget; theme: 
           </div>
           <TruncNote result={remote.data} />
           {forecastInfo && <ForecastBadge info={forecastInfo} />}
+          {cfg.format?.compare && <CompareBadge res={compareRes} remote={isRemote} stacked={!!forecastInfo} />}
           {suggestForecast && (
             <button
               type="button"

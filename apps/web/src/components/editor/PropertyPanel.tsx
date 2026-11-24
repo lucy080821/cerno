@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import type { ChartConfig, ChartFormat, FieldBinding, KpiCompare, TextStyle, Widget, WidgetConfig } from "@dashboard/schema";
 import {
   AGG_LABEL, CHART_SPECS, CHART_TYPE_ORDER, chartColorKeys, chartColorKeysFromTable, chartFields, clampFields, defaultAxisTitles, resolveFormat,
-  resolveSeriesColors, FORECAST_DEFAULTS, FORECAST_MAX_PERIODS, forecastGrainOf,
+  resolveSeriesColors, chartCompareSupported, FORECAST_DEFAULTS, FORECAST_MAX_PERIODS, forecastGrainOf,
 } from "@dashboard/chart-engine";
 import { useEditor, type AlignKind } from "@/lib/editor/store";
 import { getRows } from "@/lib/editor/sample-data";
@@ -746,6 +746,24 @@ function ChartFormatSection({ cfg, onChange }: { cfg: ChartConfig; onChange: (p:
                 ? "Vẽ một đường nét đứt cho tổng của các phần chồng."
                 : "Nét đứt cùng màu với từng đường/cột, thể hiện chiều hướng chung theo thứ tự trục ngang."}
           </p>
+        </Block>
+      )}
+
+      {(cfg.chartType === "line" || cfg.chartType === "area" || cfg.chartType === "bar") && (
+        <Block title="So sánh kỳ" on={!!fmt?.compare}
+          onToggle={(v) => onChange({ compare: v ? { to: "prev_year" } : undefined })}>
+          <SelectField label="So với" value={fmt?.compare?.to ?? "prev_year"}
+            options={[
+              { value: "prev_year", label: "Cùng kỳ năm ngoái" },
+              { value: "prev_period", label: "Kỳ trước (liền kề, cùng độ dài)" },
+            ]}
+            onChange={(v) => onChange({ compare: { to: v as "prev_year" | "prev_period" } })} />
+          <p className={s.hint}>
+            {chartCompareSupported(cfg)
+              ? "Vẽ thêm đường nét đứt (hoặc cột nhạt) của kỳ so sánh, đặt chồng theo vị trí trong kỳ. Cần một bộ lọc khoảng ngày có đủ hai đầu trên cột ngày này (tab Bộ lọc)."
+              : "Cần chọn \"Gom ngày theo\" Ngày, Tuần, Tháng, Quý hoặc Năm cho chiều đầu tiên và chỉ dùng một chiều (tab Dữ liệu) thì mới so sánh kỳ được."}
+          </p>
+          <p className={s.hint}>Chưa hỗ trợ nguồn dữ liệu lớn (hàng chục nghìn dòng trở lên).</p>
         </Block>
       )}
 

@@ -86,6 +86,11 @@ export const ChartFormat = z.object({
       showBand: z.boolean().optional(),
     })
     .optional(),
+  /**
+   * So sánh với kỳ khác ngay trên chart (đường/vùng/cột, một chiều ngày đã gom theo ngày/tuần/tháng/quý/năm): vẽ thêm đường (hoặc cột nhạt)
+   * của kỳ trước hoặc cùng kỳ năm ngoái, đặt chồng theo vị trí trong kỳ. Cần bộ lọc khoảng ngày đủ hai đầu trên chính cột ngày đó.
+   */
+  compare: z.object({ to: z.enum(["prev_period", "prev_year"]) }).optional(),
   trendline: z.enum(["none", "linear", "movingAverage"]).optional(),
   trendWindow: z.number().int().min(2).max(60).optional(),
   showTrendInfo: z.boolean().optional(),

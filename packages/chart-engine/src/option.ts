@@ -5,6 +5,7 @@ import { formatByKind, formatCompact, formatCompactByKind, formatDay, formatNumb
 import { CHART_SPECS, hasEnoughFields } from "./chartTypes";
 import { linearRegression, trendOf } from "./trend";
 import { planChartForecast } from "./forecastChart";
+import type { ChartCompareData } from "./chartCompare";
 
 export interface ChartTheme {
   palette: string[];
@@ -159,10 +160,12 @@ export function buildChartOption(
   highlight: string[] = [],
   /** Trường tính toán dạng tổng hợp, nếu chart có dùng. */
   calc?: CalcSet,
+  /** Dữ liệu kỳ so sánh (xem `computeChartCompare`), nếu chart bật so sánh kỳ. */
+  compare?: ChartCompareData | null,
 ): EChartsOptionLike | null {
   const f = chartFields(config);
   if (!f) return null;
-  return buildChartOptionFromTable(config, aggregate(rows, f.dimensions, f.metrics, calc), theme, highlight);
+  return buildChartOptionFromTable(config, aggregate(rows, f.dimensions, f.metrics, calc), theme, highlight, undefined, compare);
 }
 
 /** Như buildChartOption nhưng nhận bảng ĐÃ GỘP (ví dụ do server tính khi nguồn dữ liệu lớn). */
@@ -173,6 +176,8 @@ export function buildChartOptionFromTable(
   highlight: string[] = [],
   /** Ngày hôm nay (yyyy-mm-dd) để nhận ra kỳ cuối chưa trọn khi dự báo; bỏ trống = lấy từ đồng hồ. Chủ yếu để test. */
   today?: string,
+  /** Dữ liệu kỳ so sánh: vẽ thêm đường nét đứt (hoặc cột nhạt) cho mỗi số đo. Chỉ áp cho chart một chiều. */
+  compare?: ChartCompareData | null,
 ): EChartsOptionLike | null {
   const dim = (v: unknown) => highlight.length > 0 && !highlight.includes(String(v ?? ""));
   const DIMMED = { itemStyle: { opacity: 0.3 } };
@@ -280,7 +285,32 @@ export function buildChartOptionFromTable(
     });
   }
 
-  const showLegend = fmt.showLegend && series.length > 1;
+  // So sánh kỳ: mỗi số đo thêm một series của kỳ so sánh, cùng màu nhưng nét đứt/nhạt, khớp theo nhãn trục.
+  const compareSeries: Array<Record<string, unknown>> = [];
+  if (compare && !horizontal && !stacked && !isHist && table.dimLabels.length === 1 && compare.table.dimLabels.length === 1) {
+    const suffix = compare.to === "prev_year" ? CMP_YEAR : CMP_PREV;
+    table.metricLabels.forEach((label, mi) => {
+      const data: Array<number | null> = categories.map(() => null);
+      for (const r of compare.table.rows) {
+        const i = catIndex.get(String(r.keys[0] ?? ""));
+        if (i !== undefined) data[i] = r.values[mi] ?? null;
+      }
+      if (!data.some((v) => v !== null)) return;
+      const color = colors[mi % colors.length] ?? c.text;
+      compareSeries.push({
+        name: `${label} ${suffix}`,
+        type: seriesType,
+        data,
+        smooth: seriesType === "line",
+        showSymbol: false,
+        z: 1,
+        ...(isBar ? { barMaxWidth: 36, itemStyle: { color, opacity: 0.35, borderRadius: [4, 4, 0, 0] } } : { lineStyle: { type: "dashed", width: 2, color, opacity: 0.75 }, itemStyle: { color } }),
+        ...(chartType === "area" ? { areaStyle: { opacity: 0 } } : {}),
+      });
+    });
+  }
+
+  const showLegend = fmt.showLegend && (series.length + compareSeries.length) > 1;
 
   // Đường xu hướng (nét đứt cùng màu series). Cột chồng: một đường cho tổng. Cột ngang chưa hỗ trợ.
   const trendMode = config.format?.trendline ?? "none";
@@ -328,7 +358,7 @@ export function buildChartOptionFromTable(
           valueFormatter: (v: unknown) => formatByKind(Number(v), dk),
         },
     legend: showLegend
-      ? { top: 2, left: 4, itemWidth: 12, itemHeight: 8, textStyle: legendText, data: series.map((s) => s.name) }
+      ? { top: 2, left: 4, itemWidth: 12, itemHeight: 8, textStyle: legendText, data: [...series.map((s) => s.name), ...compareSeries.map((s) => String(s.name))] }
       : { show: false },
     grid: {
       left: 8,
@@ -359,12 +389,15 @@ export function buildChartOptionFromTable(
       };
       return horizontal ? { xAxis: valAxis, yAxis: catAxis } : { xAxis: catAxis, yAxis: valAxis };
     })(),
-    series: fc ? [...fc.series, ...trendSeries, ...fc.extra] : [...series, ...trendSeries],
+    series: fc ? [...fc.series, ...trendSeries, ...fc.extra, ...compareSeries] : [...series, ...trendSeries, ...compareSeries],
   };
 }
 
 /** Hậu tố tên series dự báo. Tách riêng khỏi chuỗi ghép để tooltip dịch được phần chữ ("· dự báo") độc lập với tên series. */
 const FC_WORD = "· dự báo";
+/** Hậu tố tên series của kỳ so sánh ("Doanh thu · kỳ trước"); có bản dịch ở lib/i18n/en/engine.ts. */
+const CMP_PREV = "· kỳ trước";
+const CMP_YEAR = "· cùng kỳ năm ngoái";
 const FC_SUFFIX_RE = / · dự báo$/;
 
 /** Phần dự báo của chart cartesian. Null khi chart không bật dự báo hoặc không dự báo được. */

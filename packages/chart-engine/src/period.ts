@@ -36,7 +36,7 @@ export function addMonths(iso: string, n: number): string {
   return make(ny, nm, Math.min(d, daysIn(ny, nm)));
 }
 
-const daysBetween = (a: string, b: string) => Math.round((Date.parse(b) - Date.parse(a)) / 86_400_000);
+export const daysBetween = (a: string, b: string) => Math.round((Date.parse(b) - Date.parse(a)) / 86_400_000);
 const STEP: Record<Grain, number> = { day: 0, week: 0, month: 1, quarter: 3, year: 12 };
 /** Thứ trong tuần, 0 = Thứ 2 … 6 = Chủ nhật. */
 const weekdayOf = (iso: string) => {

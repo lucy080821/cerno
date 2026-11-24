@@ -7,6 +7,7 @@ import { useDialog } from "@/components/ui/DialogProvider";
 import { LogoMark } from "@/components/Logo";
 import { ExportDialog } from "./ExportDialog";
 import { ShareDialog } from "./ShareDialog";
+import { HistoryDialog } from "./HistoryDialog";
 import { clearOpenParam, readOpenParam } from "@/lib/editor/open-param";
 import { NotifyDialog } from "./NotifyDialog";
 import { reportableWidgets } from "@/lib/notify/format";
@@ -88,6 +89,7 @@ export function TopBar({ onMobile, onFullscreen, notify, canShare = true }: {
   const { mutate, undo, redo, zoomAt, fit, setMode, loadDoc } = useEditor.getState();
   const fileRef = useRef<HTMLInputElement>(null);
   const [shareOpen, setShareOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const notifyRequest = useEditor((st) => st.notifyRequest);
   const [exportOpen, setExportOpen] = useState(false);
   const dashboardId = useEditor((st) => st.doc.id);
@@ -197,6 +199,9 @@ export function TopBar({ onMobile, onFullscreen, notify, canShare = true }: {
         <button className={s.btn} title="Báo cáo định kỳ qua email" aria-label="Thông báo" onClick={() => useEditor.getState().openNotify({ tab: "reports" })}>
           <Icon name="bell" size={14} /><span className={s.lblWide}>Thông báo</span>
         </button>
+        <button className={s.btn} title="Xem và khôi phục các phiên bản cũ của dashboard" aria-label="Lịch sử" onClick={() => setHistoryOpen(true)}>
+          <Icon name="reset" size={14} /><span className={s.lblWide}>Lịch sử</span>
+        </button>
         {canShare && <button className={s.btn} title="Chia sẻ và nhúng vào website" aria-label="Chia sẻ" onClick={() => setShareOpen(true)}>
           <Icon name="share" size={14} /><span className={s.lblWide}>Chia sẻ</span>
         </button>}
@@ -207,6 +212,7 @@ export function TopBar({ onMobile, onFullscreen, notify, canShare = true }: {
       </div>
       {exportOpen && <ExportDialog onClose={() => setExportOpen(false)} notify={notify} />}
       {shareOpen && <ShareDialog dashboardId={dashboardId} onClose={() => setShareOpen(false)} />}
+      {historyOpen && <HistoryDialog dashboardId={dashboardId} onClose={() => setHistoryOpen(false)} notify={notify} />}
       {notifyRequest && (
         <NotifyDialog
           dashboardId={dashboardId}

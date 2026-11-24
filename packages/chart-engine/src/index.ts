@@ -12,3 +12,4 @@ export * from "./period";
 export * from "./forecast";
 export * from "./forecastChart";
 export * from "./widget-spec";
+export * from "./chartCompare";
