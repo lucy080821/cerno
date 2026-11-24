@@ -340,4 +340,16 @@ export const EN_PROFIT: Dict = {
   "Sàn": "Marketplace",
   "{0} dòng · mỗi dòng là một sản phẩm trên một sàn": "{0} rows · each row is one product on one marketplace",
   "{0}% (mặc định)": "{0}% (default)",
+  // Thẻ ước tính phí sàn (bản rút gọn)
+  "Cerno đã tự nhận diện ngành cho": "Cerno has auto-detected the category for",
+  "File đơn hàng không ghi phí sàn? Cerno tự ước tính theo biểu phí của sàn. Đơn đã có phí trong file thì dùng đúng phí đó.": "Order file has no marketplace fee? Cerno estimates it from the marketplace's fee table. Orders that already have a fee in the file use exactly that fee.",
+  "Cách tính": "How it's calculated",
+  "Hoa hồng affiliate (% doanh thu)": "Affiliate commission (% of revenue)",
+  "Lazada, Tiki: bạn tự nhập tỷ lệ ở trang Chi phí.": "Lazada, Tiki: enter the rates yourself on the Costs page.",
+  "Người bán mới (được giảm phí cố định 01/06–31/08/2026)": "New seller (fixed fee discount 01/06–31/08/2026)",
+  "Shopee: phí cố định theo ngành hàng + phí xử lý giao dịch {0}% + phí hạ tầng {1}đ/đơn.": "Shopee: fixed fee by category + {0}% transaction processing fee + {1}đ/order infrastructure fee.",
+  "Shopee: {0} đã chọn ngành · {1} tự nhận diện · {2} chưa rõ (chưa ước tính phí).": "Shopee: {0} category chosen · {1} auto-detected · {2} unknown (not estimated yet).",
+  "TikTok Shop: hoa hồng theo ngành hàng + phí giao dịch {0}% + phí xử lý {1}đ/đơn.": "TikTok Shop: category commission + {0}% transaction fee + {1}đ/order processing fee.",
+  "TikTok Shop: {0} đã chọn ngành · {1} tự nhận diện · {2} chưa rõ (tính {3}%).": "TikTok Shop: {0} category chosen · {1} auto-detected · {2} unknown (using {3}%).",
+  "sản phẩm theo tên. Xem lại bảng Ngành hàng bên dưới, ngành nào sai thì bấm Đổi.": "products by name. Review the Category table below and click Change on any that are wrong.",
 };

@@ -235,8 +235,16 @@ export function ProductsView({ initialFilter }: { initialFilter: Filter }) {
       {fees && (
         <Card title="Ước tính phí sàn" aside={fees.available ? `Shopee từ ${fees.platforms.Shopee.tableFrom.split("-").reverse().join("/")} · TikTok Shop từ ${fees.platforms["TikTok Shop"].tableFrom.split("-").reverse().join("/")}` : undefined}>
           <p className={styles.small} style={{ lineHeight: 1.6 }}>
-            Khi file đơn hàng của Shopee hoặc TikTok Shop không có cột phí, Cerno ước tính phí sàn. Shopee: Phí Cố Định theo ngành hàng của từng sản phẩm, Phí Xử Lý Giao Dịch {PROCESSING_FEE_PCT}% và Phí Hạ Tầng {INFRA_FEE_VND.toLocaleString("vi-VN")}đ mỗi đơn (đã gồm thuế). TikTok Shop: Phí Hoa Hồng Nền Tảng theo ngành hàng, Phí Giao Dịch {TIKTOK_TRANSACTION_PCT}% và Phí Xử Lý Đơn Hàng {TIKTOK_PROCESSING_VND.toLocaleString("vi-VN")}đ mỗi đơn (đã gồm thuế). Đơn có phí trong file thì dùng đúng phí đó. Số ước tính được đánh dấu rõ trong các trang lãi. Lazada và Tiki chưa có biểu phí để nhập sẵn: bạn tự nhập tỷ lệ ở trang Chi phí.
+            File đơn hàng không ghi phí sàn? Cerno tự ước tính theo biểu phí của sàn. Đơn đã có phí trong file thì dùng đúng phí đó.
           </p>
+          <details className={styles.small} style={{ marginBottom: 8 }}>
+            <summary style={{ cursor: "pointer" }}>Cách tính</summary>
+            <ul style={{ margin: "6px 0 0", paddingLeft: 18, lineHeight: 1.6 }}>
+              <li>{`Shopee: phí cố định theo ngành hàng + phí xử lý giao dịch ${PROCESSING_FEE_PCT}% + phí hạ tầng ${INFRA_FEE_VND.toLocaleString("vi-VN")}đ/đơn.`}</li>
+              <li>{`TikTok Shop: hoa hồng theo ngành hàng + phí giao dịch ${TIKTOK_TRANSACTION_PCT}% + phí xử lý ${TIKTOK_PROCESSING_VND.toLocaleString("vi-VN")}đ/đơn.`}</li>
+              <li>Lazada, Tiki: bạn tự nhập tỷ lệ ở trang Chi phí.</li>
+            </ul>
+          </details>
           {!fees.available ? (
             <div className={styles.warn}><span>Chưa lưu được cài đặt: cần chạy migration <code>0018_shopee_fee_estimate.sql</code> trên Supabase.</span></div>
           ) : (
@@ -258,7 +266,7 @@ export function ProductsView({ initialFilter }: { initialFilter: Filter }) {
                 {feeForm.sellerType === "non_mall" && (
                   <label className={styles.checkRow}>
                     <input type="checkbox" checked={feeForm.newSeller} disabled={!canEditFees} onChange={(e) => setFeeForm((f) => ({ ...f, newSeller: e.target.checked }))} />
-                    <span>Người bán mới (đăng sản phẩm đầu tiên từ 01/01 đến 31/05/2026): giảm Phí Cố Định 01/06 đến 31/08/2026</span>
+                    <span>Người bán mới (được giảm phí cố định 01/06–31/08/2026)</span>
                   </label>
                 )}
               </div>
@@ -269,7 +277,7 @@ export function ProductsView({ initialFilter }: { initialFilter: Filter }) {
                   <option value="mall">TikTok Shop Mall</option>
                 </select>
                 <label className={styles.checkRow}>
-                  <span>Hoa hồng affiliate trung bình (% giá trị sản phẩm)</span>
+                  <span>Hoa hồng affiliate (% doanh thu)</span>
                   <input className={`${styles.input} ${styles.costInput}`} inputMode="decimal" placeholder="0" aria-label="Hoa hồng affiliate trung bình" value={affiliateText} disabled={!canEditFees || !fees.multiPlatform} onChange={(e) => setAffiliateText(e.target.value)} />
                 </label>
               </div>
@@ -282,13 +290,14 @@ export function ProductsView({ initialFilter }: { initialFilter: Filter }) {
                 </div>
               )}
               <p className={styles.small} style={{ marginTop: 10 }}>
-                {`Shopee: ${count(shopeeStats.chosen)} sản phẩm đã chọn ngành, ${count(shopeeStats.auto.length)} tự nhận diện, ${count(shopeeStats.unknown)} chưa xác định được ngành (đơn của chúng chưa được ước tính phí). `}
-                {`TikTok Shop: ${count(tiktokStats.chosen)} đã chọn ngành, ${count(tiktokStats.auto.length)} tự nhận diện, ${count(tiktokStats.unknown)} chưa xác định (tính theo mức phí mặc định ${TIKTOK_DEFAULT_RATE_PCT[feeForm.tiktokSellerType]}%).`}
+                {`Shopee: ${count(shopeeStats.chosen)} đã chọn ngành · ${count(shopeeStats.auto.length)} tự nhận diện · ${count(shopeeStats.unknown)} chưa rõ (chưa ước tính phí).`}
+                <br />
+                {`TikTok Shop: ${count(tiktokStats.chosen)} đã chọn ngành · ${count(tiktokStats.auto.length)} tự nhận diện · ${count(tiktokStats.unknown)} chưa rõ (tính ${TIKTOK_DEFAULT_RATE_PCT[feeForm.tiktokSellerType]}%).`}
               </p>
               {fees.settings.enabled && autoCount > 0 && (
                 <div className={styles.note} style={{ marginTop: 10, display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
                   <span style={{ flex: 1, minWidth: 240 }}>
-                    Cerno đã tự nhận diện ngành hàng cho <b>{count(autoCount)}</b> sản phẩm từ tên sản phẩm và đã dùng để ước tính phí, bạn không cần xác nhận từng sản phẩm. Lướt qua cột Ngành hàng bên dưới: ngành nào chưa đúng thì bấm Đổi (ngành khác thì mức phí khác).
+                    Cerno đã tự nhận diện ngành cho <b>{count(autoCount)}</b> sản phẩm theo tên. Xem lại bảng Ngành hàng bên dưới, ngành nào sai thì bấm Đổi.
                   </span>
                   {canEditFees && shopeeStats.auto.length > 0 && <button className={styles.btn} disabled={feeSaving} onClick={() => confirmAuto("Shopee")}>Xác nhận tất cả (Shopee)</button>}
                   {canEditFees && tiktokStats.auto.length > 0 && <button className={styles.btn} disabled={feeSaving} onClick={() => confirmAuto("TikTok Shop")}>Xác nhận tất cả (TikTok Shop)</button>}
