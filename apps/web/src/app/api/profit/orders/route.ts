@@ -3,7 +3,8 @@ import { loadFeeConfig } from "@/lib/server/fees";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/server/session-user";
 import { createRateLimiter } from "@/lib/server/rate-limit";
-import { computeProfit, findOrdersSource, membershipOf } from "@/lib/server/profit";
+import { computeProfitRange, findOrdersSource, membershipOf } from "@/lib/server/profit";
+import { parseRangeParams } from "@/lib/profit/period";
 import { filterOrders, orderCounts, sortOrders, type OrderFilter, type OrderSort } from "@/lib/profit/order-profit";
 
 export const runtime = "nodejs";
@@ -29,18 +30,20 @@ export async function GET(req: NextRequest) {
   const sort: OrderSort = sp.get("sort") === "profit" ? "profit" : "date";
   const q = (sp.get("q") ?? "").slice(0, 100);
   const channel = (sp.get("channel") ?? "").slice(0, 60) || undefined;
+  const range = parseRangeParams(sp.get("from"), sp.get("to"));
   const page = Math.max(1, Math.min(10_000, Math.floor(Number(sp.get("page")) || 1)));
 
   const [source, fees] = await Promise.all([findOrdersSource(supabase, workspaceId), loadFeeConfig(supabase, workspaceId)]);
   if (!source) return NextResponse.json({ source: null, orders: [], total: 0, page: 1, pageSize: PAGE_SIZE, counts: null, channels: [] });
   try {
-    const { orders } = await computeProfit(source.id, fees);
+    const { orders, all, fullSummary } = await computeProfitRange(source.id, fees, range);
     const list = sortOrders(filterOrders(orders, filter, q, channel), sort);
     return NextResponse.json(
       {
         source,
         counts: orderCounts(channel ? orders.filter((o) => o.channel === channel) : orders),
-        channels: [...new Set(orders.map((o) => o.channel))],
+        channels: [...new Set(all.map((o) => o.channel))],
+        dataRange: { min: fullSummary.dateMin, max: fullSummary.dateMax },
         total: list.length,
         page,
         pageSize: PAGE_SIZE,

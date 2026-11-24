@@ -6,6 +6,9 @@ import { compact, count, pct, vnd } from "./format";
 import { Card, ErrorBox, FeeEstimateNote, ShipEstimateNote, autoCategoryCount, Kpi, Loading, MissingCostNote } from "./Shared";
 import { todoText } from "./TodosView";
 import { useProfitSummary } from "./useProfit";
+import { EmptyPeriod, PeriodBar } from "./PeriodBar";
+import { isFiltering } from "@/lib/profit/period";
+import { usePeriod } from "@/lib/profit/period-store";
 import styles from "./profit.module.css";
 
 const LINKS = [
@@ -18,6 +21,7 @@ const LINKS = [
 /** Trang Tổng quan: vài con số chính, lãi theo ngày, 3 việc nên làm trước và lối tắt. */
 export function OverviewView() {
   const { data, error, loading, reload } = useProfitSummary();
+  const [period] = usePeriod();
   if (loading && !data) return <Loading />;
   if (error && !data) return <ErrorBox message={error} retry={reload} />;
   if (!data) return null;
@@ -25,7 +29,10 @@ export function OverviewView() {
 
   return (
     <div className={styles.stack}>
-      {!data.source || !s || s.orders === 0 ? (
+      {data.source && <PeriodBar dataMin={data.dataRange?.min} dataMax={data.dataRange?.max} />}
+      {data.source && s && s.orders === 0 && isFiltering(period) ? (
+        <EmptyPeriod />
+      ) : !data.source || !s || s.orders === 0 ? (
         <div className={styles.empty}>
           <b style={{ color: "var(--text)", fontSize: "1.05rem" }}>Bắt đầu bằng dữ liệu đơn hàng</b>
           <span>Tải file đơn hàng Excel/CSV từ Shopee, TikTok Shop hoặc sổ bán hàng. Cerno tính lãi thật của từng đơn sau phí sàn, giá vốn và quảng cáo.</span>

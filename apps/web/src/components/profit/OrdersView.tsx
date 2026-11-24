@@ -7,12 +7,16 @@ import { Waterfall } from "./charts";
 import { count, pct, signed, vnd } from "./format";
 import { REASON_HINT, REASON_LABEL } from "./reasons";
 import { Card, ErrorBox, Loading, NoOrders } from "./Shared";
+import { PeriodBar } from "./PeriodBar";
+import { usePeriod } from "@/lib/profit/period-store";
+import { rangeQuery } from "./useProfit";
 import styles from "./profit.module.css";
 
 interface OrdersResponse {
   source: { id: string } | null;
   counts: Record<OrderFilter, number> | null;
   channels: string[];
+  dataRange?: { min: string | null; max: string | null };
   total: number;
   page: number;
   pageSize: number;
@@ -108,6 +112,8 @@ function OrderDetail({ o, onClose }: { o: OrderProfit; onClose: () => void }) {
 }
 
 export function OrdersView({ initialFilter }: { initialFilter: OrderFilter }) {
+  const [period] = usePeriod();
+  const range = rangeQuery(period);
   const [filter, setFilter] = useState<OrderFilter>(initialFilter);
   const [sort, setSort] = useState<OrderSort>("date");
   const [channel, setChannel] = useState("");
@@ -124,9 +130,12 @@ export function OrdersView({ initialFilter }: { initialFilter: OrderFilter }) {
     const t = setTimeout(() => setQuery(q), 300);
     return () => clearTimeout(t);
   }, [q]);
-  useEffect(() => setPage(1), [filter, sort, channel, query]);
+  useEffect(() => setPage(1), [filter, sort, channel, query, range]);
 
-  const params = useMemo(() => new URLSearchParams({ filter, sort, page: String(page), ...(channel ? { channel } : {}), ...(query ? { q: query } : {}) }).toString(), [filter, sort, page, channel, query]);
+  const params = useMemo(
+    () => new URLSearchParams({ filter, sort, page: String(page), ...(channel ? { channel } : {}), ...(query ? { q: query } : {}) }).toString() + (range ? `&${range}` : ""),
+    [filter, sort, page, channel, query, range],
+  );
   const [tick, setTick] = useState(0);
   useEffect(() => {
     let alive = true;
@@ -155,6 +164,7 @@ export function OrdersView({ initialFilter }: { initialFilter: OrderFilter }) {
   return (
     <div className={selected ? styles.layoutWithDrawer : styles.stack}>
       <div className={styles.stack}>
+        <PeriodBar dataMin={data.dataRange?.min} dataMax={data.dataRange?.max} />
         <div className={styles.toolbar}>
           {FILTERS.map((f) => (
             <button key={f.key} className={`${styles.chip} ${filter === f.key ? styles.chipOn : ""}`} onClick={() => setFilter(f.key)}>

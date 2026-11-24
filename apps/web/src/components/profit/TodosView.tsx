@@ -52,7 +52,7 @@ const PRI: Record<Todo["priority"], { label: string; cls: string }> = {
 
 /** Trang Việc cần làm: gợi ý suy ra từ số liệu lãi từng đơn (không dùng AI). Đánh dấu "đã xong" lưu trong trình duyệt. */
 export function TodosView() {
-  const { data, error, loading, reload } = useProfitSummary();
+  const { data, error, loading, reload } = useProfitSummary({ ignorePeriod: true });
   const [done, setDone] = useState<string[]>([]);
   useEffect(() => setDone(readDone()), []);
   const toggle = (id: string) =>

@@ -5,23 +5,28 @@ import type { OrderProfit } from "@/lib/profit/order-profit";
 import { compact, count, pct, signed, vnd } from "./format";
 import { Card, ErrorBox, Kpi, Loading, NoOrders } from "./Shared";
 import { useProfitSummary } from "./useProfit";
+import { PeriodBar } from "./PeriodBar";
+import { usePeriod } from "@/lib/profit/period-store";
+import { rangeQuery } from "./useProfit";
 import styles from "./profit.module.css";
 
 /** Trang Hoàn và hủy: đơn hoàn/hủy làm shop mất bao nhiêu (theo dữ liệu đang có). */
 export function ReturnsView() {
   const { data, error, loading, reload } = useProfitSummary();
+  const [period] = usePeriod();
+  const query = rangeQuery(period);
   const [orders, setOrders] = useState<OrderProfit[] | null>(null);
   const [listError, setListError] = useState("");
   useEffect(() => {
     if (!data?.source) return;
-    fetch("/api/profit/orders?filter=return&sort=profit", { cache: "no-store" })
+    fetch(`/api/profit/orders?filter=return&sort=profit${query ? `&${query}` : ""}`, { cache: "no-store" })
       .then(async (res) => {
         const json = await res.json().catch(() => ({}));
         if (!res.ok) setListError(json.error ?? "Không tải được danh sách đơn.");
         else setOrders((json.orders ?? []) as OrderProfit[]);
       })
       .catch(() => setListError("Lỗi mạng, thử lại sau."));
-  }, [data?.source]);
+  }, [data?.source, query]);
 
   if (loading && !data) return <Loading />;
   if (error && !data) return <ErrorBox message={error} retry={reload} />;
@@ -32,6 +37,7 @@ export function ReturnsView() {
 
   return (
     <div className={styles.stack}>
+      <PeriodBar dataMin={data.dataRange?.min} dataMax={data.dataRange?.max} />
       <div className={styles.kpis}>
         <Kpi label="Đơn hoàn hàng" value={count(s.returned)} tone={s.returned ? "neg" : undefined} note={`Mất ${compact(-s.returnLoss)} (phí sàn và quảng cáo)`} />
         <Kpi label="Đơn hủy" value={count(s.cancelled)} tone={s.cancelled ? "neg" : undefined} note={`Mất ${compact(-s.cancelLoss)} tiền quảng cáo`} />

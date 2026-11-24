@@ -27,7 +27,7 @@ interface RowView {
 const toInput = (n: number | null | undefined) => (n === null || n === undefined ? "" : String(Math.round(n * 100) / 100));
 
 export function ProductsView({ initialFilter }: { initialFilter: Filter }) {
-  const { data, error, loading, reload } = useProfitSummary();
+  const { data, error, loading, reload } = useProfitSummary({ ignorePeriod: true });
   const [filter, setFilter] = useState<Filter>(initialFilter);
   const [edits, setEdits] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);

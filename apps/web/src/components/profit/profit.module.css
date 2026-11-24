@@ -557,3 +557,9 @@
 .platformTag[data-platform="Lazada"] { background: rgba(15, 20, 109, 0.1); color: #0f146d; }
 .platformTag[data-platform="Tiki"] { background: rgba(26, 148, 255, 0.12); color: #0b74e5; }
 .platformTag[data-platform="Facebook"] { background: rgba(24, 119, 242, 0.12); color: #1877f2; }
+
+/* Thanh chọn khoảng thời gian */
+.periodBar { display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border-radius: 14px; background: #fff; box-shadow: 0 1px 2px rgba(20, 22, 43, 0.06), 0 0 0 1px rgba(20, 22, 43, 0.06); }
+.periodRow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.periodYear { width: 72px; text-align: center; }
+.periodNote { margin-left: auto; font-size: 13px; color: var(--muted); }

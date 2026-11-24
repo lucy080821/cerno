@@ -5,6 +5,7 @@ import type { Row } from "@dashboard/chart-engine";
 import { ORDERS_SHEET_NAME, ORDERS_SPREADSHEET_ID } from "@/lib/orders/canonical";
 import { applyCatalogCosts, catalogMap, costKey, type CostEntry } from "@/lib/profit/catalog";
 import { buildOrders, summarize, type OrderProfit, type ProfitSummary } from "@/lib/profit/order-profit";
+import { inRange, type DateRange } from "@/lib/profit/period";
 import { getSourceMeta, getSourceRows, invalidateSourceCache } from "@/lib/server/row-cache";
 import { loadFeeConfig, makeFeeEstimator, makeShipCostEstimator, type FeeConfig } from "@/lib/server/fees";
 import { writeSourceRows } from "@/lib/server/source-write";
@@ -84,6 +85,28 @@ export async function computeProfit(sourceId: string, fees?: FeeConfig): Promise
   computed.set(key, result);
   if (computed.size > 50) computed.delete(computed.keys().next().value as string);
   return result;
+}
+
+const rangedCache = new WeakMap<OrderProfit[], Map<string, ProfitSummary>>();
+
+/**
+ * Như `computeProfit` nhưng chỉ tính các đơn có ngày đặt trong `range` (gồm cả hai đầu); `range` null = tất cả. Trả thêm `all` = toàn bộ
+ * đơn (để biết các kênh và khoảng ngày của dữ liệu). Tổng hợp theo khoảng được nhớ theo mảng đơn nên tự hết hiệu lực khi dữ liệu đổi.
+ */
+export async function computeProfitRange(sourceId: string, fees: FeeConfig | undefined, range: DateRange | null): Promise<{ all: OrderProfit[]; orders: OrderProfit[]; summary: ProfitSummary; fullSummary: ProfitSummary }> {
+  const base = await computeProfit(sourceId, fees);
+  if (!range) return { all: base.orders, orders: base.orders, summary: base.summary, fullSummary: base.summary };
+  const orders = base.orders.filter((o) => inRange(o.date, range));
+  let cache = rangedCache.get(base.orders);
+  if (!cache) rangedCache.set(base.orders, (cache = new Map()));
+  const key = `${range.from}|${range.to}`;
+  let summary = cache.get(key);
+  if (!summary) {
+    summary = summarize(orders);
+    if (cache.size >= 30) cache.delete(cache.keys().next().value as string);
+    cache.set(key, summary);
+  }
+  return { all: base.orders, orders, summary, fullSummary: base.summary };
 }
 
 const memberCache = new Map<string, { at: number; v: { workspaceId: string; editable: boolean } | null }>();

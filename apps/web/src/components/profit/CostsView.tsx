@@ -8,15 +8,21 @@ import { HBars } from "./charts";
 import { compact, count, pct, vnd } from "./format";
 import { Card, ErrorBox, FeeEstimateNote, ShipEstimateNote, autoCategoryCount, Kpi, Loading, MissingCostNote, NoOrders } from "./Shared";
 import { useProfitSummary } from "./useProfit";
+import { EmptyPeriod, PeriodBar } from "./PeriodBar";
+import { isFiltering } from "@/lib/profit/period";
+import { usePeriod } from "@/lib/profit/period-store";
 import styles from "./profit.module.css";
 
 /** Trang Chi phí: tiền đang đi vào đâu (giá vốn, phí sàn, quảng cáo), tỷ lệ trên doanh thu, theo sản phẩm. */
 export function CostsView() {
   const { data, error, loading, reload } = useProfitSummary();
+  const [period] = usePeriod();
   if (loading && !data) return <Loading />;
   if (error && !data) return <ErrorBox message={error} retry={reload} />;
   if (!data) return null;
-  if (!data.source || !data.summary || data.summary.orders === 0) return <NoOrders />;
+  if (!data.source || !data.summary) return <NoOrders />;
+  const bar = <PeriodBar dataMin={data.dataRange?.min} dataMax={data.dataRange?.max} />;
+  if (data.summary.orders === 0) return isFiltering(period) ? <div className={styles.stack}>{bar}<EmptyPeriod /></div> : <NoOrders />;
   const s = data.summary;
   const share = (n: number) => pct(s.revenue ? n / s.revenue : null);
   const lostAds = -(s.returnLoss + s.cancelLoss);
@@ -28,6 +34,7 @@ export function CostsView() {
 
   return (
     <div className={styles.stack}>
+      {bar}
       <MissingCostNote missing={s.missingCost} total={s.orders} />
       <FeeEstimateNote count={s.feeEstimated} auto={autoCategoryCount(data.fees)} />
       <ShipEstimateNote count={s.shipEstimated} />

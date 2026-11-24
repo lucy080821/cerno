@@ -6,20 +6,26 @@ import { compact, count, pct, signed, vnd } from "./format";
 import { REASON_LABEL } from "./reasons";
 import { Card, ErrorBox, FeeEstimateNote, ShipEstimateNote, autoCategoryCount, Kpi, Loading, MissingCostNote, NoOrders } from "./Shared";
 import { useProfitSummary } from "./useProfit";
+import { EmptyPeriod, PeriodBar } from "./PeriodBar";
+import { isFiltering } from "@/lib/profit/period";
+import { usePeriod } from "@/lib/profit/period-store";
 import styles from "./profit.module.css";
 
 /** Trang Lãi lỗ: tiền đi đâu, đơn nào lỗ và vì sao, lãi theo ngày, kênh, sản phẩm. */
 export function ProfitView() {
   const { data, error, loading, reload } = useProfitSummary();
+  const [period] = usePeriod();
   if (loading && !data) return <Loading />;
   if (error && !data) return <ErrorBox message={error} retry={reload} />;
   if (!data) return null;
   if (!data.source || !data.summary) return <NoOrders />;
   const s = data.summary;
-  if (s.orders === 0) return <NoOrders />;
+  const bar = <PeriodBar dataMin={data.dataRange?.min} dataMax={data.dataRange?.max} />;
+  if (s.orders === 0) return isFiltering(period) ? <div className={styles.stack}>{bar}<EmptyPeriod /></div> : <NoOrders />;
 
   return (
     <div className={styles.stack}>
+      {bar}
       <MissingCostNote missing={s.missingCost} total={s.orders} />
       <FeeEstimateNote count={s.feeEstimated} auto={autoCategoryCount(data.fees)} />
       <ShipEstimateNote count={s.shipEstimated} />
