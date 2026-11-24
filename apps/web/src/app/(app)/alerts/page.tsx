@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Card } from "@/components/profit/Shared";
+import { NotifyManager } from "@/components/notify/NotifyManager";
 import { STATE_LABELS, stateKey } from "@/lib/notify/alert-form";
 import { AppShell } from "../AppShell";
 import { ownDashboards, requirePageUser, vnTime, workspaceIds } from "../page-user";
@@ -14,8 +15,9 @@ interface RuleRow {
 
 const TONE: Record<string, string> = { firing: "bNeg", error: "bWarn", ok: "bPos" };
 
-/** Cảnh báo của mọi dashboard: trạng thái, lần báo gần nhất. Tạo/sửa trong hộp thoại Thông báo của từng dashboard. */
-export default async function AlertsPage() {
+/** Cảnh báo của mọi dashboard (trạng thái, lần báo gần nhất) và nơi tạo/sửa cảnh báo: chọn dashboard rồi cài đặt ngay tại trang, không cần mở editor. */
+export default async function AlertsPage({ searchParams }: { searchParams: Promise<{ d?: string }> }) {
+  const { d } = await searchParams;
   const { supabase, user, name } = await requirePageUser();
   const dashboards = await ownDashboards(supabase, await workspaceIds(supabase, user.id));
   const names = new Map(dashboards.map((d) => [d.id, d.name]));
@@ -39,7 +41,7 @@ export default async function AlertsPage() {
         {unavailable && <div className={styles.warn}><span>Chưa đọc được danh sách cảnh báo: cần chạy migration <code>0012_reports_alerts.sql</code> trên Supabase.</span></div>}
         <Card title="Cảnh báo của bạn" aside={rules.length ? `${rules.length} cảnh báo · ${firing} đang báo` : undefined}>
           {rules.length === 0 ? (
-            <p className={styles.small}>Chưa có cảnh báo nào. Chọn một dashboard bên dưới, mô tả điều bạn muốn được báo (ví dụ "báo khi doanh thu hôm nay dưới 2 triệu"), AI sẽ dựng luật để bạn xác nhận.</p>
+            <p className={styles.small}>Chưa có cảnh báo nào. Chọn một dashboard ở phần cài đặt bên dưới, mô tả điều bạn muốn được báo (ví dụ "báo khi doanh thu hôm nay dưới 2 triệu"), AI sẽ dựng luật để bạn xác nhận.</p>
           ) : (
             <div className={styles.tableWrap}>
               <table className={styles.table}>
@@ -53,7 +55,7 @@ export default async function AlertsPage() {
                         <td data-i18n-skip>{names.get(r.dashboard_id) ?? "—"}</td>
                         <td><span className={`${styles.badge} ${TONE[key] ? styles[TONE[key]] : ""}`}>{STATE_LABELS[key]}</span></td>
                         <td className={styles.muted}>{vnTime(r.last_triggered_at)}</td>
-                        <td className={styles.r}><Link href={`/editor/${r.dashboard_id}?open=alerts`} className={styles.btn}>Mở</Link></td>
+                        <td className={styles.r}><Link href={`/alerts?d=${r.dashboard_id}#manage`} className={styles.btn}>Quản lý</Link></td>
                       </tr>
                     );
                   })}
@@ -62,17 +64,7 @@ export default async function AlertsPage() {
             </div>
           )}
         </Card>
-        <Card title="Tạo cảnh báo mới" aside="chọn dashboard chứa số liệu cần theo dõi">
-          {dashboards.length === 0 ? (
-            <p className={styles.small}>Bạn chưa có dashboard nào. <Link href="/templates">Tạo dashboard từ mẫu</Link> trước.</p>
-          ) : (
-            <div className={styles.links}>
-              {dashboards.map((d) => (
-                <Link key={d.id} href={`/editor/${d.id}?open=alerts`} className={styles.linkCard}><b data-i18n-skip>{d.name}</b><span>Tạo cảnh báo</span></Link>
-              ))}
-            </div>
-          )}
-        </Card>
+        <NotifyManager kind="alerts" dashboards={dashboards.map((x) => ({ id: x.id, name: x.name }))} initialId={d ?? null} />
       </div>
     </AppShell>
   );

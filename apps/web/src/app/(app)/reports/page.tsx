@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Card } from "@/components/profit/Shared";
+import { NotifyManager } from "@/components/notify/NotifyManager";
 import { scheduleLabel } from "@/lib/notify/format";
 import { AppShell } from "../AppShell";
 import { ownDashboards, requirePageUser, vnTime, workspaceIds } from "../page-user";
@@ -13,8 +14,9 @@ interface SubRow {
   next_run_at: string | null; last_sent_at: string | null; last_error: string | null;
 }
 
-/** Báo cáo định kỳ qua email của mọi dashboard. Tạo/sửa trong hộp thoại Thông báo của từng dashboard. */
-export default async function ReportsPage() {
+/** Báo cáo định kỳ qua email của mọi dashboard và nơi đặt lịch/sửa: chọn dashboard rồi cài đặt ngay tại trang, không cần mở editor. */
+export default async function ReportsPage({ searchParams }: { searchParams: Promise<{ d?: string }> }) {
+  const { d } = await searchParams;
   const { supabase, user, name } = await requirePageUser();
   const dashboards = await ownDashboards(supabase, await workspaceIds(supabase, user.id));
   const names = new Map(dashboards.map((d) => [d.id, d.name]));
@@ -36,7 +38,7 @@ export default async function ReportsPage() {
         {unavailable && <div className={styles.warn}><span>Chưa đọc được danh sách báo cáo: cần chạy migration <code>0012_reports_alerts.sql</code> trên Supabase.</span></div>}
         <Card title="Báo cáo đang gửi" aside={subs.length ? `${subs.length} người nhận` : undefined}>
           {subs.length === 0 ? (
-            <p className={styles.small}>Chưa có báo cáo nào. Chọn một dashboard bên dưới để đặt lịch gửi báo cáo cho bạn hoặc đồng nghiệp.</p>
+            <p className={styles.small}>Chưa có báo cáo nào. Chọn một dashboard ở phần cài đặt bên dưới để đặt lịch gửi báo cáo cho bạn hoặc đồng nghiệp.</p>
           ) : (
             <div className={styles.tableWrap}>
               <table className={styles.table}>
@@ -49,7 +51,7 @@ export default async function ReportsPage() {
                       <td>{r.enabled ? scheduleLabel(r) : <span className={styles.badge}>Đã tắt</span>}</td>
                       <td className={styles.muted}>{vnTime(r.last_sent_at)}{r.last_error && <span className={styles.sub} data-i18n-skip>{r.last_error}</span>}</td>
                       <td className={styles.muted}>{r.enabled ? vnTime(r.next_run_at) : "—"}</td>
-                      <td className={styles.r}><Link href={`/editor/${r.dashboard_id}?open=reports`} className={styles.btn}>Mở</Link></td>
+                      <td className={styles.r}><Link href={`/reports?d=${r.dashboard_id}#manage`} className={styles.btn}>Quản lý</Link></td>
                     </tr>
                   ))}
                 </tbody>
@@ -57,17 +59,7 @@ export default async function ReportsPage() {
             </div>
           )}
         </Card>
-        <Card title="Đặt lịch báo cáo mới" aside="chọn dashboard muốn gửi">
-          {dashboards.length === 0 ? (
-            <p className={styles.small}>Bạn chưa có dashboard nào. <Link href="/templates">Tạo dashboard từ mẫu</Link> trước.</p>
-          ) : (
-            <div className={styles.links}>
-              {dashboards.map((d) => (
-                <Link key={d.id} href={`/editor/${d.id}?open=reports`} className={styles.linkCard}><b data-i18n-skip>{d.name}</b><span>Đặt lịch báo cáo</span></Link>
-              ))}
-            </div>
-          )}
-        </Card>
+        <NotifyManager kind="reports" dashboards={dashboards.map((x) => ({ id: x.id, name: x.name }))} initialId={d ?? null} />
       </div>
     </AppShell>
   );

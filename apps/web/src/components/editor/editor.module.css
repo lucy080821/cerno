@@ -3332,3 +3332,19 @@
   font-size: 12px;
   color: var(--muted, #5d6782);
 }
+
+/* Dùng các tab của hộp thoại Thông báo NGOÀI editor (trang Cảnh báo, Báo cáo định kỳ): các biến màu của editor chỉ khai báo ở .app nên
+   cần khai báo lại cho phần nội dung nhúng; display: contents để không thêm khung nào. */
+.scope {
+  --bg: #e6e9f1;
+  --panel: #f5f6fa;
+  --panel-2: #eceff6;
+  --line: rgba(20, 22, 43, 0.1);
+  --text: #14162b;
+  --muted: #5d6782;
+  --accent: #6d5efc;
+  --danger: #d6336c;
+  display: contents;
+  color: var(--text);
+  font-size: 13px;
+}

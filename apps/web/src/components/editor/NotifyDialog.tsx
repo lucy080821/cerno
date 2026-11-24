@@ -34,7 +34,7 @@ const MONTH_DAYS = Array.from({ length: 31 }, (_, d) => d + 1);
 
 // ---------------------------------------------------------------------------------------------
 
-function ReportsTab({ dashboardId, widgets }: { dashboardId: string; widgets: ReportableWidget[] }) {
+export function ReportsTab({ dashboardId, widgets }: { dashboardId: string; widgets: ReportableWidget[] }) {
   const dialog = useDialog();
   const [data, setData] = useState<ReportList | null>(null);
   const [loadError, setLoadError] = useState("");

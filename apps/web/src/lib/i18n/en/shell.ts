@@ -97,4 +97,14 @@ export const EN_SHELL: Dict = {
   "Ai có link cũng xem và đổi bộ lọc được, không cần tài khoản, không sửa được. Bạn đổi hoặc tắt link bất kỳ lúc nào, link cũ ngừng hoạt động ngay.": "Anyone with the link can view and change filters without an account, but can't edit. Change or turn off the link at any time; the old link stops working right away.",
   "Mời theo email và nhúng website": "Email invites and website embeds",
   "Người được mời đăng nhập bằng Google đúng email để xem hoặc sửa đúng dashboard đó. Mã nhúng chỉ chạy trên các tên miền bạn khai báo.": "Invited people sign in with Google using that email to view or edit just that dashboard. The embed code only works on the domains you list.",
+  // Cảnh báo / Báo cáo định kỳ cài đặt ngay tại trang (không cần mở editor)
+  "Quản lý": "Manage",
+  "Chưa có cảnh báo nào. Chọn một dashboard ở phần cài đặt bên dưới, mô tả điều bạn muốn được báo (ví dụ \"báo khi doanh thu hôm nay dưới 2 triệu\"), AI sẽ dựng luật để bạn xác nhận.": "No alerts yet. Pick a dashboard in the settings below and describe what you want to be told about (for example \"alert me when today's revenue is under 2 million\"); the AI will build the rule for you to confirm.",
+  "Chưa có báo cáo nào. Chọn một dashboard ở phần cài đặt bên dưới để đặt lịch gửi báo cáo cho bạn hoặc đồng nghiệp.": "No reports yet. Pick a dashboard in the settings below to schedule a report for yourself or a colleague.",
+  "Không đọc được dashboard này, hãy thử lại.": "Could not read this dashboard, please try again.",
+  "trước, rồi quay lại đây để cài đặt.": "first, then come back here to set this up.",
+  "dashboard chứa số liệu cần theo dõi": "the dashboard that holds the figures to watch",
+  "dashboard muốn gửi báo cáo": "the dashboard to send reports about",
+  "Chọn một dashboard ở trên để xem, tạo và chỉnh cảnh báo.": "Pick a dashboard above to view, create and edit alerts.",
+  "Chọn một dashboard ở trên để xem, đặt lịch và chỉnh báo cáo.": "Pick a dashboard above to view, schedule and edit reports.",
 };
