@@ -111,14 +111,14 @@ function OrderDetail({ o, onClose }: { o: OrderProfit; onClose: () => void }) {
   );
 }
 
-export function OrdersView({ initialFilter }: { initialFilter: OrderFilter }) {
+export function OrdersView({ initialFilter, initialQuery = "" }: { initialFilter: OrderFilter; initialQuery?: string }) {
   const [period] = usePeriod();
   const range = rangeQuery(period);
   const [filter, setFilter] = useState<OrderFilter>(initialFilter);
   const [sort, setSort] = useState<OrderSort>("date");
   const [channel, setChannel] = useState("");
-  const [q, setQ] = useState("");
-  const [query, setQuery] = useState("");
+  const [q, setQ] = useState(initialQuery);
+  const [query, setQuery] = useState(initialQuery);
   const [page, setPage] = useState(1);
   const [data, setData] = useState<OrdersResponse | null>(null);
   const [error, setError] = useState("");

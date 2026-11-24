@@ -16,7 +16,14 @@ export interface SidebarData {
   planLabel: string;
   sources: number;
   maxSources: number;
+  /** Tên hiển thị của người đăng nhập (cho thanh trên). */
+  userName: string;
+  /** Cây điều hướng: dashboard mới sửa gần đây và các nguồn dữ liệu (tối đa 8 mỗi loại). */
+  dashboards: { id: string; name: string }[];
+  sourceList: { id: string; name: string }[];
 }
+
+const TREE_LIMIT = 8;
 
 /** Thử một phần dữ liệu của thanh bên; lỗi (chưa chạy migration, mạng...) thì dùng giá trị mặc định, không làm hỏng trang. */
 async function attempt<T>(label: string, fn: () => Promise<T>, fallback: T): Promise<T> {
@@ -36,6 +43,7 @@ export async function loadSidebar(supabase: SupabaseClient, userId: string, user
   const base: SidebarData = {
     shop: shopName(null, userName), avatar, channels: "", todos: 0, alertsFiring: 0,
     plan: "free", planLabel: PLAN_LIMITS.free.label, sources: 0, maxSources: MAX_SOURCES_PER_WORKSPACE,
+    userName, dashboards: [], sourceList: [],
   };
   const mem = await attempt("workspace", async () => {
     const { data } = await supabase.from("workspace_members").select("workspace_id").eq("user_id", userId).limit(1).maybeSingle();
@@ -43,7 +51,7 @@ export async function loadSidebar(supabase: SupabaseClient, userId: string, user
   }, null);
   if (!mem) return base;
 
-  const [ws, sources, alertsFiring, profit] = await Promise.all([
+  const [ws, sourceRows, dashboardRows, alertsFiring, profit] = await Promise.all([
     attempt("plan", async () => {
       const { data, error } = await supabase.from("workspaces").select("name, plan").eq("id", mem).maybeSingle();
       if (error) {
@@ -54,9 +62,13 @@ export async function loadSidebar(supabase: SupabaseClient, userId: string, user
       return { name: (data?.name as string | undefined) ?? null, plan: normalizePlan(data?.plan) };
     }, { name: null, plan: "free" as Plan }),
     attempt("sources", async () => {
-      const { count } = await supabase.from("data_sources").select("id", { count: "exact", head: true }).eq("workspace_id", mem);
-      return count ?? 0;
-    }, 0),
+      const { data, count } = await supabase.from("data_sources").select("id, name, sheet_name", { count: "exact" }).eq("workspace_id", mem).order("created_at", { ascending: false }).limit(TREE_LIMIT);
+      return { count: count ?? 0, list: (data ?? []).map((r) => ({ id: r.id as string, name: ((r.name as string | null) ?? (r.sheet_name as string | null) ?? "Nguồn dữ liệu").trim() })) };
+    }, { count: 0, list: [] as { id: string; name: string }[] }),
+    attempt("dashboards", async () => {
+      const { data } = await supabase.from("dashboards").select("id, name").eq("workspace_id", mem).order("updated_at", { ascending: false }).limit(TREE_LIMIT);
+      return (data ?? []).map((r) => ({ id: r.id as string, name: ((r.name as string | null) ?? "").trim() || "Dashboard" }));
+    }, [] as { id: string; name: string }[]),
     attempt("alerts", async () => {
       const { data: dash } = await supabase.from("dashboards").select("id").eq("workspace_id", mem);
       const ids = (dash ?? []).map((d) => d.id as string);
@@ -81,6 +93,8 @@ export async function loadSidebar(supabase: SupabaseClient, userId: string, user
     alertsFiring,
     plan: ws.plan,
     planLabel: PLAN_LIMITS[ws.plan].label,
-    sources,
+    sources: sourceRows.count,
+    sourceList: sourceRows.list,
+    dashboards: dashboardRows,
   };
 }

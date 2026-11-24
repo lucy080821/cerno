@@ -23,6 +23,8 @@ const Body = z.object({
   question: z.string().trim().min(1).max(MAX_QUESTION_CHARS),
   sourceIds: z.array(z.string().uuid()).max(MAX_SELECTED_SOURCES),
   lang: z.enum(["vi", "en"]).default("vi"),
+  /** Mô tả trang đang xem (khung chat bên phải mọi trang); chỉ là gợi ý ngữ cảnh. */
+  context: z.string().max(400).optional(),
 });
 
 const fail = (message: string, status: number) => NextResponse.json({ error: message }, { status });
@@ -51,7 +53,7 @@ export async function POST(req: Request) {
   }
   const parsed = Body.safeParse(json);
   if (!parsed.success) return fail(parsed.error.issues[0]?.path[0] === "question" ? "Câu hỏi trống hoặc quá dài." : "Yêu cầu không hợp lệ", 400);
-  const { chatId, question, sourceIds, lang } = parsed.data;
+  const { chatId, question, sourceIds, lang, context } = parsed.data;
 
   const member = await membershipOf(supabase, user.id);
   if (!member) return fail("Bạn chưa có workspace", 403);
@@ -88,7 +90,7 @@ export async function POST(req: Request) {
       };
       send({ t: "chat", id: chatRow.id, title: chatRow.title });
       try {
-        for await (const ev of runChat({ history, question, sources, lang, signal: req.signal }, { caller, tools }) as AsyncGenerator<RunEvent>) {
+        for await (const ev of runChat({ history, question, sources, lang, pageContext: context, signal: req.signal }, { caller, tools }) as AsyncGenerator<RunEvent>) {
           if (ev.t === "final") {
             const meta = { ...ev.meta, sources: sources.map((s) => s.name), lang };
             const msg = await addMessage(supabase, chatRow.id, "assistant", ev.text, meta);

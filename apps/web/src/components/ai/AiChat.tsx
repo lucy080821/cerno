@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Spinner } from "@/components/Spinner";
 import { useDialog } from "@/components/ui/DialogProvider";
+import { useShell } from "@/lib/shell/store";
 import {
   defaultSelection, isOrdersSource, MAX_SOURCES, parseEvent, reportBlocks, sourceLabel, splitLines, toggleSource,
   type ChatSummary, type Msg, type SourceOption,
@@ -63,7 +64,20 @@ function Report({ text }: { text: string }) {
 }
 
 /** Trang chat với AI về số liệu: lịch sử bên trái, chọn nguồn ngay ở khung nhập, câu trả lời dạng báo cáo chữ thuần. */
-export function AiChat() {
+export interface AiChatProps {
+  /** "dock" = khung chat nhỏ bên phải mọi trang (lịch sử thành danh sách thả xuống); "page" = trang /ai toàn màn hình. */
+  variant?: "page" | "dock";
+  /** Mô tả trang người dùng đang xem (vd "Lãi lỗ, khoảng 01/11 đến 24/11") để AI hiểu "ở đây", "tháng này". */
+  context?: string;
+  /** Nhận câu hỏi từ ô tìm kiếm ("Hỏi AI: ..."). Chỉ MỘT khung được nhận cùng lúc. */
+  listenAsk?: boolean;
+  onClose?: () => void;
+}
+
+export function AiChat({ variant = "page", context, listenAsk = true, onClose }: AiChatProps = {}) {
+  const dock = variant === "dock";
+  const ask = useShell((st) => st.ask);
+  const clearAsk = useShell((st) => st.clearAsk);
   const dialog = useDialog();
   const [chats, setChats] = useState<ChatSummary[] | null>(null);
   const [sources, setSources] = useState<SourceOption[] | null>(null);
@@ -181,7 +195,7 @@ export function AiChat() {
       const res = await fetch("/api/ai/chat", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ chatId: activeId, question, sourceIds: selected, lang }),
+        body: JSON.stringify({ chatId: activeId, question, sourceIds: selected, lang, ...(context ? { context } : {}) }),
         signal: ctl.signal,
       });
       if (!res.ok || !res.body) {
@@ -241,11 +255,19 @@ export function AiChat() {
     }
   };
 
+  // Câu hỏi từ ô tìm kiếm: gửi ngay khi đã biết nguồn dữ liệu, rồi xoá để không gửi lặp.
+  useEffect(() => {
+    if (!listenAsk || !ask || busy || sources === null) return;
+    clearAsk();
+    void send(ask.text);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ask, sources, busy, listenAsk]);
+
   const noSources = sources !== null && sources.length === 0;
   const empty = messages.length === 0 && !busy && !loadingChat;
 
   return (
-    <div className={styles.wrap}>
+    <div className={`${styles.wrap} ${dock ? styles.dockWrap : ""}`}>
       <aside className={`${styles.history} ${historyOpen ? styles.historyOpen : ""}`}>
         <button type="button" className={styles.newBtn} onClick={newChat}>+ Cuộc trò chuyện mới</button>
         <div className={styles.histList}>
@@ -267,6 +289,13 @@ export function AiChat() {
         <div className={styles.chatBar}>
           <button type="button" className={styles.histToggle} onClick={() => setHistoryOpen((o) => !o)}>☰ Lịch sử</button>
           <span className={styles.chatTitle} data-i18n-skip>{chats?.find((c) => c.id === activeId)?.title ?? ""}</span>
+          {dock && (
+            <span className={styles.barBtns}>
+              <button type="button" onClick={newChat} title="Cuộc trò chuyện mới" aria-label="Cuộc trò chuyện mới">＋</button>
+              <Link href="/ai" title="Mở toàn màn hình" aria-label="Mở toàn màn hình">⤢</Link>
+              {onClose && <button type="button" onClick={onClose} title="Đóng khung chat" aria-label="Đóng khung chat">✕</button>}
+            </span>
+          )}
         </div>
 
         <div className={styles.scroll}>

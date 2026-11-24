@@ -1,0 +1,299 @@
+.bar {
+  position: sticky;
+  top: 0;
+  z-index: 60;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+  background: #ffffff;
+  border-bottom: 1px solid var(--line);
+}
+
+.burger {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.burger:hover {
+  background: rgba(20, 22, 43, 0.06);
+}
+
+.logo {
+  flex: none;
+  display: flex;
+  align-items: center;
+}
+
+.search {
+  position: relative;
+  flex: 1;
+  max-width: 620px;
+  margin: 0 auto;
+  min-width: 0;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  pointer-events: none;
+}
+
+.searchInput {
+  width: 100%;
+  height: 36px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #f4f5fa;
+  padding: 0 64px 0 36px;
+  font: inherit;
+  font-size: 0.88rem;
+  color: var(--text);
+}
+
+.searchInput::-webkit-search-cancel-button {
+  display: none;
+}
+
+.searchInput:focus {
+  outline: 2px solid rgba(109, 94, 252, 0.4);
+  background: #fff;
+  border-color: var(--brand-a);
+}
+
+.kbd {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font: inherit;
+  font-size: 0.7rem;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 1px 6px;
+  background: #fff;
+  pointer-events: none;
+}
+
+.results {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  max-height: min(70vh, 460px);
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 12px 36px rgba(20, 22, 43, 0.18);
+  padding: 6px;
+  z-index: 70;
+}
+
+.resGroup {
+  padding: 8px 10px 4px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.res {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  text-align: left;
+  font: inherit;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.resOn {
+  background: rgba(109, 94, 252, 0.1);
+}
+
+.resIcon {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: rgba(20, 22, 43, 0.05);
+  color: var(--muted);
+}
+
+.resOn .resIcon {
+  background: var(--brand-a);
+  color: #fff;
+}
+
+.resText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.3;
+}
+
+.resText b {
+  font-size: 0.88rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.resText span {
+  font-size: 0.75rem;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.resEmpty {
+  padding: 8px 10px;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.right {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.chatBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.chatBtn:hover {
+  border-color: var(--brand-a);
+}
+
+.chatOn {
+  background: var(--brand-a);
+  border-color: var(--brand-a);
+  color: #fff;
+}
+
+.account {
+  position: relative;
+}
+
+.avatarBtn {
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: var(--brand-gradient);
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.avatarBtn img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  min-width: 200px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 12px 36px rgba(20, 22, 43, 0.18);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  z-index: 70;
+}
+
+.menuName {
+  padding: 8px 10px;
+  font-size: 0.8rem;
+  color: var(--muted);
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.menu a,
+.menu button {
+  text-align: left;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  font: inherit;
+  font-size: 0.88rem;
+  color: var(--text);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.menu a:hover,
+.menu button:hover {
+  background: rgba(20, 22, 43, 0.06);
+}
+
+@media (max-width: 860px) {
+  .logo {
+    display: none;
+  }
+  .kbd {
+    display: none;
+  }
+  .searchInput {
+    padding-right: 12px;
+  }
+  .chatBtn span {
+    display: none;
+  }
+  .chatBtn {
+    padding: 0 9px;
+  }
+}

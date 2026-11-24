@@ -17,6 +17,8 @@ export const EN_AI: Dict = {
   "Chi phí quảng cáo có đang ăn hết lãi không?": "Is ad spend eating up all the profit?",
   "Tỷ lệ hủy và hoàn trả theo từng kênh, kênh nào đáng lo nhất?": "Cancellation and return rates by channel: which channel is the biggest worry?",
   "Top 10 sản phẩm bán chạy nhất và biên lãi của từng sản phẩm.": "Top 10 best-selling products and the profit margin of each.",
+  "Mở toàn màn hình": "Open full screen",
+  "Đóng khung chat": "Close chat panel",
   "Sao chép": "Copy",
   "Đã sao chép": "Copied",
   "Trả lời bởi Claude (AI nâng cao)": "Answered by Claude (advanced AI)",

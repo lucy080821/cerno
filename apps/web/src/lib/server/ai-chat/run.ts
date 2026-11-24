@@ -70,10 +70,10 @@ const failureOf = (out: Extract<ProviderOutcome, { ok: false }>): RunEvent => ({
 });
 
 export async function* runChat(
-  input: { history: ChatMessage[]; question: string; sources: SourceInfo[]; lang: "vi" | "en"; now?: Date; signal?: AbortSignal },
+  input: { history: ChatMessage[]; question: string; sources: SourceInfo[]; lang: "vi" | "en"; pageContext?: string; now?: Date; signal?: AbortSignal },
   deps: { caller: ChatCaller; tools: ToolDeps },
 ): AsyncGenerator<RunEvent> {
-  const system = buildSystemPrompt({ sources: input.sources, lang: input.lang, now: input.now });
+  const system = buildSystemPrompt({ sources: input.sources, lang: input.lang, now: input.now, pageContext: input.pageContext });
   const defs = toolDefs(input.sources);
   const messages: ChatMessage[] = [...input.history, { role: "user", content: input.question }];
   const used = new Set<string>();

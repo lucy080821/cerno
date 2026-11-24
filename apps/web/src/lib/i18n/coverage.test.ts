@@ -18,6 +18,7 @@ const VI = /[àáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềế
 const IGNORE_FILES = [
   /\.test\.tsx?$/,
   /\.d\.ts$/,
+  /lib\/shell\/page-context\.ts$/, // mô tả trang đang xem gửi cho AI (không hiển thị)
   /server\/ai-chat\//, // lời nhắc, mô tả công cụ và lỗi gửi cho AI / log server (giao diện trang Hỏi AI dịch riêng)
   /api\/ai\//, // thông báo lỗi của API Hỏi AI
   /api\/chat\/route\.ts$/, // lời nhắc hệ thống gửi cho AI
@@ -43,6 +44,7 @@ const IGNORE_FILES = [
 ];
 
 const IGNORE_TEXT: RegExp[] = [
+  /^[a-z0-9 ]+$/, // từ khoá khớp của ô tìm kiếm (viết không dấu, chỉ để so khớp, không hiển thị)
   /^\[(api|ai-quota)/, // nhật ký server
   /^(tạo dashboard|phần mềm làm dashboard|báo cáo trực quan|biểu đồ từ Google Sheets|nhúng dashboard vào website|công cụ BI)$/, // từ khoá SEO
   /\{0\} \| Tạo dashboard từ Google Sheets/, // tiêu đề SEO

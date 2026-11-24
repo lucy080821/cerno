@@ -1,6 +1,13 @@
-.shell {
+.frame {
   display: flex;
+  flex-direction: column;
   min-height: 100vh;
+}
+
+.row {
+  display: flex;
+  flex: 1;
+  min-width: 0;
 }
 
 /* Thanh bên tối (xanh đậm) như ảnh thiết kế: đặt lại token màu trong phạm vi thanh bên. */
@@ -11,8 +18,8 @@
   width: 252px;
   flex: none;
   position: sticky;
-  top: 0;
-  height: 100vh;
+  top: 52px;
+  height: calc(100vh - 52px);
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -24,8 +31,74 @@
   scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
 }
 
-.brand {
-  padding: 0 8px;
+/* Nút 3 gạch ở thanh trên ẩn hẳn thanh bên (máy tính). */
+.frame[data-side="closed"] .side {
+  display: none;
+}
+
+.backdrop {
+  display: none;
+}
+
+/* Hàng mục + nút mở cây con. */
+.itemRow {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.itemRow .item {
+  flex: 1;
+  min-width: 0;
+}
+
+.chev {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+
+.chev:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+}
+
+.chevOpen {
+  transform: rotate(90deg);
+}
+
+.tree {
+  margin: 2px 0 4px 20px;
+  padding-left: 10px;
+  border-left: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.leaf {
+  display: block;
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  color: var(--muted);
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.leaf:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.06);
 }
 
 /* Thẻ cửa hàng: chữ viết tắt + tên + các kênh có đơn. */
@@ -261,30 +334,59 @@
   min-width: 0;
 }
 
+/* Khung chat AI bên phải (máy tính: dính cạnh phải; điện thoại: phủ toàn màn hình). */
+.dock {
+  display: none;
+  width: 400px;
+  flex: none;
+  position: sticky;
+  top: 52px;
+  height: calc(100vh - 52px);
+  background: #fff;
+  border-left: 1px solid var(--line);
+  min-width: 0;
+}
+
+.frame[data-chat="1"] .dock {
+  display: flex;
+  flex-direction: column;
+}
+
 @media (max-width: 860px) {
-  .shell {
-    flex-direction: column;
-  }
+  /* Thanh bên thành ngăn kéo bên trái, mở bằng nút 3 gạch. */
   .side {
-    position: static;
+    position: fixed;
+    top: 52px;
+    left: 0;
+    bottom: 0;
+    height: auto;
+    width: min(290px, 86vw);
+    z-index: 55;
+    transform: translateX(-102%);
+    transition: transform 0.18s ease;
+    box-shadow: none;
+  }
+  .frame[data-side="open"] .side {
+    transform: none;
+    box-shadow: 0 0 40px rgba(20, 22, 43, 0.4);
+  }
+  .frame[data-side="closed"] .side {
+    display: flex;
+  }
+  .frame[data-side="open"] .backdrop {
+    display: block;
+    position: fixed;
+    inset: 52px 0 0 0;
+    z-index: 54;
+    background: rgba(20, 22, 43, 0.4);
+  }
+  .dock {
+    position: fixed;
+    inset: 52px 0 0 0;
     width: auto;
     height: auto;
-    flex-direction: row;
-    align-items: center;
-    overflow-x: auto;
-    overflow-y: hidden;
-    padding: 12px 16px;
-  }
-  .nav {
-    flex-direction: row;
-  }
-  .group,
-  .shop,
-  .plan {
-    display: none;
-  }
-  .item {
-    white-space: nowrap;
+    z-index: 56;
+    border-left: 0;
   }
   .top,
   .body {
