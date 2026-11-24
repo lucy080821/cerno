@@ -31,6 +31,8 @@ const test = (c: Cond, r: any) => (c.op === "eq" ? r[c.col] === c.val : c.op ===
 export class FakeDb {
   sources: SourceRecord[] = [];
   rows = new Map<string, Row[]>();
+  /** Các bảng khác (order_sheets, ad_spend...): kho chung đơn giản, mỗi bảng một mảng bản ghi. */
+  tables: Record<string, any[]> = {};
   /** Bảng giá vốn (product_costs). */
   costs: { workspace_id: string; sku: string; name?: string; unit_cost: number }[] = [];
   /** Thời gian chờ giả lập cho mỗi lời gọi, để các tác vụ đồng thời xen kẽ nhau. */
@@ -55,7 +57,9 @@ export class FakeDb {
       const run = async () => {
         await this.wait();
         if (table === "product_costs") return { data: this.costs.filter((r) => q.conds.every((c) => test(c, r))), error: null };
-        return table === "data_sources" ? this.execSources(q) : this.execRows(q);
+        if (table === "data_sources") return this.execSources(q);
+        if (table === "source_rows") return this.execRows(q);
+        return this.execGeneric(table, q);
       };
       const chain: any = {
         select: (_cols?: string, opts?: { head?: boolean }) => {
@@ -66,6 +70,8 @@ export class FakeDb {
         update: (p: any) => Object.assign(q, { op: "update", payload: p }) && chain,
         upsert: (p: any) => Object.assign(q, { op: "upsert", payload: p }) && chain,
         delete: () => Object.assign(q, { op: "delete" }) && chain,
+        order: () => chain,
+        limit: () => chain,
         eq: (col: string, val: any) => q.conds.push({ op: "eq", col, val }) && chain,
         neq: (col: string, val: any) => q.conds.push({ op: "neq", col, val }) && chain,
         gte: (col: string, val: any) => q.conds.push({ op: "gte", col, val }) && chain,
@@ -106,6 +112,41 @@ export class FakeDb {
       }
       return { error: null };
     }
+    const found = hit();
+    if (q.head) return { count: found.length, error: null };
+    if (q.single) return { data: found[0] ?? null, error: null };
+    return { data: found, error: null };
+  }
+
+  /** Giá trị mặc định của cột (DB thật tự điền khi insert). */
+  private defaults: Record<string, Record<string, unknown>> = {
+    order_sheets: { sync_interval_minutes: 120, last_synced_at: null, last_attempt_at: null, last_sync_hash: null, last_error: null, line_count: 0, order_count: 0, warnings: [] },
+  };
+  private uniqueKeys: Record<string, string[][]> = {
+    order_sheets: [["workspace_id", "channel"], ["workspace_id", "spreadsheet_id", "sheet_name"]],
+  };
+
+  private execGeneric(table: string, q: Q) {
+    const list = (this.tables[table] ??= []);
+    const hit = () => list.filter((r) => q.conds.every((c) => test(c, r)));
+    if (q.op === "insert") {
+      const p = q.payload;
+      for (const cols of this.uniqueKeys[table] ?? []) {
+        if (list.some((r) => cols.every((c) => r[c] === p[c]))) return { data: null, error: { code: "23505", message: "duplicate" } };
+      }
+      const rec = { id: `${table}-${list.length + 1}-${Math.random().toString(36).slice(2, 8)}`, ...this.defaults[table], ...p };
+      list.push(rec);
+      return { data: rec, error: null };
+    }
+    if (q.op === "update") {
+      for (const r of hit()) Object.assign(r, q.payload);
+      return { data: null, error: null };
+    }
+    if (q.op === "delete") {
+      for (const r of hit()) list.splice(list.indexOf(r), 1);
+      return { error: null };
+    }
+    if (q.op !== "select") return { data: null, error: { code: "0", message: `thao tác lạ trên ${table}: ${q.op}` } };
     const found = hit();
     if (q.head) return { count: found.length, error: null };
     if (q.single) return { data: found[0] ?? null, error: null };

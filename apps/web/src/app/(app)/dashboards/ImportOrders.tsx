@@ -2,33 +2,21 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { CHANNELS, INPUT_FIELDS, INPUT_LABELS, MAX_UPLOAD_BYTES, type ColumnMapping, type InputField } from "@/lib/orders/canonical";
+import { MAX_UPLOAD_BYTES, type ColumnMapping } from "@/lib/orders/canonical";
+import { OrderPreview, type PreviewInfo } from "./OrderPreview";
 import { Spinner } from "@/components/Spinner";
 import dash from "./dashboards.module.css";
 import tpl from "./templates.module.css";
 import styles from "./import-orders.module.css";
 
-interface Inspect {
+interface Inspect extends PreviewInfo {
   filename: string;
   sheetNames: string[];
   sheet: string;
-  headers: string[];
   profileLabel: string;
   profile: "shopee" | "tiktok" | "generic";
-  channel: string | null;
-  mapping: ColumnMapping;
-  problems: string[];
-  summary: {
-    lines: number;
-    orders: number;
-    dateMin: string | null;
-    dateMax: string | null;
-    byStatus: Record<string, number>;
-    keyed: boolean;
-    netRevenue: number;
-  } | null;
-  warnings: string[];
-  preview: Record<string, string | number | null>[];
+  /** Tên Google Sheet đang nối cho kênh này: kênh đó không nhận file tải lên. */
+  blockedBy?: string | null;
 }
 
 interface Imported {
@@ -40,10 +28,6 @@ interface Imported {
 }
 
 const nf = new Intl.NumberFormat("vi-VN");
-/** "2025-09-05 14:30" → "05/09/2025". */
-const day = (s: string | null) => (s ? `${s.slice(8, 10)}/${s.slice(5, 7)}/${s.slice(0, 4)}` : "");
-const PREVIEW_COLUMNS = ["Kênh", "Mã đơn", "Ngày đặt", "Trạng thái", "Sản phẩm", "Số lượng", "Doanh thu thực"];
-const NUMERIC = new Set(["Số lượng", "Doanh thu thực"]);
 
 /**
  * Tải file đơn hàng (Excel/CSV từ Shopee, TikTok Shop hoặc tự ghi) vào nguồn "Đơn hàng đa kênh".
@@ -136,25 +120,8 @@ export function ImportOrders({ label = "+ Tải file đơn hàng", onDone }: { l
     });
   };
 
-  const setField = (field: InputField, idx: number | null) => {
-    if (!info) return;
-    const next: ColumnMapping = { ...info.mapping };
-    if (idx === null) delete next[field];
-    else next[field] = [idx];
-    change({ mapping: next });
-  };
-
-  const removeFee = (idx: number) => {
-    if (!info) return;
-    const rest = (info.mapping.platformFee ?? []).filter((i) => i !== idx);
-    const next: ColumnMapping = { ...info.mapping };
-    if (rest.length) next.platformFee = rest;
-    else delete next.platformFee;
-    change({ mapping: next });
-  };
-
   const save = async () => {
-    if (!file || !info || info.problems.length) return;
+    if (!file || !info || info.problems.length || info.blockedBy) return;
     setSaving(true);
     setError("");
     try {
@@ -169,9 +136,10 @@ export function ImportOrders({ label = "+ Tải file đơn hàng", onDone }: { l
     }
   };
 
-  const mapped = info?.mapping;
-  const feeCols = mapped?.platformFee ?? [];
-  const optionList = info?.headers.map((h, i) => ({ h: h || `Cột ${i + 1}`, i })) ?? [];
+  // Kênh đang nối Google Sheet thì không nhận file: coi như một vấn đề chặn nhập.
+  const shown: PreviewInfo | null = info
+    ? { ...info, problems: info.blockedBy ? [...info.problems, `Kênh ${info.channel} đang lấy dữ liệu từ Google Sheet "${info.blockedBy}". Hãy thêm dữ liệu vào Sheet đó, hoặc ngắt kết nối Sheet ở trang Nguồn dữ liệu trước khi tải file lên.`] : info.problems }
+    : null;
 
   return (
     <>
@@ -229,94 +197,17 @@ export function ImportOrders({ label = "+ Tải file đơn hàng", onDone }: { l
 
                 {busy && <p className={styles.working}><Spinner size={14} inline />Đang đọc file…</p>}
 
-                {info && (
-                  <>
-                    <div className={tpl.slots}>
+                {info && shown && (
+                  <OrderPreview info={shown} busy={busy} mode="file" onChange={change}>
+                    {info.sheetNames.length > 1 && (
                       <div className={tpl.slotRow}>
-                        <div className={tpl.slotLabel}>Kênh bán<span className={tpl.star} title="Bắt buộc">*</span></div>
-                        <select className={tpl.select} value={info.channel ?? ""} disabled={busy} aria-label="Kênh bán" onChange={(e) => change({ channel: e.target.value || null })}>
-                          <option value="">— Chọn kênh —</option>
-                          {CHANNELS.map((c) => <option key={c} value={c}>{c}</option>)}
+                        <div className={tpl.slotLabel}>Sheet trong file</div>
+                        <select className={tpl.select} value={info.sheet} disabled={busy} aria-label="Sheet trong file" onChange={(e) => change({ sheet: e.target.value })}>
+                          {info.sheetNames.map((n) => <option key={n} value={n}>{n}</option>)}
                         </select>
                       </div>
-                      {info.sheetNames.length > 1 && (
-                        <div className={tpl.slotRow}>
-                          <div className={tpl.slotLabel}>Sheet trong file</div>
-                          <select className={tpl.select} value={info.sheet} disabled={busy} aria-label="Sheet trong file" onChange={(e) => change({ sheet: e.target.value })}>
-                            {info.sheetNames.map((n) => <option key={n} value={n}>{n}</option>)}
-                          </select>
-                        </div>
-                      )}
-                    </div>
-
-                    {info.summary && (
-                      <div className={styles.summary}>
-                        <div className={styles.stat}><b>{nf.format(info.summary.orders)}</b>đơn hàng</div>
-                        <div className={styles.stat}><b>{nf.format(info.summary.lines)}</b>dòng sản phẩm</div>
-                        <div className={styles.stat}><b>{`${day(info.summary.dateMin)} – ${day(info.summary.dateMax)}`}</b>khoảng thời gian</div>
-                        <div className={styles.stat}><b>{nf.format(Math.round(info.summary.netRevenue))}</b>doanh thu thực (đồng)</div>
-                      </div>
                     )}
-
-                    {info.problems.length > 0 && <ul className={`${styles.list} ${styles.problem}`} role="alert">{info.problems.map((p) => <li key={p}>{p}</li>)}</ul>}
-                    {info.warnings.length > 0 && <ul className={`${styles.list} ${styles.warn}`}>{info.warnings.map((w) => <li key={w}>{w}</li>)}</ul>}
-                    {info.summary && !info.summary.keyed && (
-                      <p className={tpl.note}>File không có mã đơn hàng: khi tải file mới của cùng kênh, dữ liệu cũ của kênh đó sẽ được thay bằng file mới.</p>
-                    )}
-
-                    <div className={styles.mapTitle}>Cột trong file của bạn</div>
-                    <div className={tpl.slots}>
-                      {INPUT_FIELDS.filter((f) => f !== "platformFee").map((f) => {
-                        const cur = mapped?.[f]?.[0];
-                        return (
-                          <div key={f} className={tpl.slotRow}>
-                            <div className={tpl.slotLabel}>{INPUT_LABELS[f]}</div>
-                            <select className={tpl.select} value={cur ?? ""} disabled={busy} aria-label={INPUT_LABELS[f]} onChange={(e) => setField(f, e.target.value === "" ? null : Number(e.target.value))}>
-                              <option value="">— Không dùng —</option>
-                              {optionList.map((o) => <option key={o.i} value={o.i}>{o.h}</option>)}
-                            </select>
-                          </div>
-                        );
-                      })}
-                      {feeCols.length > 0 && (
-                        <div className={tpl.slotRow}>
-                          <div className={tpl.slotLabel}>{INPUT_LABELS.platformFee}</div>
-                          <div className={styles.fee}>
-                            {feeCols.map((i) => (
-                              <span key={i} className={styles.chip}>
-                                {info.headers[i] || `Cột ${i + 1}`}
-                                <button className={styles.chipX} onClick={() => removeFee(i)} aria-label="Bỏ cột này">×</button>
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {info.preview.length > 0 && (
-                      <>
-                        <div className={styles.mapTitle}>Dữ liệu sẽ được lưu (vài dòng đầu)</div>
-                        <div className={styles.tableWrap}>
-                          <table className={styles.table}>
-                            <thead>
-                              <tr>{PREVIEW_COLUMNS.map((c) => <th key={c} className={NUMERIC.has(c) ? styles.num : undefined}>{c}</th>)}</tr>
-                            </thead>
-                            <tbody>
-                              {info.preview.map((r, i) => (
-                                <tr key={i}>
-                                  {PREVIEW_COLUMNS.map((c) => (
-                                    <td key={c} className={NUMERIC.has(c) ? styles.num : undefined}>
-                                      {typeof r[c] === "number" ? nf.format(r[c] as number) : r[c] ?? ""}
-                                    </td>
-                                  ))}
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      </>
-                    )}
-                  </>
+                  </OrderPreview>
                 )}
 
                 {error && <p className={tpl.error} role="alert">{error}</p>}
@@ -324,7 +215,7 @@ export function ImportOrders({ label = "+ Tải file đơn hàng", onDone }: { l
                 <div className={tpl.actions}>
                   {file && <button className={dash.ghost} onClick={() => { setFile(null); setInfo(null); setError(""); seq.current++; setBusy(false); }} disabled={saving}>Chọn file khác</button>}
                   <button className={dash.ghost} onClick={close} disabled={saving}>Hủy</button>
-                  <button className={dash.primary} onClick={save} disabled={!info || busy || saving || info.problems.length > 0}>Nhập dữ liệu</button>
+                  <button className={dash.primary} onClick={save} disabled={!info || busy || saving || info.problems.length > 0 || !!info.blockedBy}>Nhập dữ liệu</button>
                 </div>
               </>
             )}

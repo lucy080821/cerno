@@ -1,6 +1,7 @@
 import { timingSafeEqual } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
 import { syncDueSources } from "@/lib/google/sync";
+import { syncDueOrderSheets } from "@/lib/orders/sheet-sync";
 import { requestOrigin } from "@/lib/auth/public-origin";
 import { liveRunDeps } from "@/lib/server/reports/live";
 import { runDueReports } from "@/lib/server/reports/run-due";
@@ -41,6 +42,12 @@ async function handle(request: NextRequest) {
       sync = await syncDueSources();
     } catch {
       sync = { error: "sync_failed" };
+    }
+    // Sheet đơn hàng cũng được đọc lại trước khi gửi báo cáo để số liệu mới nhất.
+    try {
+      await syncDueOrderSheets();
+    } catch {
+      /* bỏ qua: báo cáo vẫn dùng dữ liệu đã có */
     }
     const origin = requestOrigin(request);
     const summary = await runDueReports(liveRunDeps(origin));

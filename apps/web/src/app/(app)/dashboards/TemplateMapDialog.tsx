@@ -10,6 +10,7 @@ import { Spinner } from "@/components/Spinner";
 import { ORDERS_TEMPLATE_ID } from "@/content/templates/ban-hang-da-kenh";
 import { isUploadId } from "@/lib/orders/canonical";
 import { ConnectSheet } from "./ConnectSheet";
+import { ConnectOrderSheet } from "./ConnectOrderSheet";
 import { ImportOrders } from "./ImportOrders";
 import dash from "./dashboards.module.css";
 import styles from "./templates.module.css";
@@ -171,12 +172,12 @@ export function TemplateMapDialog({ entry, sources, apiKey, appId, onClose }: Pr
           {forOrders
             ? hasOrders
               ? "Mẫu này dùng dữ liệu đơn hàng bạn đã tải lên, không cần tải lại. Các cột đã tự khớp, bấm Tạo dashboard là xong."
-              : "Mẫu này dùng nguồn \"Đơn hàng đa kênh\": tải file đơn hàng từ Shopee, TikTok Shop (hoặc file tự ghi) lên, các cột sẽ tự khớp."
+              : "Mẫu này dùng nguồn \"Đơn hàng đa kênh\": tải file đơn hàng từ Shopee, TikTok Shop (hoặc file tự ghi) lên, hoặc nối Google Sheet đơn hàng, các cột sẽ tự khớp."
             : "Chọn Google Sheet chứa dữ liệu của bạn. Cerno tự ghép các cột với từng mục của mẫu; bạn có thể đổi lại nếu chưa đúng."}
         </p>
 
         {sources.length === 0 ? (
-          <p className={styles.note}>{forOrders ? "Bạn chưa có dữ liệu đơn hàng. Tải file đơn hàng lên để tiếp tục." : "Bạn chưa kết nối Google Sheet nào. Kết nối một Sheet để tiếp tục."}</p>
+          <p className={styles.note}>{forOrders ? "Bạn chưa có dữ liệu đơn hàng. Tải file đơn hàng lên hoặc nối Google Sheet đơn hàng để tiếp tục." : "Bạn chưa kết nối Google Sheet nào. Kết nối một Sheet để tiếp tục."}</p>
         ) : (
           <label className={styles.field}>
             Nguồn dữ liệu
@@ -189,7 +190,12 @@ export function TemplateMapDialog({ entry, sources, apiKey, appId, onClose }: Pr
         )}
 
         <div className={styles.sheetLinks}>
-          {forOrders ? <ImportOrders label={hasOrders ? "Thêm file đơn hàng mới (tuỳ chọn)" : undefined} /> : <ConnectSheet apiKey={apiKey} appId={appId} />}
+          {forOrders ? (
+            <>
+              <ImportOrders label={hasOrders ? "Thêm file đơn hàng mới (tuỳ chọn)" : undefined} />
+              <ConnectOrderSheet apiKey={apiKey} appId={appId} label={hasOrders ? "Nối Google Sheet đơn hàng (tuỳ chọn)" : undefined} />
+            </>
+          ) : <ConnectSheet apiKey={apiKey} appId={appId} />}
           {entry.sampleSheetId && (
             <a className={dash.ghost} href={sampleSheetCopyUrl(entry.sampleSheetId)} target="_blank" rel="noopener noreferrer">
               Sao chép Sheet mẫu

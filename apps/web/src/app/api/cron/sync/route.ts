@@ -1,6 +1,7 @@
 import { timingSafeEqual } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
 import { syncDueSources } from "@/lib/google/sync";
+import { syncDueOrderSheets } from "@/lib/orders/sheet-sync";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -17,7 +18,7 @@ function authorized(request: NextRequest): boolean {
 }
 
 /**
- * Bộ hẹn giờ gọi định kỳ (vd mỗi 30 phút): tự cập nhật các nguồn Google Sheets đã quá chu kỳ (mặc định 2 giờ).
+ * Bộ hẹn giờ gọi định kỳ (vd mỗi 30 phút): tự cập nhật các nguồn Google Sheets và các Sheet đơn hàng đã quá chu kỳ (mặc định 2 giờ).
  * Bảo vệ bằng `Authorization: Bearer <CRON_SECRET>`. Chạy lặp không gây hại: nguồn chưa đến hạn thì bị bỏ qua.
  */
 async function handle(request: NextRequest) {
@@ -26,7 +27,10 @@ async function handle(request: NextRequest) {
   }
   if (!authorized(request)) return NextResponse.json({ error: "Không có quyền." }, { status: 401 });
   try {
-    return NextResponse.json(await syncDueSources());
+    // Hai việc độc lập: lỗi ở một bên không được làm hỏng bên kia.
+    const sources = await syncDueSources().catch((e) => ({ error: e instanceof Error ? e.message : "Lỗi" }));
+    const orderSheets = await syncDueOrderSheets().catch((e) => ({ error: e instanceof Error ? e.message : "Lỗi" }));
+    return NextResponse.json({ ...sources, orderSheets });
   } catch (e) {
     return NextResponse.json({ error: e instanceof Error ? e.message : "Lỗi" }, { status: 500 });
   }

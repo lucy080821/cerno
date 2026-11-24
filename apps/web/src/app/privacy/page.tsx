@@ -95,6 +95,13 @@ export default function PrivacyPage() {
           cột như vậy làm cột dữ liệu khác. Đây là dữ liệu của bạn, không phải dữ liệu từ Google: các cam kết ở mục 4 về dữ liệu
           Google không áp dụng riêng cho nó, nhưng mục 3, 5, 6 và 7 áp dụng như với mọi dữ liệu khác của bạn.
         </p>
+        <p>
+          Nếu bạn nối một tab Google Sheet làm nguồn đơn hàng, máy chủ của chúng tôi đọc tab đó (chỉ đọc, qua Google Sheets API) khi bạn nối,
+          mỗi 2 giờ và khi bạn bấm Cập nhật. <strong>Nội dung gốc của tab không được lưu:</strong> cũng như với file tải lên, chỉ các cột đã
+          được ánh xạ ở trên được giữ lại; tên, số điện thoại và địa chỉ người mua trong Sheet không được lưu. Vì đây là dữ liệu đọc từ
+          Google, các cam kết ở mục 4 áp dụng cho nó. Ngắt kết nối Sheet ở trang Nguồn dữ liệu là dừng việc đọc; dữ liệu đã nhập được giữ
+          cho đến khi bạn xóa nguồn hoặc xóa tài khoản.
+        </p>
       </Section>
 
       <Section id="muc-dich" title="3. Chúng tôi dùng dữ liệu để làm gì">

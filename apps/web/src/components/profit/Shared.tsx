@@ -30,8 +30,8 @@ export function NoOrders() {
   return (
     <div className={styles.empty}>
       <b style={{ color: "var(--text)", fontSize: "1.05rem" }}>Chưa có dữ liệu đơn hàng</b>
-      <span>Tải file đơn hàng Excel/CSV từ Shopee, TikTok Shop hoặc sổ bán hàng của bạn ở trang Dashboard, mục Nguồn dữ liệu.</span>
-      <Link href="/dashboards" className={`${styles.btn} ${styles.primary}`}>Tải file đơn hàng</Link>
+      <span>Tải file đơn hàng Excel/CSV từ Shopee, TikTok Shop hoặc sổ bán hàng của bạn, hoặc nối một Google Sheet đơn hàng (dán dữ liệu mới xuống dưới, Cerno tự cập nhật), ở trang Nguồn dữ liệu.</span>
+      <Link href="/sources" className={`${styles.btn} ${styles.primary}`}>Thêm dữ liệu đơn hàng</Link>
     </div>
   );
 }
