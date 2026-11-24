@@ -28,7 +28,7 @@ export async function callGroq(apiKey: string, req: ProviderRequest): Promise<Pr
       temperature: 0.3,
       reasoning_effort: "low",
       // Dịch vụ AI tính cả số token tối đa của câu trả lời vào hạn mức 8.000 token/phút: đừng xin dư.
-      max_completion_tokens: 1200,
+      max_completion_tokens: req.maxTokens ?? 1200,
       ...(req.tools ? { tools: req.tools, tool_choice: "auto" } : {}),
       messages: [{ role: "system", content: req.system }, ...req.messages.map(toGroqMessage)],
     }),

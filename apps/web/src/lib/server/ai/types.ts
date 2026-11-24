@@ -26,6 +26,10 @@ export interface ProviderRequest {
   /** null = không gửi công cụ. */
   tools: ToolDef[] | null;
   signal?: AbortSignal;
+  /** Số token tối đa của câu trả lời; bỏ trống = mức mặc định ngắn của khung chat trong editor. Trang Hỏi AI xin nhiều hơn để viết báo cáo đủ chi tiết. */
+  maxTokens?: number;
+  /** Mức "suy nghĩ" của Claude: low (mặc định, rẻ và nhanh) hoặc medium (phân tích kỹ hơn). Groq bỏ qua. */
+  effort?: "low" | "medium";
 }
 
 /**

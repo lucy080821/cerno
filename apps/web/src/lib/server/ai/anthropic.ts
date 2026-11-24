@@ -115,13 +115,13 @@ export async function callAnthropic(
   const stream = client.messages.stream(
     {
       model,
-      max_tokens: 2000,
+      max_tokens: req.maxTokens ?? 2000,
       system: req.system,
       messages: toAnthropicMessages(req.messages),
       ...(req.tools?.length ? { tools: toAnthropicTools(req.tools) } : {}),
       // Trả lời nhanh và rẻ: không suy nghĩ dài (token suy nghĩ cũng tính tiền) và không phải giữ lại khối suy nghĩ giữa các vòng gọi công cụ.
       thinking: { type: "disabled" },
-      output_config: { effort: "low" },
+      output_config: { effort: req.effort ?? "low" },
     },
     { signal: req.signal },
   );

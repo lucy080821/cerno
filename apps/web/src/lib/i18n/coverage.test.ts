@@ -18,6 +18,8 @@ const VI = /[àáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềế
 const IGNORE_FILES = [
   /\.test\.tsx?$/,
   /\.d\.ts$/,
+  /server\/ai-chat\//, // lời nhắc, mô tả công cụ và lỗi gửi cho AI / log server (giao diện trang Hỏi AI dịch riêng)
+  /api\/ai\//, // thông báo lỗi của API Hỏi AI
   /api\/chat\/route\.ts$/, // lời nhắc hệ thống gửi cho AI
   /ai-tools\.ts$/, // mô tả công cụ gửi cho AI
   /ai-context\.ts$/, // ngữ cảnh gửi cho AI
