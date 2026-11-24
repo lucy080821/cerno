@@ -366,4 +366,9 @@ export const EN_PROFIT: Dict = {
   "Quý này": "This quarter",
   "Quý {0}/{1}": "Q{0}/{1}",
   "Tháng {0}/{1}": "Month {0}/{1}",
+  "Bạn đã xong hết các việc được gợi ý": "You have finished all the suggested tasks",
+  "Việc mới sẽ hiện ở đây khi số liệu có thay đổi.": "New tasks will show up here when your figures change.",
+  "Ẩn {0} việc đã xong": "Hide {0} finished tasks",
+  "Xem {0} việc đã xong": "Show {0} finished tasks",
+  "Gợi ý được tính từ số liệu đơn hàng, chỉ tính những sản phẩm có từ 3 đơn trở lên. \"Đã xong\" chỉ lưu trong trình duyệt này; nếu vấn đề vẫn còn trong số liệu, bạn có thể bỏ đánh dấu để xem lại.": "Suggestions are calculated from your order data and only cover products with at least 3 orders. \"Done\" is only saved in this browser; if the problem is still in your figures, you can unmark it to see it again.",
 };

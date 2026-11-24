@@ -7,8 +7,12 @@
   align-items: center;
   gap: 12px;
   padding: 0 16px;
-  background: var(--surface);
-  border-bottom: 1px solid var(--line);
+  background: var(--bar-bg);
+  border-bottom: 1px solid var(--bar-line);
+  /* Màu của thanh trên đặt ở .frame (shell.module.css) qua các biến --bar-*; chữ con đọc --text/--muted nên đặt lại ở đây. */
+  color: var(--bar-fg);
+  --text: var(--bar-fg);
+  --muted: var(--bar-muted);
 }
 
 .burger {
@@ -25,13 +29,19 @@
 }
 
 .burger:hover {
-  background: rgba(20, 22, 43, 0.06);
+  background: var(--bar-hover);
 }
 
 .logo {
   flex: none;
   display: flex;
   align-items: center;
+}
+
+/* Logo có nền tối nên viền sáng mảnh để nổi lên trên thanh xanh đậm. */
+.logo svg {
+  border-radius: 7px;
+  box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.55);
 }
 
 .search {
@@ -54,9 +64,9 @@
 .searchInput {
   width: 100%;
   height: 36px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--bar-field-line);
   border-radius: 10px;
-  background: var(--bg);
+  background: var(--bar-field);
   padding: 0 64px 0 36px;
   font: inherit;
   font-size: 0.88rem;
@@ -67,9 +77,13 @@
   display: none;
 }
 
+.searchInput::placeholder {
+  color: var(--bar-muted);
+}
+
 .searchInput:focus {
-  outline: 2px solid rgba(109, 94, 252, 0.4);
-  background: var(--surface);
+  outline: 2px solid rgba(109, 94, 252, 0.55);
+  background: var(--bar-field-focus);
   border-color: var(--brand-a);
 }
 
@@ -80,15 +94,18 @@
   transform: translateY(-50%);
   font: inherit;
   font-size: 0.7rem;
-  color: var(--muted);
-  border: 1px solid var(--line);
+  color: var(--bar-muted);
+  border: 1px solid var(--bar-field-line);
   border-radius: 6px;
   padding: 1px 6px;
-  background: var(--surface);
+  background: transparent;
   pointer-events: none;
 }
 
 .results {
+  --text: #14162b;
+  --muted: #5d6782;
+  color: #14162b;
   position: absolute;
   top: calc(100% + 6px);
   left: 0;
@@ -189,10 +206,10 @@
   gap: 6px;
   height: 34px;
   padding: 0 12px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--bar-field-line);
   border-radius: 10px;
-  background: var(--surface);
-  color: var(--text);
+  background: var(--bar-chip);
+  color: var(--bar-fg);
   font: inherit;
   font-size: 0.85rem;
   font-weight: 600;
@@ -236,6 +253,9 @@
 }
 
 .menu {
+  --text: #14162b;
+  --muted: #5d6782;
+  color: #14162b;
   position: absolute;
   right: 0;
   top: calc(100% + 8px);

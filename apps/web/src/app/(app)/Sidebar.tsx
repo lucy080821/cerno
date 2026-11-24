@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { NavIcon } from "@/components/shell/NavIcon";
 import { activeKey, NAV } from "@/lib/shell/nav";
 import { badgeText, initialsOf, usageRatio } from "@/lib/shell/sidebar";
+import { pendingCount, useDoneTodos } from "@/lib/profit/todos-done";
 import { useShell } from "@/lib/shell/store";
 import { useSidebarData } from "@/lib/shell/use-sidebar";
 import styles from "./shell.module.css";
@@ -40,6 +41,7 @@ export function Sidebar() {
   const active = activeKey(pathname);
   const sb = useSidebarData(pathname);
   const closeSide = useShell((s) => s.closeSide);
+  const doneTodos = useDoneTodos();
   const [open, setOpen] = useState<Record<string, boolean>>({ dashboards: true, sources: false });
 
   useEffect(() => {
@@ -88,7 +90,7 @@ export function Sidebar() {
       <nav className={styles.nav} aria-label="Điều hướng">
         {NAV.map((n, i) => {
           if ("group" in n) return <div key={i} className={styles.group}>{n.group}</div>;
-          const badge = n.badge && sb ? badgeText(sb[n.badge]) : null;
+          const badge = n.badge && sb ? badgeText(n.badge === "todos" && sb.todoIds ? pendingCount(sb.todoIds, doneTodos) : sb[n.badge]) : null;
           const on = n.key === active;
           const kids = TREE_PARENTS.has(n.key) ? children(n.key) : [];
           const expanded = kids.length > 0 && !!open[n.key];

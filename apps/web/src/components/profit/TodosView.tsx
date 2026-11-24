@@ -1,23 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { Todo } from "@/lib/profit/todos";
+import { splitTodos, useDoneTodos, writeDoneTodos } from "@/lib/profit/todos-done";
 import { compact, count, pct, vnd } from "./format";
 import { ErrorBox, Loading, NoOrders } from "./Shared";
 import { useProfitSummary } from "./useProfit";
 import styles from "./profit.module.css";
-
-const DONE_KEY = "cerno.profit.todos.done";
-
-function readDone(): string[] {
-  try {
-    const v = JSON.parse(window.localStorage.getItem(DONE_KEY) ?? "[]");
-    return Array.isArray(v) ? v.filter((x) => typeof x === "string") : [];
-  } catch {
-    return [];
-  }
-}
 
 export function todoText(t: Todo): { title: string; detail: string; impact: string; action: string } {
   switch (t.kind) {
@@ -53,18 +43,9 @@ const PRI: Record<Todo["priority"], { label: string; cls: string }> = {
 /** Trang Việc cần làm: gợi ý suy ra từ số liệu lãi từng đơn (không dùng AI). Đánh dấu "đã xong" lưu trong trình duyệt. */
 export function TodosView() {
   const { data, error, loading, reload } = useProfitSummary({ ignorePeriod: true });
-  const [done, setDone] = useState<string[]>([]);
-  useEffect(() => setDone(readDone()), []);
-  const toggle = (id: string) =>
-    setDone((cur) => {
-      const next = cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id];
-      try {
-        window.localStorage.setItem(DONE_KEY, JSON.stringify(next));
-      } catch {
-        /* chế độ riêng tư: chỉ nhớ trong phiên */
-      }
-      return next;
-    });
+  const done = useDoneTodos();
+  const [showDone, setShowDone] = useState(false);
+  const toggle = (id: string) => writeDoneTodos(done.includes(id) ? done.filter((x) => x !== id) : [...done, id]);
 
   if (loading && !data) return <Loading />;
   if (error && !data) return <ErrorBox message={error} retry={reload} />;
@@ -73,28 +54,42 @@ export function TodosView() {
   const todos = data.todos ?? [];
   if (todos.length === 0) return <div className={styles.empty}><b style={{ color: "var(--text)" }}>Chưa có việc gì cần làm</b><span>Không có sản phẩm lỗ, đơn thiếu giá vốn hay đơn hoàn đáng kể.</span></div>;
 
+  const { open, closed } = splitTodos(todos, done);
+  const row = (t: Todo, isDone: boolean) => {
+    const x = todoText(t);
+    const pri = PRI[t.priority];
+    return (
+      <div key={t.id} className={`${styles.task} ${isDone ? styles.taskDone : ""}`}>
+        <span className={`${styles.badge} ${pri.cls ? styles[pri.cls] : ""}`}>{pri.label}</span>
+        <div>
+          <b>{x.title}</b>
+          <div className={styles.small} style={{ marginTop: 3, lineHeight: 1.5 }}>{x.detail}</div>
+          {x.impact && <div className={styles.small} style={{ marginTop: 3 }}><b>{x.impact}</b></div>}
+        </div>
+        <div className={styles.toolbar}>
+          <Link href={t.href} className={`${styles.btn} ${t.priority !== "medium" && !isDone ? styles.primary : ""}`}>{x.action}</Link>
+          <button className={styles.btn} onClick={() => toggle(t.id)}>{isDone ? "Bỏ đánh dấu" : "Đã xong"}</button>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className={styles.stack}>
-      {todos.map((t) => {
-        const x = todoText(t);
-        const isDone = done.includes(t.id);
-        const pri = PRI[t.priority];
-        return (
-          <div key={t.id} className={`${styles.task} ${isDone ? styles.taskDone : ""}`}>
-            <span className={`${styles.badge} ${pri.cls ? styles[pri.cls] : ""}`}>{pri.label}</span>
-            <div>
-              <b>{x.title}</b>
-              <div className={styles.small} style={{ marginTop: 3, lineHeight: 1.5 }}>{x.detail}</div>
-              {x.impact && <div className={styles.small} style={{ marginTop: 3 }}><b>{x.impact}</b></div>}
-            </div>
-            <div className={styles.toolbar}>
-              <Link href={t.href} className={`${styles.btn} ${t.priority !== "medium" ? styles.primary : ""}`}>{x.action}</Link>
-              <button className={styles.btn} onClick={() => toggle(t.id)}>{isDone ? "Bỏ đánh dấu" : "Đã xong"}</button>
-            </div>
-          </div>
-        );
-      })}
-      <p className={styles.small}>Gợi ý được tính từ số liệu đơn hàng, chỉ tính những sản phẩm có từ 3 đơn trở lên. &quot;Đã xong&quot; chỉ lưu trong trình duyệt này.</p>
+      {open.length === 0 ? (
+        <div className={styles.empty}><b style={{ color: "var(--text)" }}>Bạn đã xong hết các việc được gợi ý</b><span>Việc mới sẽ hiện ở đây khi số liệu có thay đổi.</span></div>
+      ) : (
+        open.map((t) => row(t, false))
+      )}
+      {closed.length > 0 && (
+        <>
+          <button type="button" className={styles.btn} style={{ alignSelf: "flex-start" }} onClick={() => setShowDone((v) => !v)} aria-expanded={showDone}>
+            {showDone ? `Ẩn ${closed.length} việc đã xong` : `Xem ${closed.length} việc đã xong`}
+          </button>
+          {showDone && closed.map((t) => row(t, true))}
+        </>
+      )}
+      <p className={styles.small}>Gợi ý được tính từ số liệu đơn hàng, chỉ tính những sản phẩm có từ 3 đơn trở lên. &quot;Đã xong&quot; chỉ lưu trong trình duyệt này; nếu vấn đề vẫn còn trong số liệu, bạn có thể bỏ đánh dấu để xem lại.</p>
     </div>
   );
 }

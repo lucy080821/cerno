@@ -11,6 +11,8 @@ export interface SidebarData {
   avatar: string | null;
   channels: string;
   todos: number;
+  /** Mã từng việc đang gợi ý: để thanh bên trừ các việc đã đánh dấu xong (lưu trong trình duyệt). */
+  todoIds: string[];
   alertsFiring: number;
   plan: Plan;
   planLabel: string;
@@ -41,7 +43,7 @@ async function attempt<T>(label: string, fn: () => Promise<T>, fallback: T): Pro
  */
 export async function loadSidebar(supabase: SupabaseClient, userId: string, userName: string, avatar: string | null = null): Promise<SidebarData> {
   const base: SidebarData = {
-    shop: shopName(null, userName), avatar, channels: "", todos: 0, alertsFiring: 0,
+    shop: shopName(null, userName), avatar, channels: "", todos: 0, todoIds: [], alertsFiring: 0,
     plan: "free", planLabel: PLAN_LIMITS.free.label, sources: 0, maxSources: MAX_SOURCES_PER_WORKSPACE,
     userName, dashboards: [], sourceList: [],
   };
@@ -90,6 +92,7 @@ export async function loadSidebar(supabase: SupabaseClient, userId: string, user
     shop: shopName(ws.name, userName),
     channels: profit ? channelLine(profit.channels) : "",
     todos: profit ? buildTodos(profit).length : 0,
+    todoIds: profit ? buildTodos(profit).map((t) => t.id) : [],
     alertsFiring,
     plan: ws.plan,
     planLabel: PLAN_LIMITS[ws.plan].label,
