@@ -36,6 +36,9 @@ const build = (t: { effectiveFrom: string; source: string; rows: number[][] }): 
 
 const TABLES: Record<SellerType, Table> = { non_mall: build(data.nonMall), mall: build(data.mall) };
 
+/** Toàn bộ ngành của biểu phí (dùng để tự nhận diện ngành từ tên sản phẩm, lib/fees/match.ts). Không sửa mảng trả về. */
+export const categoryList = (type: SellerType): readonly (FeeCategory & { norm: string; leaf: string })[] => TABLES[type].list;
+
 export const tableInfo = (type: SellerType) => ({ effectiveFrom: TABLES[type].effectiveFrom, source: TABLES[type].source, count: TABLES[type].list.length });
 
 /** Mức Phí Cố Định (%) của một ngành theo đường dẫn; null nếu không có trong biểu phí (vd đổi loại shop khiến tên ngành khác). */

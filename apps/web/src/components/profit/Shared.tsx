@@ -66,13 +66,21 @@ export function MissingCostNote({ missing, total }: { missing: number; total: nu
   );
 }
 
-/** Nhắc khi có đơn dùng phí sàn ước tính (file không có phí). */
-export function FeeEstimateNote({ count }: { count: number }) {
+/** Số sản phẩm Shopee mà Cerno tự nhận diện ngành hàng (người bán chưa chọn/xác nhận). */
+export const autoCategoryCount = (fees: { suggestions?: Record<string, unknown> } | undefined): number => Object.keys(fees?.suggestions ?? {}).length;
+
+/** Nhắc khi có đơn dùng phí sàn ước tính (file không có phí). `auto` = số sản phẩm có ngành hàng do Cerno tự nhận diện. */
+export function FeeEstimateNote({ count, auto = 0 }: { count: number; auto?: number }) {
   if (!count) return null;
   return (
     <div className={styles.note}>
       <b>{count.toLocaleString("vi-VN")}</b> đơn dùng phí sàn <b>ước tính</b> theo biểu phí Shopee vì file đơn hàng không có phí. Số thật nằm ở Báo cáo thu nhập của Shopee. Bật hoặc chỉnh ở trang{" "}
       <Link href="/products">Sản phẩm và giá vốn</Link>.
+      {auto > 0 && (
+        <>
+          {" "}Ngành hàng của <b>{auto.toLocaleString("vi-VN")}</b> sản phẩm do Cerno tự nhận diện từ tên sản phẩm, bạn kiểm tra lại giúp xem đã đúng chưa.
+        </>
+      )}
     </div>
   );
 }

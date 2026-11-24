@@ -178,6 +178,8 @@ export interface ProductProfit {
   key: string;
   sku: string | null;
   name: string;
+  /** Các kênh có bán sản phẩm này (kể cả đơn hủy/hoàn), xếp theo tên. */
+  channels: string[];
   quantity: number;
   /** Số đơn có sản phẩm này. */
   orders: number;
@@ -272,7 +274,7 @@ export function summarize(orders: OrderProfit[]): ProfitSummary {
   const days = new Map<string, { profit: number; orders: number }>();
   const chans = new Map<string, { orders: number; profit: number; computable: number; loss: number }>();
   const reasons = new Map<LossReason, ReasonStat>();
-  const prods = new Map<string, ProductProfit & { _orders: Set<string>; _unknown: boolean }>();
+  const prods = new Map<string, ProductProfit & { _orders: Set<string>; _unknown: boolean; _channels: Set<string> }>();
 
   for (const o of orders) {
     const d = dayOf(o.date);
@@ -294,9 +296,10 @@ export function summarize(orders: OrderProfit[]): ProfitSummary {
       const key = productKey(l.sku, l.product) ?? "(không rõ sản phẩm)";
       let p = prods.get(key);
       if (!p) {
-        p = { key, sku: l.sku, name: l.product ?? l.sku ?? key, quantity: 0, orders: 0, revenue: 0, cost: 0, fee: 0, adCost: 0, shipCost: 0, shippingIn: 0, profit: null, profitPerOrder: null, avgPrice: null, unitCost: null, breakEvenPrice: null, missingCostOrders: 0, costMissing: false, _orders: new Set(), _unknown: false };
+        p = { key, sku: l.sku, name: l.product ?? l.sku ?? key, channels: [], quantity: 0, orders: 0, revenue: 0, cost: 0, fee: 0, adCost: 0, shipCost: 0, shippingIn: 0, profit: null, profitPerOrder: null, avgPrice: null, unitCost: null, breakEvenPrice: null, missingCostOrders: 0, costMissing: false, _orders: new Set(), _unknown: false, _channels: new Set() };
         prods.set(key, p);
       }
+      p._channels.add(o.channel);
       if (!o.valid) return;
       p._orders.add(`${o.channel}\u0000${o.id}`);
       if (!o.costKnown) {
@@ -359,12 +362,13 @@ export function summarize(orders: OrderProfit[]): ProfitSummary {
     .sort((a, b) => b.orders - a.orders);
   s.reasons = [...reasons.values()].sort((a, b) => a.amount - b.amount);
   s.products = [...prods.values()]
-    .map(({ _orders, _unknown, ...p }) => {
+    .map(({ _orders, _unknown, _channels, ...p }) => {
       const orders = _orders.size;
       const known = p.missingCostOrders === 0 && !_unknown && orders > 0;
       const profit = known ? p.revenue + p.shippingIn - p.fee - p.cost - p.adCost - p.shipCost : null;
       return {
         ...p,
+        channels: [..._channels].sort(),
         orders,
         costMissing: _unknown,
         profit,

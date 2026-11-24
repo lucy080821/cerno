@@ -5,6 +5,7 @@ import { costKey } from "@/lib/profit/catalog";
 import { productKey, type FeeEstimator } from "@/lib/profit/order-profit";
 import { DEFAULT_FEE_SETTINGS, FEE_CHANNEL, isSellerType, type FeePayload, type FeeSettings } from "@/lib/fees/constants";
 import { estimateOrderFee } from "@/lib/fees/estimate";
+import { MATCH_VERSION, suggestCategory } from "@/lib/fees/match";
 import { categoryRate, tableInfo } from "@/lib/fees/shopee";
 import { cleanShipRates, makeShipEstimator, type ShipEstimator, type ShipRates } from "@/lib/profit/shipping";
 
@@ -30,7 +31,7 @@ const missingTable = (e: { code?: string; message?: string } | null | undefined)
   !!e && (e.code === "42P01" || e.code === "PGRST205" || /fee_settings|product_fee_categories/.test(e.message ?? ""));
 
 const sign = (settings: FeeSettings, categories: Map<string, string>, ship: ShipRates): string =>
-  createHash("sha1").update(JSON.stringify([settings, [...categories.entries()].sort(), Object.entries(ship).sort()])).digest("hex").slice(0, 16);
+  createHash("sha1").update(JSON.stringify([settings, [...categories.entries()].sort(), Object.entries(ship).sort(), MATCH_VERSION])).digest("hex").slice(0, 16);
 
 const missingShipTable = (e: { code?: string; message?: string } | null | undefined) =>
   !!e && (e.code === "42P01" || e.code === "PGRST205" || /shipping_costs/.test(e.message ?? ""));
@@ -67,15 +68,19 @@ export async function loadFeeConfig(db: SupabaseClient, workspaceId: string): Pr
   }
 }
 
-/** Bộ ước tính phí cho `buildOrders`; undefined khi tắt, chưa có bảng hoặc chưa chọn ngành nào. */
+/**
+ * Bộ ước tính phí cho `buildOrders`; undefined khi tắt hoặc chưa có bảng. Sản phẩm người bán chưa chọn ngành thì dùng ngành Cerno tự
+ * nhận diện từ tên sản phẩm (lib/fees/match.ts; giao diện nhắc người bán kiểm tra lại); không nhận diện được thì chưa ước tính đơn đó.
+ */
 export function makeFeeEstimator(cfg: FeeConfig): FeeEstimator | undefined {
-  if (!cfg.available || !cfg.settings.enabled || cfg.categories.size === 0) return undefined;
+  if (!cfg.available || !cfg.settings.enabled) return undefined;
   const { sellerType, newSeller } = cfg.settings;
   return (o) => {
     if (o.channel !== FEE_CHANNEL) return null;
     const lines = o.lines.map((l) => {
       const key = productKey(l.sku, l.product);
-      const path = key ? cfg.categories.get(costKey(key)) : undefined;
+      const chosen = key ? cfg.categories.get(costKey(key)) : undefined;
+      const path = chosen ?? suggestCategory(sellerType, l.product ?? l.sku)?.path;
       return { gross: l.gross, ratePct: categoryRate(sellerType, path) };
     });
     return estimateOrderFee({ date: o.date, lines, buyerShipping: o.shippingIn, settings: { sellerType, newSeller } })?.total ?? null;
@@ -120,11 +125,21 @@ export async function saveFeeConfig(a: SaveFeeConfigArgs): Promise<void> {
   }
 }
 
-/** Phần cấu hình phí gửi cho trình duyệt. */
-export function feePayload(cfg: FeeConfig): FeePayload {
+/**
+ * Phần cấu hình phí gửi cho trình duyệt. `products` (key + tên) để gợi ý ngành cho sản phẩm chưa được người bán chọn ngành.
+ */
+export function feePayload(cfg: FeeConfig, products: { key: string; name: string }[] = []): FeePayload {
   const type = cfg.settings.sellerType;
+  const suggestions: FeePayload["suggestions"] = {};
+  for (const p of products) {
+    const k = costKey(p.key);
+    if (cfg.categories.has(k) || suggestions[k]) continue;
+    const g = suggestCategory(type, p.name);
+    if (g) suggestions[k] = { path: g.path, ratePct: g.ratePct, source: g.source };
+  }
   return {
     ship: cfg.ship,
+    suggestions,
     available: cfg.available,
     settings: cfg.settings,
     tableFrom: tableInfo(type).effectiveFrom,

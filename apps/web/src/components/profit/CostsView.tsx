@@ -5,7 +5,7 @@ import { AdSpendCard } from "./AdSpendCard";
 import { ShippingCard } from "./ShippingCard";
 import { HBars } from "./charts";
 import { compact, count, pct, vnd } from "./format";
-import { Card, ErrorBox, FeeEstimateNote, ShipEstimateNote, Kpi, Loading, MissingCostNote, NoOrders } from "./Shared";
+import { Card, ErrorBox, FeeEstimateNote, ShipEstimateNote, autoCategoryCount, Kpi, Loading, MissingCostNote, NoOrders } from "./Shared";
 import { useProfitSummary } from "./useProfit";
 import styles from "./profit.module.css";
 
@@ -28,7 +28,7 @@ export function CostsView() {
   return (
     <div className={styles.stack}>
       <MissingCostNote missing={s.missingCost} total={s.orders} />
-      <FeeEstimateNote count={s.feeEstimated} />
+      <FeeEstimateNote count={s.feeEstimated} auto={autoCategoryCount(data.fees)} />
       <ShipEstimateNote count={s.shipEstimated} />
       <div className={styles.kpis}>
         <Kpi label="Tổng chi phí" value={compact(total)} note={`${share(total)} doanh thu thực`} />

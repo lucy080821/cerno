@@ -7,7 +7,7 @@ import type { ProductProfit } from "@/lib/profit/order-profit";
 import { count, signed, vnd } from "./format";
 import { DEFAULT_FEE_SETTINGS, INFRA_FEE_VND, PROCESSING_FEE_PCT, SELLER_TYPES, type FeeSettings, type SellerType } from "@/lib/fees/constants";
 import { CategoryDialog, ratePctText } from "./CategoryDialog";
-import { Card, ErrorBox, FeeEstimateNote, Loading, NoOrders } from "./Shared";
+import { autoCategoryCount, Card, ErrorBox, FeeEstimateNote, Loading, NoOrders } from "./Shared";
 import { useProfitSummary } from "./useProfit";
 import styles from "./profit.module.css";
 
@@ -68,6 +68,9 @@ export function ProductsView({ initialFilter }: { initialFilter: Filter }) {
   const canEdit = data.editable && data.catalog.available;
   const canEditFees = data.editable && !!fees?.available;
   const chosenCount = rows.filter((r) => fees?.categories[costKey(r.key)]).length;
+  // Sản phẩm chưa được người bán chọn ngành nhưng Cerno đã tự nhận diện từ tên (cần người bán kiểm tra lại).
+  const autoRows = rows.filter((r) => !fees?.categories[costKey(r.key)] && fees?.suggestions[costKey(r.key)]);
+  const autoCount = autoRows.length;
   const feeFormChanged = !!fees && (feeForm.enabled !== fees.settings.enabled || feeForm.sellerType !== fees.settings.sellerType || feeForm.newSeller !== fees.settings.newSeller);
 
   const changed = Object.entries(edits).filter(([key, v]) => {
@@ -134,6 +137,16 @@ export function ProductsView({ initialFilter }: { initialFilter: Filter }) {
     setCatRow(null);
     const targets = applyAll ? rows.filter((r) => r.key === row.key || !fees?.categories[costKey(r.key)]) : [row];
     void saveFees({ upserts: targets.map((r) => ({ sku: r.key, category: path })) }, `Đã chọn ngành cho ${count(targets.length)} sản phẩm.`);
+  }
+
+  /** Người bán xác nhận ngành Cerno đã tự nhận diện: lưu thành ngành đã chọn (từ đó không còn đánh dấu "tự nhận diện"). */
+  function confirmAuto(list: RowView[]) {
+    const upserts = list.flatMap((r) => {
+      const g = fees?.suggestions[costKey(r.key)];
+      return g ? [{ sku: r.key, category: g.path }] : [];
+    });
+    if (!upserts.length) return;
+    void saveFees({ upserts }, `Đã xác nhận ngành hàng cho ${count(upserts.length)} sản phẩm.`);
   }
 
   function applyPaste() {
@@ -219,13 +232,21 @@ export function ProductsView({ initialFilter }: { initialFilter: Filter }) {
                 )}
               </div>
               <p className={styles.small} style={{ marginTop: 10 }}>
-                {`${count(chosenCount)} sản phẩm đã chọn ngành, ${count(rows.length - chosenCount)} chưa chọn.`} Sản phẩm chưa chọn ngành thì đơn của nó chưa được ước tính phí.
+                {`${count(chosenCount)} sản phẩm đã chọn ngành, ${count(autoCount)} do Cerno tự nhận diện, ${count(rows.length - chosenCount - autoCount)} chưa có ngành.`} Sản phẩm chưa có ngành thì đơn của nó chưa được ước tính phí.
               </p>
+              {fees.settings.enabled && autoCount > 0 && (
+                <div className={styles.note} style={{ marginTop: 10, display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+                  <span style={{ flex: 1, minWidth: 240 }}>
+                    Cerno đã tự nhận diện ngành hàng cho <b>{count(autoCount)}</b> sản phẩm dựa vào tên sản phẩm. Bạn kiểm tra lại giúp xem tên ngành đã đúng chưa: ngành khác thì phí cố định khác và phí sàn ước tính sẽ lệch. Đúng rồi thì bấm Xác nhận, sai thì bấm Đổi ở cột Ngành hàng.
+                  </span>
+                  {canEditFees && <button className={`${styles.btn} ${styles.primary}`} disabled={feeSaving} onClick={() => confirmAuto(autoRows)}>Xác nhận tất cả</button>}
+                </div>
+              )}
             </>
           )}
         </Card>
       )}
-      <FeeEstimateNote count={data.summary?.feeEstimated ?? 0} />
+      <FeeEstimateNote count={data.summary?.feeEstimated ?? 0} auto={autoCategoryCount(fees)} />
       {message && <div className={styles.note}>{message}</div>}
       {saveError && <ErrorBox message={saveError} />}
 
@@ -243,7 +264,9 @@ export function ProductsView({ initialFilter }: { initialFilter: Filter }) {
                 const p = r.product;
                 const value = edits[r.key] ?? toInput(r.catalogCost ?? p?.unitCost ?? null);
                 const isMissing = missing(r);
-                const cat = fees?.categories[costKey(r.key)];
+                const chosen = fees?.categories[costKey(r.key)];
+                const guess = chosen ? undefined : fees?.suggestions[costKey(r.key)];
+                const cat = chosen ?? guess;
                 return (
                   <tr key={r.key} className={losing(r) ? styles.lossRow : ""}>
                     <td><b data-i18n-skip>{r.name}</b>{r.sku && r.sku !== r.name && <span className={styles.sub} data-i18n-skip>{r.sku}</span>}</td>
@@ -275,8 +298,10 @@ export function ProductsView({ initialFilter }: { initialFilter: Filter }) {
                           ) : (
                             <span className={`${styles.catText} ${styles.muted}`}>Chưa chọn</span>
                           )}
+                          {guess && <span className={`${styles.badge} ${styles.bWarn}`} title="Cerno đoán ngành này từ tên sản phẩm, bạn kiểm tra lại giúp">Tự nhận diện · kiểm tra lại</span>}
+                          {guess && canEditFees && <button className={styles.btn} disabled={feeSaving} aria-label={`Xác nhận ngành của ${r.name}`} onClick={() => confirmAuto([r])}>Xác nhận</button>}
                           {canEditFees && <button className={styles.btn} disabled={feeSaving} onClick={() => setCatRow(r)}>{cat ? "Đổi" : "Chọn ngành"}</button>}
-                          {cat && canEditFees && <button className={styles.btn} disabled={feeSaving} aria-label={`Bỏ ngành của ${r.name}`} onClick={() => void saveFees({ removes: [r.key] }, "Đã bỏ ngành hàng.")}>Bỏ</button>}
+                          {chosen && canEditFees && <button className={styles.btn} disabled={feeSaving} aria-label={`Bỏ ngành của ${r.name}`} onClick={() => void saveFees({ removes: [r.key] }, "Đã bỏ ngành hàng.")}>Bỏ</button>}
                         </div>
                       </td>
                     )}

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { DayBars } from "./charts";
 import { compact, count, pct, vnd } from "./format";
-import { Card, ErrorBox, FeeEstimateNote, ShipEstimateNote, Kpi, Loading, MissingCostNote } from "./Shared";
+import { Card, ErrorBox, FeeEstimateNote, ShipEstimateNote, autoCategoryCount, Kpi, Loading, MissingCostNote } from "./Shared";
 import { todoText } from "./TodosView";
 import { useProfitSummary } from "./useProfit";
 import styles from "./profit.module.css";
@@ -34,7 +34,7 @@ export function OverviewView() {
       ) : (
         <>
           <MissingCostNote missing={s.missingCost} total={s.orders} />
-          <FeeEstimateNote count={s.feeEstimated} />
+          <FeeEstimateNote count={s.feeEstimated} auto={autoCategoryCount(data.fees)} />
       <ShipEstimateNote count={s.shipEstimated} />
           <div className={styles.kpis}>
             <Kpi label="Lãi thật" value={compact(s.profit)} tone={s.profit < 0 ? "neg" : "pos"} note={`Biên lãi ${pct(s.margin)}`} />

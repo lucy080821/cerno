@@ -48,4 +48,6 @@ export interface FeePayload {
   tableFrom: string;
   /** costKey(sku) → ngành đã chọn và mức phí hiện hành (null nếu ngành không có trong biểu phí của loại shop này). */
   categories: Record<string, { path: string; ratePct: number | null }>;
+  /** costKey(sku) → ngành Cerno TỰ NHẬN DIỆN từ tên sản phẩm, chỉ cho sản phẩm chưa được người bán chọn ngành. Cần người bán kiểm tra lại. */
+  suggestions: Record<string, { path: string; ratePct: number; source: "alias" | "name" }>;
 }

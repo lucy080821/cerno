@@ -268,4 +268,16 @@ export const EN_PROFIT: Dict = {
   "Đang dùng": "In use",
   "Đây là số ước tính theo mức trung bình, không phải phí ship thật của từng đơn. Số này chỉ dùng ở các trang lãi, không ghi vào bảng đơn hàng nên dashboard và báo cáo email chưa thấy.": "This is an estimate based on an average, not the real shipping of each order. It is only used on the profit pages and isn't written to the orders table, so dashboards and email reports don't see it yet.",
   "Đã lưu. Lãi từng đơn được tính lại với phí vận chuyển này.": "Saved. Profit per order is recalculated with this shipping cost.",
+  // Tự nhận diện ngành hàng
+  "Cerno đoán ngành này từ tên sản phẩm, bạn kiểm tra lại giúp": "Cerno guessed this category from the product name, please check it",
+  "Cerno đã tự nhận diện ngành hàng cho": "Cerno has automatically identified the category for",
+  "Sản phẩm chưa có ngành thì đơn của nó chưa được ước tính phí.": "Products without a category are not fee-estimated yet.",
+  "Tự nhận diện · kiểm tra lại": "Auto-detected · please check",
+  "Xác nhận ngành của {0}": "Confirm the category of {0}",
+  "Xác nhận tất cả": "Confirm all",
+  "sản phẩm dựa vào tên sản phẩm. Bạn kiểm tra lại giúp xem tên ngành đã đúng chưa: ngành khác thì phí cố định khác và phí sàn ước tính sẽ lệch. Đúng rồi thì bấm Xác nhận, sai thì bấm Đổi ở cột Ngành hàng.": "products from their names. Please check that the category name is right: a different category means a different fixed fee and the estimated marketplace fee will be off. If it's right, click Confirm; if not, click Change in the Category column.",
+  "{0} sản phẩm đã chọn ngành, {1} do Cerno tự nhận diện, {2} chưa có ngành.": "{0} products have a chosen category, {1} were auto-detected by Cerno, {2} have no category yet.",
+  "Đã xác nhận ngành hàng cho {0} sản phẩm.": "Confirmed the category for {0} products.",
+  "Ngành hàng của": "The category of",
+  "sản phẩm do Cerno tự nhận diện từ tên sản phẩm, bạn kiểm tra lại giúp xem đã đúng chưa.": "products was auto-detected by Cerno from the product name; please check that it is right.",
 };
