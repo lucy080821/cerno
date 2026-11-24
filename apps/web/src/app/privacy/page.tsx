@@ -148,9 +148,10 @@ export default function PrivacyPage() {
           của mỗi nguồn (giá trị thật của các ô trong những dòng đó). Chúng tôi <strong>không</strong> gửi toàn bộ bảng dữ liệu.
         </p>
         <p>
-          Nếu bạn không muốn gửi những thông tin này, đừng dùng khung chat AI: không nhắn thì không có gì được gửi đi. Chúng
-          tôi không lưu nội dung hội thoại với AI trên máy chủ của mình (lịch sử chỉ nằm trong trình duyệt của bạn cho tới khi bạn
-          đóng hoặc xóa).
+          Nếu bạn không muốn gửi những thông tin này, đừng dùng khung chat AI: không nhắn thì không có gì được gửi đi. Với khung chat AI trong trình chỉnh sửa dashboard, chúng tôi không lưu nội dung hội thoại trên máy chủ của mình (lịch sử chỉ nằm trong trình duyệt của bạn cho tới khi bạn đóng hoặc xóa).
+        </p>
+        <p>
+          Trang “Hỏi AI”: khi bạn chọn nguồn dữ liệu và đặt câu hỏi, AI tự tra cứu số liệu từ các nguồn bạn chọn. Nhà cung cấp AI nhận câu hỏi của bạn, tên và cấu trúc cột của các nguồn đã chọn, và kết quả các truy vấn gộp số liệu mà AI yêu cầu (ví dụ doanh thu theo kênh, lãi theo sản phẩm, gồm tên sản phẩm và tên kênh), cùng tối đa 10 dòng dữ liệu mẫu khi AI cần xem dữ liệu thô. Chúng tôi không gửi toàn bộ bảng dữ liệu. Nguồn đơn hàng đã chuẩn hóa không chứa thông tin người mua (không được lưu); với Google Sheets, dòng mẫu là giá trị thật của các ô trong sheet bạn chọn. Khác với khung chat trong trình chỉnh sửa, trang Hỏi AI lưu lịch sử các cuộc trò chuyện (câu hỏi, câu trả lời và tên các nguồn đã chọn) trong cơ sở dữ liệu của chúng tôi, chỉ bạn xem được; bạn xóa từng cuộc trò chuyện ngay trên trang, và lịch sử bị xóa cùng tài khoản.
         </p>
         <p>
           Báo cáo định kỳ qua email: khi bạn bật, máy chủ tính số liệu của dashboard rồi gửi tới nhà cung cấp AI một bản tóm tắt gồm tên chỉ số, tên nhóm (ví dụ tên tỉnh, tên sản phẩm), số liệu đã gộp của kỳ báo cáo và kỳ trước, cùng yêu cầu riêng của người nhận (nếu có) để AI viết phần phân tích. Chúng tôi không gửi toàn bộ bảng dữ liệu hay dòng dữ liệu thô, và ảnh biểu đồ trong email do chúng tôi tự tạo, không gửi cho AI. Email báo cáo gửi qua Gmail tới địa chỉ người nhận. Ảnh biểu đồ trong email được lưu tạm ở kho ảnh công khai theo đường dẫn ngẫu nhiên và tự xóa sau 30 ngày; ai có đường dẫn đó (nằm trong email) đều xem được ảnh.
@@ -187,6 +188,7 @@ export default function PrivacyPage() {
           <li>Dữ liệu đơn hàng từ file bạn tải lên: lưu cho tới khi bạn xóa nguồn “Đơn hàng đa kênh” (nút “Xóa nguồn” ở trang quản lý) hoặc xóa tài khoản. File gốc không được lưu.</li>
           <li>Mã làm mới Google: lưu cho tới khi bạn xóa tài khoản hoặc thu hồi quyền ở Google (khi đó chúng tôi không đọc thêm được dữ liệu mới).</li>
           <li>Ảnh bạn tải lên: lưu cho tới khi bạn xóa tài khoản hoặc yêu cầu xóa.</li>
+          <li>Lịch sử trang Hỏi AI (câu hỏi, câu trả lời): lưu cho tới khi bạn xóa cuộc trò chuyện hoặc xóa tài khoản.</li>
           <li>
             <strong>Tự xóa tài khoản:</strong> vào trang “Tài khoản” trong ứng dụng, gõ lại email để xác nhận. Chúng tôi xóa ngay khỏi hệ
             thống đang chạy: toàn bộ dashboard, nguồn dữ liệu và bản sao, ảnh đã tải lên, mã làm mới Google (đồng thời thu hồi quyền ở phía

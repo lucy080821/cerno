@@ -65,7 +65,7 @@ export async function POST(req: Request) {
   const isNew = !chat;
   if (!chat) {
     chat = await createChat(supabase, { workspaceId: member.workspaceId, userId: user.id, title: titleFrom(question), sourceIds: usable });
-    if (!chat) return fail("Không tạo được cuộc trò chuyện (đã đạt giới hạn hoặc chưa chạy migration 0023).", 409);
+    if (!chat) return fail("Không tạo được cuộc trò chuyện mới (có thể đã đạt giới hạn 200 cuộc, hãy xóa bớt cuộc cũ).", 409);
   }
   const history = isNew ? [] : await loadHistory(supabase, chat.id);
   const saved = await addMessage(supabase, chat.id, "user", question);

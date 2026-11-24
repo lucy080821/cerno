@@ -40,6 +40,12 @@ describe("Chính sách quyền riêng tư", () => {
     expect(t).toContain("không gửi toàn bộ bảng dữ liệu");
   });
 
+  it("công bố trang Hỏi AI: tối đa 10 dòng mẫu và việc lưu lịch sử trò chuyện", () => {
+    expect(t).toContain("tối đa 10 dòng dữ liệu mẫu");
+    expect(t).toContain("lưu lịch sử các cuộc trò chuyện");
+    expect(t).toContain("Lịch sử trang Hỏi AI");
+  });
+
   it("chu kỳ tự cập nhật nêu trong chính sách khớp hằng số của code", () => {
     expect(t).toContain(`mỗi ${AUTO_SYNC_MINUTES / 60} giờ`);
   });

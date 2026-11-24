@@ -14,6 +14,6 @@ export const site = {
     contactEmail: process.env.NEXT_PUBLIC_CONTACT_EMAIL || "[điền email liên hệ: NEXT_PUBLIC_CONTACT_EMAIL]",
     /** Số điện thoại liên hệ (tuỳ chọn): chỉ hiện khi đã đặt NEXT_PUBLIC_OPERATOR_PHONE. */
     phone: (process.env.NEXT_PUBLIC_OPERATOR_PHONE || "").trim(),
-    updated: "08/11/2026",
+    updated: "24/11/2026",
   },
 };
