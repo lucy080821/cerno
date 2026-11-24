@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 export default async function AiPage() {
   const { name } = await requirePageUser();
   return (
-    <AppShell userName={name} title="Hỏi AI" desc="Hỏi bằng tiếng Việt về số liệu của bạn. AI tự tra dữ liệu thật và trả lời dạng báo cáo chi tiết.">
+    <AppShell userName={name} title="Hỏi AI" bare>
       <AiChat />
     </AppShell>
   );

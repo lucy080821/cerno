@@ -6,7 +6,8 @@ import styles from "./shell.module.css";
  * nằm ở layout (ShellFrame) nên không dựng lại mỗi lần chuyển trang; component này không truy vấn gì.
  * `userName` chỉ còn để các trang cũ truyền vào, không dùng nữa.
  */
-export function AppShell({ title, desc, actions, children }: { userName?: string; title: string; desc?: string; actions?: ReactNode; children: ReactNode }) {
+export function AppShell({ title, desc, actions, bare = false, children }: { userName?: string; title: string; desc?: string; actions?: ReactNode; /** Không hiện khối tiêu đề, nội dung chiếm trọn chiều cao (trang chat). */ bare?: boolean; children: ReactNode }) {
+  if (bare) return <div className={styles.bodyBare}>{children}</div>;
   return (
     <>
       <header className={styles.top}>

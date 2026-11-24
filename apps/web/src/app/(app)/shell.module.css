@@ -334,6 +334,12 @@
   min-width: 0;
 }
 
+/* Trang chat: không có khối tiêu đề, khung chat chiếm gần hết chiều cao. */
+.bodyBare {
+  padding: 12px 16px;
+  min-width: 0;
+}
+
 /* Khung chat AI bên phải (máy tính: dính cạnh phải; điện thoại: phủ toàn màn hình). */
 .dock {
   display: none;
