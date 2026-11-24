@@ -42,7 +42,8 @@ describe("trang Sản phẩm và giá vốn", () => {
     const html = renderToStaticMarkup(<ProductsView initialFilter="all" />);
     expect(html).toContain("Ngành hàng tính phí");
     expect(html).toContain("Chảo chống dính 24cm");
-    expect(html.match(/platformTag/g)?.length).toBe(3); // chảo × (Shopee + TikTok Shop) + kem × Shopee
+    // Bảng sản phẩm: chảo (Shopee + TikTok Shop) + kem (Shopee) = 3 nhãn; bảng ngành hàng: 3 dòng sản phẩm × sàn = 3 nhãn.
+    expect(html.match(/platformTag/g)?.length).toBe(6);
   });
 
   it("vẽ được khi chưa chạy migration 0021 hoặc chưa có đơn nào", () => {

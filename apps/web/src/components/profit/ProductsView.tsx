@@ -307,7 +307,7 @@ export function ProductsView({ initialFilter }: { initialFilter: Filter }) {
           <table className={styles.table}>
             <thead>
               <tr>
-                <th style={{ minWidth: 210 }}>Sản phẩm</th><th className={styles.r}>Đã bán</th><th className={styles.r}>Giá bán TB</th><th className={styles.r}>Giá vốn / cái</th>
+                <th style={{ minWidth: 210 }}>Sản phẩm</th><th>Sàn</th><th className={styles.r}>Đã bán</th><th className={styles.r}>Giá bán TB</th><th className={styles.r}>Giá vốn / cái</th>
                 <th className={styles.r}>Phí sàn / đơn</th><th className={styles.r}>Quảng cáo / đơn</th><th className={styles.r}>Lãi mỗi đơn</th><th className={styles.r}>Giá hòa vốn</th><th>Tình trạng</th>
               </tr>
             </thead>
@@ -319,6 +319,7 @@ export function ProductsView({ initialFilter }: { initialFilter: Filter }) {
                 return (
                   <tr key={r.key} className={losing(r) ? styles.lossRow : ""}>
                     <td><b data-i18n-skip>{r.name}</b>{r.sku && r.sku !== r.name && <span className={styles.sub} data-i18n-skip>{r.sku}</span>}</td>
+                    <td><div className={styles.tags}>{p && p.channels.length ? p.channels.map((c) => <span key={c} className={styles.platformTag}>{c}</span>) : <span className={styles.muted}>—</span>}</div></td>
                     <td className={styles.r}>{p ? count(p.quantity) : "—"}</td>
                     <td className={styles.r}>{vnd(p?.avgPrice)}</td>
                     <td className={styles.r}>
@@ -347,7 +348,7 @@ export function ProductsView({ initialFilter }: { initialFilter: Filter }) {
                   </tr>
                 );
               })}
-              {shown.length === 0 && <tr><td colSpan={9} className={styles.muted} style={{ textAlign: "center", padding: 28 }}>Không có sản phẩm nào.</td></tr>}
+              {shown.length === 0 && <tr><td colSpan={10} className={styles.muted} style={{ textAlign: "center", padding: 28 }}>Không có sản phẩm nào.</td></tr>}
             </tbody>
           </table>
         </div>
