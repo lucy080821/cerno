@@ -32,6 +32,8 @@ export function TemplateMapDialog({ entry, sources, apiKey, appId, onClose }: Pr
   const router = useRouter();
   const t = entry.template;
   const forOrders = t.id === ORDERS_TEMPLATE_ID;
+  // Đã có nguồn đơn hàng tải lên thì mẫu dùng luôn, không cần tải lại.
+  const hasOrders = forOrders && sources.some((s) => isUploadId(s.spreadsheet_id));
   // Mẫu đơn hàng dùng nguồn "Đơn hàng đa kênh" (file tải lên); các mẫu khác mặc định nguồn mới nhất.
   const [sourceId, setSourceId] = useState((forOrders ? sources.find((s) => isUploadId(s.spreadsheet_id)) : undefined)?.id ?? sources[0]?.id ?? "");
   const [mapping, setMapping] = useState<Mapping>({});
@@ -167,7 +169,9 @@ export function TemplateMapDialog({ entry, sources, apiKey, appId, onClose }: Pr
         <h2 id="tpl-title" className={styles.dialogTitle}>{`Tạo từ mẫu “${t.name}”`}</h2>
         <p className={styles.sub}>
           {forOrders
-            ? "Mẫu này dùng nguồn \"Đơn hàng đa kênh\": tải file đơn hàng từ Shopee, TikTok Shop (hoặc file tự ghi) lên, các cột sẽ tự khớp."
+            ? hasOrders
+              ? "Mẫu này dùng dữ liệu đơn hàng bạn đã tải lên, không cần tải lại. Các cột đã tự khớp, bấm Tạo dashboard là xong."
+              : "Mẫu này dùng nguồn \"Đơn hàng đa kênh\": tải file đơn hàng từ Shopee, TikTok Shop (hoặc file tự ghi) lên, các cột sẽ tự khớp."
             : "Chọn Google Sheet chứa dữ liệu của bạn. Cerno tự ghép các cột với từng mục của mẫu; bạn có thể đổi lại nếu chưa đúng."}
         </p>
 
@@ -185,7 +189,7 @@ export function TemplateMapDialog({ entry, sources, apiKey, appId, onClose }: Pr
         )}
 
         <div className={styles.sheetLinks}>
-          {forOrders ? <ImportOrders /> : <ConnectSheet apiKey={apiKey} appId={appId} />}
+          {forOrders ? <ImportOrders label={hasOrders ? "Thêm file đơn hàng mới (tuỳ chọn)" : undefined} /> : <ConnectSheet apiKey={apiKey} appId={appId} />}
           {entry.sampleSheetId && (
             <a className={dash.ghost} href={sampleSheetCopyUrl(entry.sampleSheetId)} target="_blank" rel="noopener noreferrer">
               Sao chép Sheet mẫu

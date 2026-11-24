@@ -69,4 +69,6 @@ export const EN_TEMPLATES: Dict = {
   "Đơn giá vốn": "Unit cost",
   "Giá trị tồn": "Stock value",
   "Ngày chốt tồn": "Stock count date",
+  "Mẫu này dùng dữ liệu đơn hàng bạn đã tải lên, không cần tải lại. Các cột đã tự khớp, bấm Tạo dashboard là xong.": "This template uses the order data you've already uploaded, so there's no need to upload again. The columns are already matched; just click Create dashboard.",
+  "Thêm file đơn hàng mới (tuỳ chọn)": "Add a new order file (optional)",
 };
