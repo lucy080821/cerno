@@ -59,11 +59,16 @@
   background: rgba(255, 255, 255, 0.55);
 }
 
+/* Cuộc trò chuyện đang mở: thẻ trắng nổi lên, vạch tím bên trái, chữ tím đậm để nhìn là biết đang ở đâu. */
 .histActive,
 .histActive:hover {
   background: #fff;
-  box-shadow: 0 1px 3px rgba(20, 22, 43, 0.1);
-  font-weight: 600;
+  box-shadow: inset 3px 0 0 var(--brand-a), 0 1px 4px rgba(20, 22, 43, 0.14);
+}
+
+.histActive .histMain {
+  color: #4a3fd1;
+  font-weight: 700;
 }
 
 .histMain {
@@ -674,7 +679,7 @@
 }
 
 .dockWrap .history {
-  background: var(--surface);
+  background: #e8ebf8;
 }
 
 .dockWrap .sugs {
