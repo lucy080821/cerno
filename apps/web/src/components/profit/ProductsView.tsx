@@ -328,7 +328,7 @@ export function ProductsView({ initialFilter }: { initialFilter: Filter }) {
                 return (
                   <tr key={r.key} className={losing(r) ? styles.lossRow : ""}>
                     <td><b data-i18n-skip>{r.name}</b>{r.sku && r.sku !== r.name && <span className={styles.sub} data-i18n-skip>{r.sku}</span>}</td>
-                    <td><div className={styles.tags}>{p && p.channels.length ? p.channels.map((c) => <span key={c} className={styles.platformTag}>{c}</span>) : <span className={styles.muted}>—</span>}</div></td>
+                    <td><div className={styles.tags}>{p && p.channels.length ? p.channels.map((c) => <span key={c} className={styles.platformTag} data-platform={c}>{c}</span>) : <span className={styles.muted}>—</span>}</div></td>
                     <td className={styles.r}>{p ? count(p.quantity) : "—"}</td>
                     <td className={styles.r}>{vnd(p?.avgPrice)}</td>
                     <td className={styles.r}>
@@ -385,7 +385,7 @@ export function ProductsView({ initialFilter }: { initialFilter: Filter }) {
                   return (
                     <tr key={`${r.key}|${pl}`}>
                       <td><b data-i18n-skip>{r.name}</b>{r.sku && r.sku !== r.name && <span className={styles.sub} data-i18n-skip>{r.sku}</span>}</td>
-                      <td><span className={styles.platformTag}>{pl}</span></td>
+                      <td><span className={styles.platformTag} data-platform={pl}>{pl}</span></td>
                       <td>{cat ? <span title={cat.path} data-i18n-skip>{cat.path}</span> : <span className={styles.muted}>Chưa xác định được ngành</span>}</td>
                       <td className={styles.r}>
                         {cat ? (cat.ratePct !== null ? ratePctText(cat.ratePct) : <span className={styles.muted}>Không có trong biểu phí</span>) : dflt !== null ? <span className={styles.muted}>{`${dflt}% (mặc định)`}</span> : "—"}
