@@ -30,11 +30,11 @@ const make = (rows: Row[]): SummaryResponse => {
 };
 
 describe("thanh chọn khoảng thời gian trên các trang lãi", () => {
-  it("PeriodBar có lối tắt, ô Lọc theo và ghi chú khoảng dữ liệu", () => {
+  it("PeriodBar có lối tắt, nút chọn Ngày, Tháng, Quý, Năm và ghi chú khoảng dữ liệu", () => {
     const html = renderToStaticMarkup(<PeriodBar dataMin="2026-01-05" dataMax="2026-11-24" />);
     expect(html).toContain("Hôm nay");
     expect(html).toContain("Quý này");
-    expect(html).toContain("Lọc theo");
+    expect(html).toContain("Khoảng ngày");
     expect(html).toContain("dữ liệu từ 05/01/2026 đến 24/11/2026");
   });
 
@@ -42,12 +42,12 @@ describe("thanh chọn khoảng thời gian trên các trang lãi", () => {
     response = make([line({}), line({ [COL.orderId]: "B", [COL.status]: "Hoàn trả" })]);
     for (const el of [<ProfitView key="p" />, <CostsView key="c" />, <OverviewView key="o" />, <ReturnsView key="r" />]) {
       const html = renderToStaticMarkup(el);
-      expect(html, String((el as { type: { name: string } }).type.name)).toContain("Lọc theo");
+      expect(html, String((el as { type: { name: string } }).type.name)).toContain("Khoảng ngày");
     }
   });
 
   it("chưa có đơn thì vẫn hiện hướng dẫn tải file, không hiện thanh chọn", () => {
     response = { source: null, editable: true, catalog: { available: true, entries: [] } };
-    expect(renderToStaticMarkup(<ProfitView />)).not.toContain("Lọc theo");
+    expect(renderToStaticMarkup(<ProfitView />)).not.toContain("Khoảng ngày");
   });
 });

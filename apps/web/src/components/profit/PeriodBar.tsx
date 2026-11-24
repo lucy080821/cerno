@@ -64,10 +64,11 @@ export function PeriodBar({ dataMin, dataMax }: { dataMin?: string | null; dataM
         ))}
       </div>
       <div className={styles.periodRow}>
-        <select className={styles.input} aria-label="Lọc theo" value={unit === "all" ? "" : unit} onChange={(e) => e.target.value && set(switchUnit(period, e.target.value as PeriodUnit, today))}>
-          <option value="" disabled>Chọn theo…</option>
-          {UNITS.map((u) => <option key={u.value} value={u.value}>{u.label}</option>)}
-        </select>
+        {UNITS.map((u) => (
+          <button key={u.value} className={`${styles.chip} ${unit === u.value ? styles.chipOn : ""}`} onClick={() => unit !== u.value && set(switchUnit(period, u.value, today))}>
+            {u.label}
+          </button>
+        ))}
 
         {unit !== "all" && unit !== "range" && (
           <button className={styles.btn} aria-label="Kỳ trước" onClick={() => set(shiftPeriod(period, -1))}>‹</button>

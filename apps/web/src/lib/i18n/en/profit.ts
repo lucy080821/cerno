@@ -356,7 +356,6 @@ export const EN_PROFIT: Dict = {
   "Chọn khoảng khác ở thanh phía trên, hoặc bấm Tất cả để xem toàn bộ dữ liệu.": "Pick another period in the bar above, or click All to see all the data.",
   "Không có đơn nào trong khoảng thời gian này": "No orders in this period",
   "Kỳ sau": "Next period",
-  "Lọc theo": "Filter by",
   "Quý {0}": "Quarter {0}",
   "Tất cả thời gian": "All time",
   "7 ngày gần nhất": "Last 7 days",
@@ -367,5 +366,4 @@ export const EN_PROFIT: Dict = {
   "Quý này": "This quarter",
   "Quý {0}/{1}": "Q{0}/{1}",
   "Tháng {0}/{1}": "Month {0}/{1}",
-  "Chọn theo…": "Pick by…",
 };
