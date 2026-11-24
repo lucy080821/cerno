@@ -8,8 +8,8 @@ import {
 import { usePeriod } from "@/lib/profit/period-store";
 import styles from "./profit.module.css";
 
-const UNITS: { value: PeriodUnit; label: string }[] = [
-  { value: "all", label: "Tất cả" },
+// "Tất cả" đã có nút riêng ở hàng lối tắt nên không lặp lại trong ô chọn.
+const UNITS: { value: Exclude<PeriodUnit, "all">; label: string }[] = [
   { value: "day", label: "Ngày" },
   { value: "month", label: "Tháng" },
   { value: "quarter", label: "Quý" },
@@ -64,7 +64,8 @@ export function PeriodBar({ dataMin, dataMax }: { dataMin?: string | null; dataM
         ))}
       </div>
       <div className={styles.periodRow}>
-        <select className={styles.input} aria-label="Lọc theo" value={unit} onChange={(e) => set(switchUnit(period, e.target.value as PeriodUnit, today))}>
+        <select className={styles.input} aria-label="Lọc theo" value={unit === "all" ? "" : unit} onChange={(e) => e.target.value && set(switchUnit(period, e.target.value as PeriodUnit, today))}>
+          <option value="" disabled>Chọn theo…</option>
           {UNITS.map((u) => <option key={u.value} value={u.value}>{u.label}</option>)}
         </select>
 

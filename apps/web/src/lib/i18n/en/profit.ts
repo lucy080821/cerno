@@ -367,4 +367,5 @@ export const EN_PROFIT: Dict = {
   "Quý này": "This quarter",
   "Quý {0}/{1}": "Q{0}/{1}",
   "Tháng {0}/{1}": "Month {0}/{1}",
+  "Chọn theo…": "Pick by…",
 };
