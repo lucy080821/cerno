@@ -5,7 +5,7 @@ import { parseNumber } from "@/lib/google/parse-number";
 import { costKey, parseCostPaste, type CostEntry } from "@/lib/profit/catalog";
 import type { ProductProfit } from "@/lib/profit/order-profit";
 import { count, signed, vnd } from "./format";
-import { DEFAULT_FEE_SETTINGS, INFRA_FEE_VND, PROCESSING_FEE_PCT, SELLER_TYPES, type FeeSettings, type SellerType } from "@/lib/fees/constants";
+import { DEFAULT_FEE_SETTINGS, FEE_CHANNEL, INFRA_FEE_VND, PROCESSING_FEE_PCT, SELLER_TYPES, type FeeSettings, type SellerType } from "@/lib/fees/constants";
 import { CategoryDialog, ratePctText } from "./CategoryDialog";
 import { autoCategoryCount, Card, ErrorBox, FeeEstimateNote, Loading, NoOrders } from "./Shared";
 import { useProfitSummary } from "./useProfit";
@@ -67,9 +67,12 @@ export function ProductsView({ initialFilter }: { initialFilter: Filter }) {
   const missingOrders = data.summary?.missingCost ?? 0;
   const canEdit = data.editable && data.catalog.available;
   const canEditFees = data.editable && !!fees?.available;
-  const chosenCount = rows.filter((r) => fees?.categories[costKey(r.key)]).length;
-  // Sản phẩm chưa được người bán chọn ngành nhưng Cerno đã tự nhận diện từ tên (cần người bán kiểm tra lại).
-  const autoRows = rows.filter((r) => !fees?.categories[costKey(r.key)] && fees?.suggestions[costKey(r.key)]);
+  // Ngành hàng chỉ có nghĩa với sản phẩm bán trên Shopee (chỉ Shopee có biểu phí để ước tính); sản phẩm chưa có đơn vẫn coi là áp dụng.
+  const sold = (r: RowView) => !r.product || r.product.channels.includes(FEE_CHANNEL);
+  const shopeeRows = rows.filter(sold);
+  const chosenCount = shopeeRows.filter((r) => fees?.categories[costKey(r.key)]).length;
+  // Sản phẩm chưa được người bán chọn ngành nhưng Cerno đã tự nhận diện từ tên (đã dùng để ước tính phí, người bán chỉ cần lướt qua).
+  const autoRows = shopeeRows.filter((r) => !fees?.categories[costKey(r.key)] && fees?.suggestions[costKey(r.key)]);
   const autoCount = autoRows.length;
   const feeFormChanged = !!fees && (feeForm.enabled !== fees.settings.enabled || feeForm.sellerType !== fees.settings.sellerType || feeForm.newSeller !== fees.settings.newSeller);
 
@@ -135,7 +138,7 @@ export function ProductsView({ initialFilter }: { initialFilter: Filter }) {
 
   function pickCategory(row: RowView, path: string, applyAll: boolean) {
     setCatRow(null);
-    const targets = applyAll ? rows.filter((r) => r.key === row.key || !fees?.categories[costKey(r.key)]) : [row];
+    const targets = applyAll ? rows.filter((r) => r.key === row.key || (sold(r) && !fees?.categories[costKey(r.key)])) : [row];
     void saveFees({ upserts: targets.map((r) => ({ sku: r.key, category: path })) }, `Đã chọn ngành cho ${count(targets.length)} sản phẩm.`);
   }
 
@@ -232,14 +235,14 @@ export function ProductsView({ initialFilter }: { initialFilter: Filter }) {
                 )}
               </div>
               <p className={styles.small} style={{ marginTop: 10 }}>
-                {`${count(chosenCount)} sản phẩm đã chọn ngành, ${count(autoCount)} do Cerno tự nhận diện, ${count(rows.length - chosenCount - autoCount)} chưa có ngành.`} Sản phẩm chưa có ngành thì đơn của nó chưa được ước tính phí.
+                {`${count(chosenCount)} sản phẩm Shopee đã chọn ngành, ${count(autoCount)} tự nhận diện, ${count(shopeeRows.length - chosenCount - autoCount)} chưa xác định được ngành.`} Sản phẩm chưa có ngành thì đơn của nó chưa được ước tính phí.
               </p>
               {fees.settings.enabled && autoCount > 0 && (
                 <div className={styles.note} style={{ marginTop: 10, display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
                   <span style={{ flex: 1, minWidth: 240 }}>
-                    Cerno đã tự nhận diện ngành hàng cho <b>{count(autoCount)}</b> sản phẩm dựa vào tên sản phẩm. Bạn kiểm tra lại giúp xem tên ngành đã đúng chưa: ngành khác thì phí cố định khác và phí sàn ước tính sẽ lệch. Đúng rồi thì bấm Xác nhận, sai thì bấm Đổi ở cột Ngành hàng.
+                    Cerno đã tự nhận diện ngành hàng cho <b>{count(autoCount)}</b> sản phẩm Shopee từ tên sản phẩm và đã dùng để ước tính phí, bạn không cần xác nhận từng sản phẩm. Lướt qua cột Ngành hàng bên dưới: ngành nào chưa đúng thì bấm Đổi (ngành khác thì phí cố định khác).
                   </span>
-                  {canEditFees && <button className={`${styles.btn} ${styles.primary}`} disabled={feeSaving} onClick={() => confirmAuto(autoRows)}>Xác nhận tất cả</button>}
+                  {canEditFees && <button className={styles.btn} disabled={feeSaving} onClick={() => confirmAuto(autoRows)}>Xác nhận tất cả</button>}
                 </div>
               )}
             </>
@@ -256,7 +259,7 @@ export function ProductsView({ initialFilter }: { initialFilter: Filter }) {
             <thead>
               <tr>
                 <th style={{ minWidth: 210 }}>Sản phẩm</th><th className={styles.r}>Đã bán</th><th className={styles.r}>Giá bán TB</th><th className={styles.r}>Giá vốn / cái</th>
-                <th className={styles.r}>Phí sàn / đơn</th><th className={styles.r}>Quảng cáo / đơn</th><th className={styles.r}>Lãi mỗi đơn</th><th className={styles.r}>Giá hòa vốn</th>{fees?.available && <th>Ngành hàng tính phí</th>}<th>Tình trạng</th>
+                <th className={styles.r}>Phí sàn / đơn</th><th className={styles.r}>Quảng cáo / đơn</th><th className={styles.r}>Lãi mỗi đơn</th><th className={styles.r}>Giá hòa vốn</th>{fees?.available && (<><th style={{ minWidth: 260 }}>Ngành hàng</th><th className={styles.r}>Phí cố định</th><th /></>)}<th>Tình trạng</th>
               </tr>
             </thead>
             <tbody>
@@ -288,22 +291,29 @@ export function ProductsView({ initialFilter }: { initialFilter: Filter }) {
                     <td className={styles.r}>{p?.profitPerOrder !== null && p?.profitPerOrder !== undefined ? <b className={p.profitPerOrder < 0 ? styles.neg : styles.pos}>{signed(p.profitPerOrder)}</b> : "—"}</td>
                     <td className={styles.r}>{vnd(p?.breakEvenPrice)}</td>
                     {fees?.available && (
-                      <td>
-                        <div className={styles.catCell}>
-                          {cat ? (
-                            <span className={styles.catText}>
-                              <span title={cat.path} data-i18n-skip>{cat.path}</span>
-                              <b>{cat.ratePct !== null ? ratePctText(cat.ratePct) : "Không có trong biểu phí loại shop này"}</b>
-                            </span>
+                      <>
+                        <td className={styles.catName}>
+                          {!sold(r) ? (
+                            <span className={styles.muted}>Không áp dụng (không bán trên Shopee)</span>
+                          ) : cat ? (
+                            <>
+                              <span className={styles.catPath} title={cat.path} data-i18n-skip>{cat.path}</span>
+                              <span className={`${styles.badge} ${guess ? styles.bWarn : styles.bPos}`}>{guess ? "Tự nhận diện" : "Đã chọn"}</span>
+                            </>
                           ) : (
-                            <span className={`${styles.catText} ${styles.muted}`}>Chưa chọn</span>
+                            <span className={styles.muted}>Chưa xác định được ngành</span>
                           )}
-                          {guess && <span className={`${styles.badge} ${styles.bWarn}`} title="Cerno đoán ngành này từ tên sản phẩm, bạn kiểm tra lại giúp">Tự nhận diện · kiểm tra lại</span>}
-                          {guess && canEditFees && <button className={styles.btn} disabled={feeSaving} aria-label={`Xác nhận ngành của ${r.name}`} onClick={() => confirmAuto([r])}>Xác nhận</button>}
-                          {canEditFees && <button className={styles.btn} disabled={feeSaving} onClick={() => setCatRow(r)}>{cat ? "Đổi" : "Chọn ngành"}</button>}
-                          {chosen && canEditFees && <button className={styles.btn} disabled={feeSaving} aria-label={`Bỏ ngành của ${r.name}`} onClick={() => void saveFees({ removes: [r.key] }, "Đã bỏ ngành hàng.")}>Bỏ</button>}
-                        </div>
-                      </td>
+                        </td>
+                        <td className={styles.r}>{sold(r) && cat ? (cat.ratePct !== null ? ratePctText(cat.ratePct) : "Không có trong biểu phí") : "—"}</td>
+                        <td className={styles.actions}>
+                          {sold(r) && canEditFees && (
+                            <>
+                              <button className={styles.btn} disabled={feeSaving} onClick={() => setCatRow(r)}>{cat ? "Đổi" : "Chọn ngành"}</button>
+                              {chosen && <button className={styles.btn} disabled={feeSaving} aria-label={`Bỏ ngành của ${r.name}`} onClick={() => void saveFees({ removes: [r.key] }, "Đã bỏ ngành hàng.")}>Bỏ</button>}
+                            </>
+                          )}
+                        </td>
+                      </>
                     )}
                     <td>
                       {isMissing ? <span className={`${styles.badge} ${styles.bWarn}`}>Thiếu giá vốn</span>
@@ -316,7 +326,7 @@ export function ProductsView({ initialFilter }: { initialFilter: Filter }) {
                   </tr>
                 );
               })}
-              {shown.length === 0 && <tr><td colSpan={fees?.available ? 10 : 9} className={styles.muted} style={{ textAlign: "center", padding: 28 }}>Không có sản phẩm nào.</td></tr>}
+              {shown.length === 0 && <tr><td colSpan={fees?.available ? 12 : 9} className={styles.muted} style={{ textAlign: "center", padding: 28 }}>Không có sản phẩm nào.</td></tr>}
             </tbody>
           </table>
         </div>
@@ -334,7 +344,7 @@ export function ProductsView({ initialFilter }: { initialFilter: Filter }) {
         <CategoryDialog
           productName={catRow.name}
           sellerType={fees.settings.sellerType}
-          canApplyAll={rows.some((r) => r.key !== catRow.key && !fees.categories[costKey(r.key)])}
+          canApplyAll={rows.some((r) => r.key !== catRow.key && sold(r) && !fees.categories[costKey(r.key)])}
           onPick={(path, all) => pickCategory(catRow, path, all)}
           onClose={() => setCatRow(null)}
         />

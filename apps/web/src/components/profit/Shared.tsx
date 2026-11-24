@@ -78,7 +78,7 @@ export function FeeEstimateNote({ count, auto = 0 }: { count: number; auto?: num
       <Link href="/products">Sản phẩm và giá vốn</Link>.
       {auto > 0 && (
         <>
-          {" "}Ngành hàng của <b>{auto.toLocaleString("vi-VN")}</b> sản phẩm do Cerno tự nhận diện từ tên sản phẩm, bạn kiểm tra lại giúp xem đã đúng chưa.
+          {" "}Ngành hàng của <b>{auto.toLocaleString("vi-VN")}</b> sản phẩm do Cerno tự nhận diện từ tên sản phẩm; nếu thấy chưa đúng, bạn đổi ở trang Sản phẩm và giá vốn.
         </>
       )}
     </div>

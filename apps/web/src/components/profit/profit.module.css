@@ -502,6 +502,32 @@
   white-space: nowrap;
 }
 
+/* Cột Ngành hàng của bảng sản phẩm: tên ngành xuống dòng đầy đủ, nhãn ở dòng dưới; cột thao tác không co lại. */
+.catName {
+  min-width: 260px;
+  max-width: 360px;
+  line-height: 1.4;
+  font-size: 0.82rem;
+  padding-right: 16px;
+}
+
+.catPath {
+  display: block;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  margin-bottom: 4px;
+}
+
+.actions {
+  white-space: nowrap;
+  text-align: right;
+  padding-left: 16px;
+}
+
+.actions .btn + .btn {
+  margin-left: 6px;
+}
+
 .checkRow {
   display: flex;
   align-items: center;
