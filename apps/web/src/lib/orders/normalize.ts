@@ -301,6 +301,30 @@ export function normalizeOrders(table: RawTable, headerRow: number, mapping: Col
     const name = headerOf(table[headerRow]?.[revCol]) || `Cột ${revCol + 1}`;
     warnings.push(`Cột "${name}" không có giá trị nào (thường là ô công thức chưa được tính): doanh thu tạm tính từ đơn giá × số lượng. Hãy mở file bằng Excel, lưu lại rồi tải lên nếu muốn dùng số liệu gốc.`);
   }
+  // Cột thành tiền có vẻ là TỔNG CẢ ĐƠN lặp ở mọi dòng (vd chọn "Tổng giá trị đơn hàng" thay vì "Tổng giá bán (sản phẩm)" của Shopee):
+  // đơn nhiều sản phẩm mà mọi dòng cùng một số tiền thì doanh thu bị cộng nhiều lần và lãi ảo cao.
+  if (revCol !== undefined) {
+    const byOrder = new Map<string, number[]>();
+    keys.forEach((k, i) => {
+      const list = byOrder.get(k);
+      if (list) list.push(i);
+      else byOrder.set(k, [i]);
+    });
+    let multi = 0;
+    let repeated = 0;
+    for (const idxs of byOrder.values()) {
+      if (idxs.length < 2) continue;
+      const revs = idxs.map((i) => lines[i].revenue);
+      if (revs.some((r) => r === null || r <= 0)) continue;
+      multi++;
+      const products = new Set(idxs.map((i) => lines[i].sku ?? lines[i].product));
+      if (products.size >= 2 && revs.every((r) => r === revs[0])) repeated++;
+    }
+    if (multi >= 3 && repeated / multi >= 0.7) {
+      const name = headerOf(table[headerRow]?.[revCol]) || `Cột ${revCol + 1}`;
+      warnings.push(`Cột "${name}" có cùng một số tiền ở mọi dòng của ${repeated.toLocaleString("vi-VN")} đơn nhiều sản phẩm: có vẻ đây là tổng tiền cả đơn, doanh thu sẽ bị cộng nhiều lần và lãi bị ảo cao. Hãy chọn cột thành tiền của TỪNG sản phẩm (ví dụ "Tổng giá bán (sản phẩm)" của Shopee).`);
+    }
+  }
   if (lossyIds) warnings.push("Mã đơn bị Excel đổi sang dạng số nên có thể sai. Hãy xuất lại file và đừng mở bằng Excel trước khi tải lên.");
   if (noId) warnings.push(`${noId.toLocaleString("vi-VN")} dòng không có mã đơn: coi mỗi dòng là một đơn và không gộp trùng được khi tải lại file.`);
   return { rows, keyed, stats, warnings };

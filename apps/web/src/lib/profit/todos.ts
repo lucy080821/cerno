@@ -12,6 +12,11 @@ export interface Todo {
   /** Khoá ổn định để giao diện nhớ việc đã xong. */
   id: string;
   product?: string;
+  /** Khoá sản phẩm (cho việc theo sản phẩm): để mở xem nhanh đúng sản phẩm đó. */
+  key?: string;
+  sku?: string | null;
+  /** Các kênh có bán sản phẩm; sản phẩm cùng tên nhưng khác mã SKU/kênh là các việc khác nhau nên giao diện phải nêu rõ. */
+  channels?: string[];
   /** Số tiền đang mất mỗi tháng (âm) hoặc số đơn liên quan, tuỳ loại. */
   amount?: number;
   orders?: number;
@@ -34,12 +39,12 @@ export function buildTodos(s: ProfitSummary): Todo[] {
   for (const p of s.products) {
     if (p.profit === null || p.orders < MIN_ORDERS_FOR_TREND) continue;
     if (p.profit < 0) {
-      todos.push({ kind: "loss_product", priority: "high", id: `loss:${p.key}`, product: p.name, amount: p.profit, orders: p.orders, breakEvenPrice: p.breakEvenPrice, avgPrice: p.avgPrice, href: "/products" });
+      todos.push({ kind: "loss_product", priority: "high", id: `loss:${p.key}`, product: p.name, key: p.key, sku: p.sku, channels: p.channels, amount: p.profit, orders: p.orders, breakEvenPrice: p.breakEvenPrice, avgPrice: p.avgPrice, href: "/products" });
       continue;
     }
     const gross = p.revenue + p.shippingIn - p.fee - p.cost - p.shipCost;
     if (p.adCost > 0 && gross > 0 && p.adCost / gross >= 0.6) {
-      todos.push({ kind: "ads_product", priority: "medium", id: `ads:${p.key}`, product: p.name, orders: p.orders, adPerOrder: p.adCost / p.orders, grossPerOrder: gross / p.orders, amount: -p.adCost, href: "/profit" });
+      todos.push({ kind: "ads_product", priority: "medium", id: `ads:${p.key}`, product: p.name, key: p.key, sku: p.sku, channels: p.channels, orders: p.orders, adPerOrder: p.adCost / p.orders, grossPerOrder: gross / p.orders, amount: -p.adCost, href: "/profit" });
     }
   }
   if (s.returned + s.cancelled > 0 && s.returnLoss + s.cancelLoss < 0) {

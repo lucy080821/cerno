@@ -134,6 +134,7 @@ export const EN_ORDERS: Dict = {
   "Giá vốn của dòng sản phẩm (tổng, không phải đơn giá)": "Cost of goods for the product line (total, not unit cost)",
   "Chi phí quảng cáo (cấp đơn)": "Ad cost (per order)",
   "Đã bỏ qua dòng mô tả cột nằm ngay dưới tiêu đề.": "Skipped the column-description row right below the header.",
+  "Cột \"{0}\" có cùng một số tiền ở mọi dòng của {1} đơn nhiều sản phẩm: có vẻ đây là tổng tiền cả đơn, doanh thu sẽ bị cộng nhiều lần và lãi bị ảo cao. Hãy chọn cột thành tiền của TỪNG sản phẩm (ví dụ \"Tổng giá bán (sản phẩm)\" của Shopee).": "Column \"{0}\" has the same amount on every line of {1} multi-product orders: it looks like the whole-order total, so revenue would be counted several times and profit overstated. Pick the per-product amount column instead (for example Shopee's \"Tổng giá bán (sản phẩm)\").",
   "Cột \"{0}\" không có giá trị nào (thường là ô công thức chưa được tính): doanh thu tạm tính từ đơn giá × số lượng. Hãy mở file bằng Excel, lưu lại rồi tải lên nếu muốn dùng số liệu gốc.": "Column \"{0}\" has no values (usually formula cells that were never calculated): revenue is estimated as unit price × quantity. Open the file in Excel, save it, and upload again if you want the original figures.",
   // Google Sheet đơn hàng
   "+ Nối Google Sheet đơn hàng": "+ Connect an order Google Sheet",

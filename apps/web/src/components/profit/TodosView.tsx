@@ -5,6 +5,7 @@ import { useState } from "react";
 import type { Todo } from "@/lib/profit/todos";
 import { splitTodos, useDoneTodos, writeDoneTodos } from "@/lib/profit/todos-done";
 import { compact, count, pct, vnd } from "./format";
+import { ProductDetailModal } from "./ProductDetail";
 import { ErrorBox, Loading, NoOrders } from "./Shared";
 import { useProfitSummary } from "./useProfit";
 import styles from "./profit.module.css";
@@ -25,7 +26,7 @@ export function todoText(t: Todo): { title: string; detail: string; impact: stri
         title: `Giảm quảng cáo cho ${t.product}`,
         detail: `Quảng cáo ${vnd(t.adPerOrder)} mỗi đơn, bằng ${pct(t.adPerOrder && t.grossPerOrder ? t.adPerOrder / t.grossPerOrder : null, 0)} lãi trước quảng cáo (${vnd(t.grossPerOrder)} mỗi đơn).`,
         impact: `Quảng cáo ${compact(-(t.amount ?? 0))}`,
-        action: "Xem lãi lỗ",
+        action: "Xem sản phẩm",
       };
     case "returns":
       return { title: `Xem ${count(t.orders ?? 0)} đơn hoàn và hủy`, detail: "Giữ bằng chứng để khiếu nại đơn hoàn, tắt quảng cáo sớm cho đơn chưa chốt.", impact: `Đang mất ${compact(-(t.amount ?? 0))}`, action: "Xem đơn" };
@@ -45,6 +46,8 @@ export function TodosView() {
   const { data, error, loading, reload } = useProfitSummary({ ignorePeriod: true });
   const done = useDoneTodos();
   const [showDone, setShowDone] = useState(false);
+  /** Sản phẩm đang xem nhanh trong hộp thoại (khoá `ProductProfit.key`). */
+  const [viewKey, setViewKey] = useState<string | null>(null);
   const toggle = (id: string) => writeDoneTodos(done.includes(id) ? done.filter((x) => x !== id) : [...done, id]);
 
   if (loading && !data) return <Loading />;
@@ -63,11 +66,21 @@ export function TodosView() {
         <span className={`${styles.badge} ${pri.cls ? styles[pri.cls] : ""}`}>{pri.label}</span>
         <div>
           <b>{x.title}</b>
+          {t.key && (
+            <div className={styles.toolbar} style={{ marginTop: 4, gap: 6 }}>
+              {t.sku && t.sku !== t.product && <span className={styles.small} data-i18n-skip>{`SKU ${t.sku}`}</span>}
+              {(t.channels ?? []).map((c) => <span key={c} className={styles.platformTag} data-platform={c} data-i18n-skip>{c}</span>)}
+            </div>
+          )}
           <div className={styles.small} style={{ marginTop: 3, lineHeight: 1.5 }}>{x.detail}</div>
           {x.impact && <div className={styles.small} style={{ marginTop: 3 }}><b>{x.impact}</b></div>}
         </div>
         <div className={styles.toolbar}>
-          <Link href={t.href} className={`${styles.btn} ${t.priority !== "medium" && !isDone ? styles.primary : ""}`}>{x.action}</Link>
+          {t.key ? (
+            <button type="button" className={`${styles.btn} ${!isDone ? styles.primary : ""}`} onClick={() => setViewKey(t.key ?? null)}>{x.action}</button>
+          ) : (
+            <Link href={t.href} className={`${styles.btn} ${t.priority !== "medium" && !isDone ? styles.primary : ""}`}>{x.action}</Link>
+          )}
           <button className={styles.btn} onClick={() => toggle(t.id)}>{isDone ? "Bỏ đánh dấu" : "Đã xong"}</button>
         </div>
       </div>
@@ -89,6 +102,10 @@ export function TodosView() {
           {showDone && closed.map((t) => row(t, true))}
         </>
       )}
+      {viewKey && (() => {
+        const p = data.summary?.products.find((x) => x.key === viewKey);
+        return p ? <ProductDetailModal p={p} onClose={() => setViewKey(null)} /> : null;
+      })()}
       <p className={styles.small}>Gợi ý được tính từ số liệu đơn hàng, chỉ tính những sản phẩm có từ 3 đơn trở lên. &quot;Đã xong&quot; chỉ lưu trong trình duyệt này; nếu vấn đề vẫn còn trong số liệu, bạn có thể bỏ đánh dấu để xem lại.</p>
     </div>
   );
