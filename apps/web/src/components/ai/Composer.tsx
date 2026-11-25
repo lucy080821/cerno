@@ -1,6 +1,6 @@
 "use client";
 
-import type { RefObject } from "react";
+import { useEffect, type RefObject } from "react";
 import type { SourceOption } from "@/lib/ai-chat/client";
 import { SourcePicker } from "./SourcePicker";
 import styles from "./ai.module.css";
@@ -17,15 +17,28 @@ interface Props {
   onPickSource(id: string): void;
 }
 
-/** Ô nhập dạng thẻ: chữ ở trên, thanh công cụ (chọn nguồn + Gửi/Dừng) ở dưới. Enter gửi, Shift+Enter xuống dòng. */
+/** Chiều cao tối đa của ô nhập khi gõ nhiều dòng (px); quá thì cuộn trong ô. */
+const MAX_INPUT_PX = 160;
+
+/**
+ * Ô nhập dạng thẻ, thấp gọn: chữ ở trên (một dòng, tự cao dần khi gõ nhiều dòng), thanh công cụ (chọn nguồn + Gửi/Dừng) ở dưới.
+ * Enter gửi, Shift+Enter xuống dòng.
+ */
 export function Composer({ value, onChange, onSend, onStop, busy, textareaRef, sources, selected, onPickSource }: Props) {
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, MAX_INPUT_PX)}px`;
+  }, [value, textareaRef]);
+
   return (
     <div className={styles.composer}>
       <div className={styles.composerCard}>
         <textarea
           ref={textareaRef}
           className={styles.input}
-          rows={2}
+          rows={1}
           value={value}
           maxLength={2000}
           placeholder="Hỏi về doanh thu, lãi lỗ, sản phẩm, kênh bán, chi phí…"

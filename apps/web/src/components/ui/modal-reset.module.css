@@ -1,0 +1,17 @@
+/*
+ * Hộp thoại được dựng NGAY TRONG thẻ cha (ô bảng, thẻ nút...) nên kế thừa kiểu chữ của chỗ đó: ô thao tác của bảng đặt chữ
+ * không xuống dòng, căn phải, cỡ nhỏ làm hộp thoại tràn ngang, mất tiêu đề, hiện thanh cuộn ngang. Mọi lớp phủ hộp thoại dùng
+ * `composes: reset from ".../modal-reset.module.css"` để cắt kế thừa này ngay ở gốc.
+ */
+.reset {
+  white-space: normal;
+  text-align: left;
+  text-transform: none;
+  letter-spacing: normal;
+  word-spacing: normal;
+  font-size: 16px;
+  font-weight: 400;
+  font-style: normal;
+  line-height: 1.6;
+  color: var(--text);
+}

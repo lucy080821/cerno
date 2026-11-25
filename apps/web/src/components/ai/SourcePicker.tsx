@@ -17,6 +17,7 @@ interface Props {
 export function SourcePicker({ sources, selected, onPick }: Props) {
   const [open, setOpen] = useState(false);
   const byId = new Map((sources ?? []).map((s) => [s.id, s]));
+  const chosen = selected.map((id) => byId.get(id)).filter((s): s is SourceOption => !!s);
   return (
     <div className={styles.srcRow}>
       <div className={styles.pickerWrap}>
@@ -49,7 +50,7 @@ export function SourcePicker({ sources, selected, onPick }: Props) {
           </>
         )}
       </div>
-      {selected.map((id) => byId.get(id)).filter((s): s is SourceOption => !!s).map((s) => (
+      {chosen.map((s) => (
         <span key={s.id} className={styles.chip}>
           <span data-i18n-skip>{sourceLabel(s)}</span>
           <button type="button" aria-label="Bỏ nguồn này" onClick={() => onPick(s.id)}>×</button>

@@ -408,6 +408,7 @@
 
 /* Hộp thoại chọn ngành hàng tính phí (trang Sản phẩm và giá vốn). */
 .overlay {
+  composes: reset from "../ui/modal-reset.module.css";
   position: fixed;
   inset: 0;
   z-index: 300;
