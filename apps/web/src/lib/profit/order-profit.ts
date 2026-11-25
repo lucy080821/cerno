@@ -233,6 +233,8 @@ export interface ProfitSummary {
   /** Số đơn có phí ship shop chịu là số ước tính theo mức trung bình người dùng nhập. */
   shipEstimated: number;
   revenue: number;
+  /** Doanh thu thực của MỌI đơn (kể cả đơn chưa có giá vốn); `revenue` chỉ gồm các đơn đã tính được lãi. */
+  allRevenue: number;
   fee: number;
   cost: number;
   adCost: number;
@@ -266,7 +268,7 @@ function shares(o: OrderProfit): number[] {
 export function summarize(orders: OrderProfit[]): ProfitSummary {
   const s: ProfitSummary = {
     orders: orders.length, computable: 0, missingCost: 0, profitable: 0, loss: 0, thin: 0, returned: 0, cancelled: 0, feeEstimated: 0, shipEstimated: 0,
-    revenue: 0, fee: 0, cost: 0, adCost: 0, shipCost: 0, shippingIn: 0, profit: 0, lossAmount: 0, avgProfit: null, margin: null,
+    revenue: 0, allRevenue: 0, fee: 0, cost: 0, adCost: 0, shipCost: 0, shippingIn: 0, profit: 0, lossAmount: 0, avgProfit: null, margin: null,
     returnLoss: 0, cancelLoss: 0,
     histogram: PROFIT_BINS.map((b) => ({ label: b.label, count: 0, negative: b.max <= 0 })),
     daily: [], channels: [], reasons: [], products: [], dateMin: null, dateMax: null,
@@ -284,6 +286,7 @@ export function summarize(orders: OrderProfit[]): ProfitSummary {
     }
     if (o.feeEstimated) s.feeEstimated++;
     if (o.shipCost > 0) s.shipEstimated++;
+    s.allRevenue += o.revenue;
     if (o.status === "Hoàn trả") s.returned++;
     if (o.status === "Đã hủy") s.cancelled++;
     const ch = chans.get(o.channel) ?? { orders: 0, profit: 0, computable: 0, loss: 0 };

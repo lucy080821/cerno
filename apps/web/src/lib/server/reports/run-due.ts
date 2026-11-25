@@ -1,6 +1,6 @@
 import { nextRunAt, type ReportFrequency } from "@dashboard/schema";
 import type { MailMessage, SendResult } from "@/lib/server/mail";
-import { composeReport, createComposeCaches, type ComposeDeps, type ComposeMeta } from "./compose";
+import { composeReport, createComposeCaches, type ComposeCaches, type ComposeDeps, type ComposeMeta, type ComposeResult, type ReportConfig } from "./compose";
 
 /**
  * Chạy các báo cáo đến hạn (gọi từ cron). Mỗi lượt: nhận tối đa `limit` đăng ký (đã "thuê" 30 phút trong DB nên cron chạy
@@ -15,7 +15,9 @@ const RETRY_MS = 3_600_000;
 
 export interface DueSub {
   id: string;
-  dashboard_id: string;
+  /** null = báo cáo của cả cửa hàng (không gắn dashboard). */
+  dashboard_id: string | null;
+  workspace_id?: string | null;
   recipient_email: string;
   recipient_name: string;
   prompt: string;
@@ -34,7 +36,8 @@ export interface DueSub {
 export interface LogEntry {
   kind: "report";
   ref_id: string;
-  dashboard_id: string;
+  dashboard_id: string | null;
+  workspace_id?: string | null;
   recipient: string;
   status: "sent" | "failed" | "skipped";
   error?: string;
@@ -50,11 +53,13 @@ export interface FinishPatch {
 
 export interface RunDeps {
   compose: ComposeDeps;
+  /** Ráp báo cáo theo cửa hàng (đăng ký không gắn dashboard). Thiếu thì các đăng ký đó báo lỗi. */
+  composeStore?(workspaceId: string, cfg: ReportConfig, opts: { now: Date; caches: ComposeCaches; unsubscribeUrl: string }): Promise<ComposeResult>;
   claim(limit: number): Promise<DueSub[]>;
   isOptedOut(email: string, subId: string): Promise<boolean>;
   send(m: MailMessage): Promise<SendResult>;
   /** Còn được gửi thêm email hôm nay không (hạn mức email theo gói). Bỏ trống = không giới hạn. */
-  mailAllowed?(dashboardId: string): Promise<boolean>;
+  mailAllowed?(scope: { dashboardId: string | null; workspaceId: string | null }): Promise<boolean>;
   log(e: LogEntry): Promise<void>;
   finish(id: string, patch: FinishPatch): Promise<void>;
   /** Link huỷ nhận cho một đăng ký, hoặc null nếu chưa cấu hình UNSUBSCRIBE_SECRET (khi đó KHÔNG được gửi). */
@@ -77,7 +82,7 @@ export async function runDueReports(deps: RunDeps, limit = MAX_PER_RUN): Promise
   const caches = createComposeCaches();
 
   for (const sub of subs) {
-    const base = { kind: "report" as const, ref_id: sub.id, dashboard_id: sub.dashboard_id, recipient: sub.recipient_email };
+    const base = { kind: "report" as const, ref_id: sub.id, dashboard_id: sub.dashboard_id, ...(sub.dashboard_id ? {} : { workspace_id: sub.workspace_id ?? null }), recipient: sub.recipient_email };
     const next = () => nextRunAt({ frequency: sub.frequency, weekday: sub.weekday, month_day: sub.month_day, hour_vn: sub.hour_vn }, deps.now()).toISOString();
     try {
       if (await deps.isOptedOut(sub.recipient_email, sub.id)) {
@@ -97,14 +102,19 @@ export async function runDueReports(deps: RunDeps, limit = MAX_PER_RUN): Promise
       }
 
       // Hạn mức email mỗi ngày của workspace (theo gói): hết thì bỏ qua báo cáo kỳ này, ghi rõ lý do.
-      if (deps.mailAllowed && !(await deps.mailAllowed(sub.dashboard_id))) {
+      if (deps.mailAllowed && !(await deps.mailAllowed({ dashboardId: sub.dashboard_id, workspaceId: sub.workspace_id ?? null }))) {
         await deps.log({ ...base, status: "skipped", meta: { reason: "daily_limit" } });
         await deps.finish(sub.id, { last_error: "Đã đạt giới hạn email trong ngày của gói; báo cáo kỳ này bị bỏ qua.", next_run_at: next() });
         sum.skipped++;
         continue;
       }
 
-      const r = await composeReport(deps.compose, sub.dashboard_id, sub, { now: deps.now(), caches, unsubscribeUrl: links.pageUrl });
+      const opts = { now: deps.now(), caches, unsubscribeUrl: links.pageUrl };
+      const r: ComposeResult = sub.dashboard_id
+        ? await composeReport(deps.compose, sub.dashboard_id, sub, opts)
+        : sub.workspace_id && deps.composeStore
+          ? await deps.composeStore(sub.workspace_id, sub, opts)
+          : { ok: false, error: "Không tìm thấy phạm vi của báo cáo." };
       if (!r.ok) {
         const gone = r.error.includes("không còn tồn tại");
         await deps.log({ ...base, status: "failed", error: r.error, meta: {} });

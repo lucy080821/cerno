@@ -20,7 +20,8 @@ async function apiFetch(url: string, init?: RequestInit): Promise<Response> {
 
 export interface ReportRow {
   id: string;
-  dashboard_id: string;
+  /** null = báo cáo của cả cửa hàng (không gắn dashboard). */
+  dashboard_id: string | null;
   created_by: string;
   recipient_email: string;
   recipient_name: string;
@@ -43,6 +44,8 @@ export interface ReportRow {
 
 export interface ReportList {
   subscriptions: ReportRow[];
+  /** Báo cáo cửa hàng chưa dùng được vì thiếu migration 0025. */
+  migrationNeeded?: boolean;
   isOwner: boolean;
   me: string;
   viewLinkEnabled: boolean;
@@ -62,8 +65,11 @@ export interface PreviewResult {
   meta: { ai: { used: boolean; reason?: string }; images: number; imageNotes: string[]; linkFallback: boolean };
 }
 
-async function call<T>(id: string, init?: RequestInit, query = ""): Promise<T> {
-  const res = await apiFetch(`/api/dashboards/${id}/reports${query}`, {
+/** id = dashboard; null = báo cáo theo cửa hàng (app/api/workspace/reports). */
+const base = (id: string | null) => (id ? `/api/dashboards/${id}/reports` : "/api/workspace/reports");
+
+async function call<T>(id: string | null, init?: RequestInit, query = ""): Promise<T> {
+  const res = await apiFetch(`${base(id)}${query}`, {
     ...init,
     headers: { "content-type": "application/json", ...init?.headers },
   });
@@ -72,19 +78,19 @@ async function call<T>(id: string, init?: RequestInit, query = ""): Promise<T> {
   return json;
 }
 
-export const listReports = (id: string) => call<ReportList>(id);
+export const listReports = (id: string | null) => call<ReportList>(id);
 
-export const createReport = (id: string, input: ReportSubscriptionInput) =>
+export const createReport = (id: string | null, input: ReportSubscriptionInput) =>
   call<{ subscription: ReportRow }>(id, { method: "POST", body: JSON.stringify(input) });
 
-export const updateReport = (id: string, subId: string, input: ReportSubscriptionInput) =>
+export const updateReport = (id: string | null, subId: string, input: ReportSubscriptionInput) =>
   call<{ subscription: ReportRow }>(id, { method: "PATCH", body: JSON.stringify(input) }, `?id=${encodeURIComponent(subId)}`);
 
-export const deleteReport = (id: string, subId: string) =>
+export const deleteReport = (id: string | null, subId: string) =>
   call<{ ok: true }>(id, { method: "DELETE" }, `?id=${encodeURIComponent(subId)}`);
 
-export const previewReport = (id: string, input: ReportSubscriptionInput) =>
+export const previewReport = (id: string | null, input: ReportSubscriptionInput) =>
   call<PreviewResult>(id, { method: "POST", body: JSON.stringify(input) }, "?preview=1");
 
-export const sendTestReport = (id: string, input: ReportSubscriptionInput) =>
+export const sendTestReport = (id: string | null, input: ReportSubscriptionInput) =>
   call<{ sent: true; to: string }>(id, { method: "POST", body: JSON.stringify(input) }, "?test=1");

@@ -5,6 +5,7 @@ import {
 import type { CalcFieldDef } from "@dashboard/chart-engine";
 import type { InlineImage, MailMessage, SendResult } from "@/lib/server/mail";
 import { buildAlertEmail, type AlertEmailInput, type AlertEmailKind } from "@/lib/server/mail/alert-email";
+import { storeWording } from "@/lib/server/mail/store-wording";
 import { alertChartPng } from "./chart";
 import { computeAlert, computeSeries, summarize, verdictOf, type AlertComputation, type Executor } from "./compute";
 import { conditionSentence, metricLabel, thresholdText } from "@/lib/alerts/describe";
@@ -20,7 +21,10 @@ import { checkRule, type CalcInfo, type SourceInfo } from "./validate";
 
 export interface RuleRow {
   id: string;
-  dashboard_id: string;
+  /** null = luật của cả cửa hàng (đọc dữ liệu Đơn hàng đa kênh, không gắn dashboard). */
+  dashboard_id: string | null;
+  /** Workspace của luật. Thiếu ở dữ liệu cũ trước migration 0025 (khi đó luôn có dashboard_id). */
+  workspace_id?: string | null;
   created_by: string;
   name: string;
   metric: unknown;
@@ -37,8 +41,22 @@ export interface RuleRow {
   group_state: unknown;
 }
 
+/** Phạm vi của một luật: một dashboard, hoặc cả cửa hàng (dashboardId = null). */
+export interface ScopeRef {
+  dashboardId: string | null;
+  workspaceId: string | null;
+}
+
+export const scopeOf = (r: Pick<RuleRow, "dashboard_id" | "workspace_id">): ScopeRef => ({ dashboardId: r.dashboard_id, workspaceId: r.workspace_id ?? null });
+const scopeKey = (r: Pick<RuleRow, "dashboard_id" | "workspace_id">) => r.dashboard_id ?? `ws:${r.workspace_id ?? ""}`;
+
 export interface AlertCtx {
+  /** Tên hiện trong email: tên dashboard, hoặc tên cửa hàng với luật theo cửa hàng. */
   dashboardName: string;
+  /** Link nút "Mở" trong email khi luật không gắn dashboard (mặc định trang Tổng quan). */
+  openUrl?: string;
+  /** Truy vấn riêng của phạm vi này (luật theo cửa hàng đọc dữ liệu đơn hàng đã kèm lãi). Thiếu = `deps.exec`. */
+  exec?: Executor;
   ownerId: string;
   sources: SourceInfo[];
   calc: CalcInfo[];
@@ -64,7 +82,8 @@ export interface RulePatch {
 export interface AlertLog {
   kind: "alert";
   ref_id: string;
-  dashboard_id: string;
+  dashboard_id: string | null;
+  workspace_id?: string | null;
   recipient: string;
   status: "sent" | "failed" | "skipped";
   error?: string;
@@ -75,14 +94,14 @@ export interface AlertDeps {
   now(): Date;
   rulesForSource(sourceId: string): Promise<RuleRow[]>;
   staleRules(): Promise<RuleRow[]>;
-  context(dashboardId: string): Promise<AlertCtx | null>;
+  context(scope: ScopeRef): Promise<AlertCtx | null>;
   exec: Executor;
   /** Lúc dữ liệu của nguồn đổi lần cuối (ISO), null nếu chưa biết. */
   dataChangedAt(sourceId: string): Promise<string | null>;
   isOptedOut(email: string, ruleId: string): Promise<boolean>;
   send(m: MailMessage): Promise<SendResult>;
   /** Còn được gửi thêm email hôm nay không (hạn mức email theo gói). Bỏ trống = không giới hạn. */
-  mailAllowed?(dashboardId: string): Promise<boolean>;
+  mailAllowed?(scope: ScopeRef): Promise<boolean>;
   log(e: AlertLog): Promise<void>;
   save(ruleId: string, patch: RulePatch): Promise<void>;
   creatorEmail(userId: string): Promise<string | null>;
@@ -139,11 +158,14 @@ async function deliver(
   rule: RuleRow, ctx: AlertCtx, kind: AlertEmailKind, parts: EmailParts, to: string[], deps: AlertDeps,
   image: InlineImage | null, meta: Record<string, unknown>,
 ): Promise<number> {
-  const token = await deps.viewToken(rule.dashboard_id);
-  const dashboardUrl = token ? `${deps.origin}/view/${token}` : `${deps.origin}/d/${rule.dashboard_id}`;
+  let dashboardUrl: string;
+  if (rule.dashboard_id) {
+    const token = await deps.viewToken(rule.dashboard_id);
+    dashboardUrl = token ? `${deps.origin}/view/${token}` : `${deps.origin}/d/${rule.dashboard_id}`;
+  } else dashboardUrl = ctx.openUrl ?? `${deps.origin}/overview`;
   let sent = 0;
   for (const email of [...new Set(to.map((x) => x.toLowerCase()))].slice(0, MAX_RECIPIENTS)) {
-    const base = { kind: "alert" as const, ref_id: rule.id, dashboard_id: rule.dashboard_id, recipient: email };
+    const base = { kind: "alert" as const, ref_id: rule.id, dashboard_id: rule.dashboard_id, ...(rule.dashboard_id ? {} : { workspace_id: rule.workspace_id ?? null }), recipient: email };
     try {
       if (await deps.isOptedOut(email, rule.id)) {
         await deps.log({ ...base, status: "skipped", meta: { ...meta, reason: "optout" } });
@@ -155,14 +177,16 @@ async function deliver(
         continue;
       }
       // Hạn mức email mỗi ngày của workspace (theo gói): hết thì không gửi (và không tính là đã báo, lần sau thử lại).
-      if (deps.mailAllowed && !(await deps.mailAllowed(rule.dashboard_id))) {
+      if (deps.mailAllowed && !(await deps.mailAllowed(scopeOf(rule)))) {
         await deps.log({ ...base, status: "skipped", meta: { ...meta, reason: "daily_limit" } });
         continue;
       }
-      const mail = buildAlertEmail({
+      const built = buildAlertEmail({
         ...parts, appName: deps.appName ?? "Cerno", kind, ruleName: rule.name, dashboardName: ctx.dashboardName, dashboardUrl,
         snoozeUrl: links.snoozeUrl, muteUrl: links.muteUrl, unsubscribeUrl: links.pageUrl,
       });
+      // Luật theo cửa hàng (không có dashboard): đổi các cụm cố định nhắc tới "dashboard".
+      const mail = rule.dashboard_id ? built : storeWording(built);
       const r = await deps.send({
         to: email, subject: mail.subject, html: mail.html, text: mail.text,
         ...(image ? { images: [image] } : {}),
@@ -181,7 +205,7 @@ async function deliver(
 async function chartFor(draft: AlertDraft2, comp: AlertComputation, ctx: AlertCtx, deps: AlertDeps): Promise<{ image: InlineImage; alt: string } | null> {
   if (comp.kind !== "single") return null;
   try {
-    const series = await computeSeries(draft.metric, { exec: deps.exec, calc: ctx.calcDefs(draft.metric.sourceId), now: deps.now() }, 14);
+    const series = await computeSeries(draft.metric, { exec: ctx.exec ?? deps.exec, calc: ctx.calcDefs(draft.metric.sourceId), now: deps.now() }, 14);
     if (!series) return null;
     const c = draft.condition;
     const threshold = c.type === "threshold" ? c.value : null;
@@ -225,10 +249,10 @@ export async function processRule(rule: RuleRow, deps: AlertDeps, ctxCache: Map<
   if (!rule.enabled) return skip();
 
   const parsed = AlertDraft.safeParse({ metric: rule.metric, condition: rule.condition });
-  let ctxP = ctxCache.get(rule.dashboard_id);
+  let ctxP = ctxCache.get(scopeKey(rule));
   if (!ctxP) {
-    ctxP = deps.context(rule.dashboard_id);
-    ctxCache.set(rule.dashboard_id, ctxP);
+    ctxP = deps.context(scopeOf(rule));
+    ctxCache.set(scopeKey(rule), ctxP);
   }
   const ctx = await ctxP;
   if (!parsed.success) return markError(rule, ctx, "Luật không còn hợp lệ, hãy mở và lưu lại luật này.", deps);
@@ -242,7 +266,7 @@ export async function processRule(rule: RuleRow, deps: AlertDeps, ctxCache: Map<
 
   let comp: AlertComputation;
   try {
-    comp = await computeAlert(draft.metric, draft.condition, { exec: deps.exec, calc: ctx.calcDefs(draft.metric.sourceId), now });
+    comp = await computeAlert(draft.metric, draft.condition, { exec: ctx.exec ?? deps.exec, calc: ctx.calcDefs(draft.metric.sourceId), now });
   } catch {
     // Lỗi tạm thời (DB, truy vấn): giữ nguyên trạng thái, ghi nhận để người dùng thấy.
     await deps.save(rule.id, { last_checked_at: nowIso, last_error: "Không tính được số liệu lần này, sẽ thử lại ở lần cập nhật dữ liệu sau." });
@@ -346,10 +370,10 @@ async function processStale(rule: RuleRow, deps: AlertDeps, ctxCache: Map<string
   const now = deps.now();
   const nowIso = now.toISOString();
   const parsed = AlertDraft.safeParse({ metric: rule.metric, condition: rule.condition });
-  let ctxP = ctxCache.get(rule.dashboard_id);
+  let ctxP = ctxCache.get(scopeKey(rule));
   if (!ctxP) {
-    ctxP = deps.context(rule.dashboard_id);
-    ctxCache.set(rule.dashboard_id, ctxP);
+    ctxP = deps.context(scopeOf(rule));
+    ctxCache.set(scopeKey(rule), ctxP);
   }
   const ctx = await ctxP;
   if (!parsed.success || parsed.data.condition.type !== "stale") return markError(rule, ctx, "Luật không còn hợp lệ, hãy mở và lưu lại luật này.", deps);

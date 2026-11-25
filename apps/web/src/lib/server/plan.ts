@@ -38,6 +38,27 @@ export async function mailAllowedForDashboard(dashboardId: string, now = new Dat
   return sent < PLAN_LIMITS[p.plan].mailsPerDay;
 }
 
+/** Gói của một workspace (luật/báo cáo theo cửa hàng không có dashboard). */
+export async function planForWorkspace(workspaceId: string): Promise<Plan> {
+  const { data: w } = await createAdminClient().from("workspaces").select("plan").eq("id", workspaceId).maybeSingle();
+  return normalizePlan(w?.plan);
+}
+
+/** Còn được gửi thêm email hôm nay không (theo gói của workspace). Không đếm được thì cho phép. */
+export async function mailAllowedForWorkspace(workspaceId: string, now = new Date()): Promise<boolean> {
+  const plan = await planForWorkspace(workspaceId);
+  const sent = await mailsSentToday(workspaceId, now);
+  if (sent === null) return true;
+  return sent < PLAN_LIMITS[plan].mailsPerDay;
+}
+
+/** Như `mailAllowedForDashboard`/`mailAllowedForWorkspace`, theo phạm vi của luật hoặc đăng ký. */
+export async function mailAllowedForScope(scope: { dashboardId: string | null; workspaceId: string | null }, now = new Date()): Promise<boolean> {
+  if (scope.dashboardId) return mailAllowedForDashboard(scope.dashboardId, now);
+  if (scope.workspaceId) return mailAllowedForWorkspace(scope.workspaceId, now);
+  return true;
+}
+
 const AI_PARSE = "alert_ai_parse";
 
 /**

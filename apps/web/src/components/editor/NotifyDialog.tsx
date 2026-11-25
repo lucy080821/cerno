@@ -34,7 +34,8 @@ const MONTH_DAYS = Array.from({ length: 31 }, (_, d) => d + 1);
 
 // ---------------------------------------------------------------------------------------------
 
-export function ReportsTab({ dashboardId, widgets }: { dashboardId: string; widgets: ReportableWidget[] }) {
+/** `dashboardId` null = báo cáo theo cửa hàng (dữ liệu bán hàng đa kênh): không có widget để chọn ảnh và không có link xem. */
+export function ReportsTab({ dashboardId, widgets }: { dashboardId: string | null; widgets: ReportableWidget[] }) {
   const dialog = useDialog();
   const [data, setData] = useState<ReportList | null>(null);
   const [loadError, setLoadError] = useState("");
@@ -90,7 +91,7 @@ export function ReportsTab({ dashboardId, widgets }: { dashboardId: string; widg
    * Trả false nếu người dùng từ chối hoặc không thể bật (khi đó không lưu).
    */
   const ensureViewLink = async (f: ReportForm): Promise<boolean> => {
-    if (!data || f.link_mode !== "view_link" || data.viewLinkEnabled) return true;
+    if (!dashboardId || !data || f.link_mode !== "view_link" || data.viewLinkEnabled) return true;
     if (!data.isOwner) {
       setMsg({ kind: "err", text: "Chủ dashboard chưa bật link xem. Hãy chọn “Link đăng nhập” hoặc nhờ chủ dashboard bật link xem." });
       return false;
@@ -320,6 +321,7 @@ export function ReportsTab({ dashboardId, widgets }: { dashboardId: string; widg
           </div>
         )}
 
+        {dashboardId && (
         <div className={n.radios} role="radiogroup" aria-label="Link mở dashboard">
           <span className={n.legend}>Link “Mở dashboard” trong email</span>
           <label className={n.check}>
@@ -331,6 +333,7 @@ export function ReportsTab({ dashboardId, widgets }: { dashboardId: string; widg
             <span>Link đăng nhập: người nhận phải được mời và đăng nhập bằng đúng email</span>
           </label>
         </div>
+        )}
 
         <label className={n.check}>
           <input type="checkbox" checked={form.enabled} disabled={busy !== null} onChange={(e) => patch({ enabled: e.target.checked })} />
@@ -373,12 +376,16 @@ export function ReportsTab({ dashboardId, widgets }: { dashboardId: string; widg
     <div className={n.body} style={{ padding: 0 }}>
       <div className={n.top}>
         <p>
-          {data.isOwner
-            ? "Gửi báo cáo số liệu của dashboard qua email theo lịch. Mỗi người nhận có thể có yêu cầu riêng."
-            : "Đăng ký nhận báo cáo của dashboard này qua email của chính bạn."}{" "}
+          {dashboardId
+            ? data.isOwner
+              ? "Gửi báo cáo số liệu của dashboard qua email theo lịch. Mỗi người nhận có thể có yêu cầu riêng."
+              : "Đăng ký nhận báo cáo của dashboard này qua email của chính bạn."
+            : data.isOwner
+              ? "Gửi báo cáo số liệu bán hàng của cửa hàng (doanh thu, lãi, hủy/hoàn, kênh, sản phẩm) qua email theo lịch. Mỗi người nhận có thể có yêu cầu riêng."
+              : "Đăng ký nhận báo cáo bán hàng của cửa hàng này qua email của chính bạn."}{" "}
           <span>Gói:</span> <span className={n.tag}>{data.planLabel}</span>
         </p>
-        <button className={`${s.btn} ${s.btnActive}`} onClick={openNew} disabled={full || busy !== null}>
+        <button className={`${s.btn} ${s.btnActive}`} onClick={openNew} disabled={full || !!data.migrationNeeded || busy !== null}>
           <Icon name="plus" size={13} /> Thêm
         </button>
       </div>
@@ -388,7 +395,8 @@ export function ReportsTab({ dashboardId, widgets }: { dashboardId: string; widg
       {!data.mailReady && (
         <p className={n.warn}>Máy chủ chưa cấu hình gửi email nên các báo cáo chưa được gửi đi. Bạn vẫn có thể tạo lịch và xem trước.</p>
       )}
-      {full && <p className={n.warn}>{`Đã đạt giới hạn ${data.limit} người nhận cho dashboard này.`}</p>}
+      {data.migrationNeeded && <p className={n.warn}>Cần chạy migration 0025_workspace_notify.sql trên Supabase trước khi tạo báo cáo theo cửa hàng.</p>}
+      {full && <p className={n.warn}>{dashboardId ? `Đã đạt giới hạn ${data.limit} người nhận cho dashboard này.` : `Đã đạt giới hạn ${data.limit} người nhận cho cửa hàng này.`}</p>}
       {msg && <p className={msg.kind === "ok" ? n.ok : n.err} role={msg.kind === "ok" ? "status" : "alert"}>{msg.text}</p>}
 
       {data.subscriptions.length === 0 ? (

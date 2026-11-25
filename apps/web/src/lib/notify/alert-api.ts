@@ -20,7 +20,8 @@ async function apiFetch(url: string, init?: RequestInit): Promise<Response> {
 
 export interface AlertRow {
   id: string;
-  dashboard_id: string;
+  /** null = cảnh báo của cả cửa hàng (không gắn dashboard). */
+  dashboard_id: string | null;
   created_by: string;
   name: string;
   source_prompt: string | null;
@@ -43,6 +44,10 @@ export interface AlertRow {
 
 export interface AlertList {
   rules: AlertRow[];
+  /** Cảnh báo cửa hàng chưa dùng được vì thiếu migration 0025. */
+  migrationNeeded?: boolean;
+  /** Cửa hàng chưa có dữ liệu đơn hàng để đặt cảnh báo. */
+  noOrders?: boolean;
   isOwner: boolean;
   me: string;
   mailReady: boolean;
@@ -80,8 +85,11 @@ export type ParseResult =
   | { ai: true; invalid: true; errors: string[] }
   | { ai: false; error: string };
 
-async function call<T>(id: string, path: string, init?: RequestInit, query = ""): Promise<T> {
-  const res = await apiFetch(`/api/dashboards/${id}/alerts${path}${query}`, {
+/** id = dashboard; null = cảnh báo theo cửa hàng (app/api/workspace/alerts). */
+const base = (id: string | null) => (id ? `/api/dashboards/${id}/alerts` : "/api/workspace/alerts");
+
+async function call<T>(id: string | null, path: string, init?: RequestInit, query = ""): Promise<T> {
+  const res = await apiFetch(`${base(id)}${path}${query}`, {
     ...init,
     headers: { "content-type": "application/json", ...init?.headers },
   });
@@ -90,20 +98,20 @@ async function call<T>(id: string, path: string, init?: RequestInit, query = "")
   return json;
 }
 
-export const listAlerts = (id: string) => call<AlertList>(id, "");
-export const createAlert = (id: string, input: AlertRuleInput) => call<{ rule: AlertRow }>(id, "", { method: "POST", body: JSON.stringify(input) });
-export const updateAlert = (id: string, ruleId: string, input: AlertRuleInput) =>
+export const listAlerts = (id: string | null) => call<AlertList>(id, "");
+export const createAlert = (id: string | null, input: AlertRuleInput) => call<{ rule: AlertRow }>(id, "", { method: "POST", body: JSON.stringify(input) });
+export const updateAlert = (id: string | null, ruleId: string, input: AlertRuleInput) =>
   call<{ rule: AlertRow }>(id, "", { method: "PATCH", body: JSON.stringify(input) }, `?id=${encodeURIComponent(ruleId)}`);
-export const deleteAlert = (id: string, ruleId: string) => call<{ ok: true }>(id, "", { method: "DELETE" }, `?id=${encodeURIComponent(ruleId)}`);
+export const deleteAlert = (id: string | null, ruleId: string) => call<{ ok: true }>(id, "", { method: "DELETE" }, `?id=${encodeURIComponent(ruleId)}`);
 /** hours = 0 để bỏ tạm hoãn. */
-export const snoozeAlert = (id: string, ruleId: string, hours: number) =>
+export const snoozeAlert = (id: string | null, ruleId: string, hours: number) =>
   call<{ rule: AlertRow }>(id, "", { method: "PATCH" }, `?id=${encodeURIComponent(ruleId)}&snooze=${hours}`);
-export const evaluateAlert = (id: string, draft: { metric: AlertMetric; condition: AlertCondition }) =>
+export const evaluateAlert = (id: string | null, draft: { metric: AlertMetric; condition: AlertCondition }) =>
   call<{ summary: Summary | null }>(id, "", { method: "POST", body: JSON.stringify(draft) }, "?evaluate=1");
 
 /** Hỏi AI dịch lời mô tả thành luật. Lỗi mạng/máy chủ được trả về dạng `{ai:false}` để giao diện cho tự cài. */
-export async function parseAlertText(id: string, text: string): Promise<ParseResult> {
-  const res = await apiFetch(`/api/dashboards/${id}/alerts/parse`, {
+export async function parseAlertText(id: string | null, text: string): Promise<ParseResult> {
+  const res = await apiFetch(`${base(id)}/parse`, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ text }),

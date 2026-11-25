@@ -95,6 +95,9 @@ const list = (items: string[]) =>
 
 /** Chữ thay đổi theo ngôn ngữ ("+6 ngày" → "+6 days"). */
 const growthOf = (k: KpiFact, lang: Lang) => (lang === "en" ? growthEn(k.growthText) : k.growthText);
+/** Tên cố định (chỉ số, nhóm) sang tiếng Anh ở phần tiếng Anh của thư; tên người dùng tự đặt không có trong từ điển thì giữ nguyên. */
+const nm = (s: string, lang: Lang) => (lang === "en" ? toEn(s) : s);
+
 const labelOf = (s: { label: string; labelEn?: string }, lang: Lang) => (lang === "en" ? s.labelEn ?? toEn(s.label) : s.label);
 
 function kpiRow(k: KpiFact, lang: Lang, overview = false): string {
@@ -104,7 +107,7 @@ function kpiRow(k: KpiFact, lang: Lang, overview = false): string {
     : `<span style="color:#9ca3af">–</span>`;
   const cell = `padding:10px 8px;border-bottom:1px solid #e5e7eb;${FONT}font-size:14px;line-height:1.4;`;
   return (
-    `<tr><td style="${cell}color:#374151">${e(k.title)}</td>` +
+    `<tr><td style="${cell}color:#374151">${e(nm(k.title, lang))}</td>` +
     `<td style="${cell}text-align:right;font-weight:700;color:#14162b">${k.value ? e(k.value.text) : "—"}</td>` +
     (overview ? "" : `<td style="${cell}text-align:right;color:#6b7280">${k.prev ? e(k.prev.text) : "—"}</td><td style="${cell}text-align:right">${change}</td>`) +
     `</tr>`
@@ -141,7 +144,7 @@ function kpiCards(f: ReportFacts, lang: Lang): string {
     return (
       `<td width="50%" valign="top" style="padding:0 4px 8px">` +
       `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border:1px solid #e5e7eb;border-left:4px solid ${k.growthText && !overview ? color : "#d1d5db"};border-radius:10px;background:#ffffff">` +
-      `<tr><td style="padding:12px 14px 2px;${FONT}font-size:12px;line-height:1.3;font-weight:700;color:#6b7280;text-transform:uppercase">${e(k.title)}</td></tr>` +
+      `<tr><td style="padding:12px 14px 2px;${FONT}font-size:12px;line-height:1.3;font-weight:700;color:#6b7280;text-transform:uppercase">${e(nm(k.title, lang))}</td></tr>` +
       `<tr><td style="padding:0 14px;${FONT}font-size:24px;line-height:1.3;font-weight:700;color:#14162b">${k.value ? e(k.value.text) : "—"}</td></tr>` +
       (overview
         ? `<tr><td style="padding:0 14px 12px"></td></tr></table></td>`
@@ -212,7 +215,7 @@ function moversBlock(f: ReportFacts, lang: Lang): string {
     f.movers
       .map(
         (m) =>
-          `<div style="margin:0 0 12px"><div style="${FONT}font-size:13px;line-height:1.4;font-weight:700;color:#14162b">${e(m.chart)}</div>` +
+          `<div style="margin:0 0 12px"><div style="${FONT}font-size:13px;line-height:1.4;font-weight:700;color:#14162b">${e(nm(m.chart, lang))}</div>` +
           side(t.up, COLOR.good, m.up) + side(t.down, COLOR.bad, m.down) + `</div>`,
       )
       .join("")
@@ -228,7 +231,7 @@ function topsBlock(f: ReportFacts, lang: Lang): string {
     f.tops
       .map(
         (x) =>
-          `<div style="margin:0 0 12px"><div style="${FONT}font-size:13px;line-height:1.4;font-weight:700;color:#14162b">${e(x.chart)}</div>` +
+          `<div style="margin:0 0 12px"><div style="${FONT}font-size:13px;line-height:1.4;font-weight:700;color:#14162b">${e(nm(x.chart, lang))}</div>` +
           `<div style="margin:2px 0;${FONT}font-size:13px;line-height:1.5;color:#374151">${x.items.map((i) => `${e(i.name)} (${e(i.value.text)})`).join("; ")}</div></div>`,
       )
       .join("")
@@ -284,7 +287,7 @@ function textFor(lang: Lang, i: ReportEmailInput, dash: string, name: string, te
     out.push(t.keyMetrics.toUpperCase());
     for (const k of f.kpis) {
       const g = f.mode === "overview" ? "" : growthOf(k, lang);
-      out.push(`- ${k.title}: ${k.value ? k.value.text : t.noData}${k.prev ? ` (${t.prevWord} ${k.prev.text})` : ""}${g ? `, ${g}` : ""}`);
+      out.push(`- ${nm(k.title, lang)}: ${k.value ? k.value.text : t.noData}${k.prev ? ` (${t.prevWord} ${k.prev.text})` : ""}${g ? `, ${g}` : ""}`);
     }
     out.push("");
   }
@@ -293,7 +296,7 @@ function textFor(lang: Lang, i: ReportEmailInput, dash: string, name: string, te
   if (f.movers.length) {
     out.push(t.movers.toUpperCase());
     for (const m of f.movers) {
-      out.push(m.chart);
+      out.push(nm(m.chart, lang));
       if (m.up.length) out.push(`  ${t.up}: ${m.up.map((x) => `${x.name} (+${x.delta.text})`).join("; ")}`);
       if (m.down.length) out.push(`  ${t.down}: ${m.down.map((x) => `${x.name} (${x.delta.text})`).join("; ")}`);
     }
@@ -301,7 +304,7 @@ function textFor(lang: Lang, i: ReportEmailInput, dash: string, name: string, te
   }
   if (f.tops?.length) {
     out.push(t.tops.toUpperCase());
-    for (const x of f.tops) out.push(x.chart, `  ${x.items.map((i) => `${i.name} (${i.value.text})`).join("; ")}`);
+    for (const x of f.tops) out.push(nm(x.chart, lang), `  ${x.items.map((i) => `${i.name} (${i.value.text})`).join("; ")}`);
     out.push("");
   }
   if (lang === "vi" && i.images.length) out.push(t.chartsInMail(i.images.length), "");

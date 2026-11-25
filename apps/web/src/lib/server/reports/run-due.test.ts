@@ -152,7 +152,7 @@ describe("runDueReports", () => {
   });
 
   it("hết hạn mức email trong ngày (theo gói): bỏ qua báo cáo kỳ này, ghi lý do, không gửi, không gọi AI", async () => {
-    const h = harness([sub("an"), sub("binh")], { mailAllowed: async (d) => d === "khac" });
+    const h = harness([sub("an"), sub("binh")], { mailAllowed: async (s) => s.dashboardId === "khac" });
     const r = await runDueReports(h.deps);
     expect(r).toMatchObject({ sent: 0, skipped: 2 });
     expect(h.sent).toEqual([]);

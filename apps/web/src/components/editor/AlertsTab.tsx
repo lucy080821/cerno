@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   createAlert, deleteAlert, evaluateAlert, listAlerts, parseAlertText, snoozeAlert, updateAlert,
@@ -67,7 +68,8 @@ function PreviewBox({ summary, loading, error }: { summary: Summary | null; load
 
 // ---------------------------------------------------------------------------------------------
 
-export function AlertsTab({ dashboardId, prefill }: { dashboardId: string; prefill?: AlertPrefill | null }) {
+/** `dashboardId` null = cảnh báo theo cửa hàng (dữ liệu bán hàng đa kênh, không gắn dashboard). */
+export function AlertsTab({ dashboardId, prefill }: { dashboardId: string | null; prefill?: AlertPrefill | null }) {
   const dialog = useDialog();
   const [data, setData] = useState<AlertList | null>(null);
   const [loadError, setLoadError] = useState("");
@@ -460,6 +462,8 @@ export function AlertsTab({ dashboardId, prefill }: { dashboardId: string; prefi
 
   // ---------------- Danh sách ----------------
   const full = data.rules.length >= data.limit;
+  // Chưa chạy migration hoặc cửa hàng chưa có đơn hàng: xem được nhưng chưa tạo được.
+  const locked = full || !!data.migrationNeeded || !!data.noOrders;
   const now = new Date();
   const calcNames = data.schema.calc.map((c) => c.name);
   return (
@@ -473,20 +477,28 @@ export function AlertsTab({ dashboardId, prefill }: { dashboardId: string; prefi
 
       {data.plan === "free" && <UpgradeNote />}
       {!data.mailReady && <p className={n.warn}>Máy chủ chưa cấu hình gửi email nên các cảnh báo chưa được gửi đi. Bạn vẫn có thể tạo và kiểm tra luật.</p>}
-      {full && <p className={n.warn}>{`Đã đạt giới hạn ${data.limit} cảnh báo cho dashboard này.`}</p>}
+      {data.migrationNeeded && <p className={n.warn}>Cần chạy migration 0025_workspace_notify.sql trên Supabase trước khi tạo cảnh báo theo cửa hàng.</p>}
+      {data.noOrders && (
+        <p className={n.warn}>
+          Cửa hàng chưa có dữ liệu đơn hàng. <Link href="/sources">Tải file đơn hàng hoặc nối Google Sheet đơn hàng</Link> rồi quay lại đây để tạo cảnh báo.
+        </p>
+      )}
+      {full && <p className={n.warn}>{dashboardId ? `Đã đạt giới hạn ${data.limit} cảnh báo cho dashboard này.` : `Đã đạt giới hạn ${data.limit} cảnh báo cho cửa hàng này.`}</p>}
 
       <div className={n.item}>
         <label className={n.field}>
           Mô tả điều bạn muốn được báo
-          <textarea value={text} maxLength={500} disabled={busy !== null || full} rows={2}
-            placeholder="Ví dụ: báo khi doanh thu hôm nay dưới 10 triệu · báo khi số đơn huỷ tăng bất thường · báo khi tỉnh nào doanh thu giảm hơn 20%"
+          <textarea value={text} maxLength={500} disabled={busy !== null || locked} rows={2}
+            placeholder={dashboardId
+              ? "Ví dụ: báo khi doanh thu hôm nay dưới 10 triệu · báo khi số đơn huỷ tăng bất thường · báo khi tỉnh nào doanh thu giảm hơn 20%"
+              : "Ví dụ: báo khi lãi hôm nay dưới 500 nghìn · báo khi tỷ lệ hủy tuần này trên 10% · báo khi kênh nào lãi giảm hơn 20% so với tuần trước"}
             onChange={(e) => setText(e.target.value)} />
         </label>
         {data.limits.aiParsePerMonth !== null && <p className={n.sub}>{`Tạo cảnh báo bằng AI: tối đa ${data.limits.aiParsePerMonth} lần mỗi tháng.`}</p>}
         {question && <p className={n.warn}>{`AI hỏi: ${question}`}</p>}
         <div className={n.actions}>
-          <button className={s.btn} onClick={openManual} disabled={busy !== null || full}>Tự cài</button>
-          <button className={`${s.btn} ${s.btnActive}`} onClick={askAi} disabled={busy !== null || full}>
+          <button className={s.btn} onClick={openManual} disabled={busy !== null || locked}>Tự cài</button>
+          <button className={`${s.btn} ${s.btnActive}`} onClick={askAi} disabled={busy !== null || locked}>
             {busy === "ai" ? <Spinner size={12} inline /> : <Icon name="plus" size={13} />} Tạo bằng AI
           </button>
         </div>

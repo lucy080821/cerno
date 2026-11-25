@@ -9,7 +9,9 @@ import { sendMail } from "@/lib/server/mail";
 import { createNotifyToken, unsubscribeApiUrl, unsubscribeConfigured, unsubscribePageUrl } from "@/lib/server/notify/unsubscribe";
 import { executeQuery } from "@/lib/server/query-service";
 import { getSourceMeta } from "@/lib/server/row-cache";
-import { mailAllowedForDashboard, planForDashboard } from "@/lib/server/plan";
+import { mailAllowedForScope, planForDashboard, planForWorkspace } from "@/lib/server/plan";
+import { composeStoreReport, type StoreComposeDeps } from "@/lib/server/workspace-notify/report-compose";
+import { loadStoreInfo, storeSummarize } from "@/lib/server/workspace-notify/store-data";
 import type { ComposeDeps, LoadedDashboard } from "./compose";
 import type { DueSub, RunDeps } from "./run-due";
 
@@ -78,11 +80,24 @@ export function liveComposeDeps(origin: string): ComposeDeps {
   };
 }
 
+/** Phụ thuộc thật cho báo cáo theo cửa hàng (không gắn dashboard). */
+export function liveStoreDeps(origin: string): StoreComposeDeps {
+  return {
+    loadStore: loadStoreInfo,
+    summarize: storeSummarize,
+    chat: liveChat,
+    // AI viết báo cáo chỉ có ở gói trả phí; gói miễn phí nhận bảng số + ảnh.
+    aiAllowed: async (_ownerId, workspaceId) => (await planForWorkspace(workspaceId)) === "paid",
+    origin,
+  };
+}
+
 /** Phụ thuộc cho cron: nhận báo cáo đến hạn, gửi mail thật, ghi nhật ký và lịch. */
 export function liveRunDeps(origin: string): RunDeps {
   const admin = createAdminClient();
   return {
     compose: liveComposeDeps(origin),
+    composeStore: (workspaceId, cfg, opts) => composeStoreReport(liveStoreDeps(origin), workspaceId, cfg, opts),
     async claim(limit) {
       const { data, error } = await admin.rpc("claim_due_reports", { p_limit: limit });
       if (error) throw new Error(`claim_due_reports: ${error.message}`);
@@ -99,7 +114,7 @@ export function liveRunDeps(origin: string): RunDeps {
       return (data ?? []).length > 0;
     },
     send: sendMail,
-    mailAllowed: (dashboardId) => mailAllowedForDashboard(dashboardId),
+    mailAllowed: (scope) => mailAllowedForScope(scope),
     async log(e) {
       await admin.from("notification_log").insert({ ...e, channel: "email" });
     },

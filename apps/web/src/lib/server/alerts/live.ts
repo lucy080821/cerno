@@ -4,15 +4,16 @@ import { siteUrl } from "@/lib/seo";
 import { sendMail } from "@/lib/server/mail";
 import { createNotifyToken, unsubscribeApiUrl, unsubscribeConfigured, unsubscribePageUrl } from "@/lib/server/notify/unsubscribe";
 import { liveChat, liveExec } from "@/lib/server/reports/live";
-import { mailAllowedForDashboard } from "@/lib/server/plan";
+import { mailAllowedForScope } from "@/lib/server/plan";
+import { loadWorkspaceAlertCtx } from "@/lib/server/workspace-notify/context";
 import { loadAlertContext } from "./context";
 import { explainBilingual } from "./explain";
 import type { AlertCtx, AlertDeps, RuleRow } from "./evaluate";
 
 /** Nối các phụ thuộc thật (DB service role, SMTP, AI) cho việc chạy luật cảnh báo. Chỉ chạy ở server. */
 
-const RULE_COLUMNS =
-  "id, dashboard_id, created_by, name, metric, condition, recipients, cooldown_minutes, notify_recover, enabled, snooze_until, last_state, last_value, last_triggered_at, last_error, group_state";
+/** Lấy mọi cột: chạy được cả khi chưa có migration 0025 (cột workspace_id). */
+const RULE_COLUMNS = "*";
 
 /** Link "Tạm hoãn" hết hạn sau 30 ngày (link huỷ nhận thì không bao giờ hết hạn). */
 const SNOOZE_LINK_DAYS = 30;
@@ -42,9 +43,12 @@ export function liveAlertDeps(origin: string = siteUrl()): AlertDeps {
       return (data ?? []) as RuleRow[];
     },
 
-    async context(dashboardId): Promise<AlertCtx | null> {
-      const c = await loadAlertContext(dashboardId);
-      return c ? { dashboardName: c.dashboardName, ownerId: c.ownerId, sources: c.sources, calc: c.calc, calcDefs: c.calcDefs } : null;
+    async context(scope): Promise<AlertCtx | null> {
+      if (scope.dashboardId) {
+        const c = await loadAlertContext(scope.dashboardId);
+        return c ? { dashboardName: c.dashboardName, ownerId: c.ownerId, sources: c.sources, calc: c.calc, calcDefs: c.calcDefs } : null;
+      }
+      return scope.workspaceId ? loadWorkspaceAlertCtx(scope.workspaceId) : null;
     },
 
     exec: liveExec,
@@ -66,7 +70,7 @@ export function liveAlertDeps(origin: string = siteUrl()): AlertDeps {
     },
 
     send: sendMail,
-    mailAllowed: (dashboardId) => mailAllowedForDashboard(dashboardId),
+    mailAllowed: (scope) => mailAllowedForScope(scope),
 
     async log(e) {
       await admin.from("notification_log").insert({ ...e, channel: "email" });

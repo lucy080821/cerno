@@ -37,6 +37,7 @@ const IGNORE_FILES = [
   /lib\/alerts\/describe\.ts$/, // câu mô tả điều kiện ghép động (hiện trong email và danh sách luật), không dịch bằng từ điển
   /server\/alerts\//, // nhãn khoảng thời gian trong email cảnh báo (luôn tiếng Việt)
   /server\/reports\//, // báo cáo email luôn bằng tiếng Việt (người nhận không đổi ngôn ngữ giao diện)
+  /server\/workspace-notify\//, // báo cáo/cảnh báo theo cửa hàng: nội dung email (chữ cố định có bản dịch trong en/notify.ts cho phần tiếng Anh của thư) và lỗi server
   /lib\/orders\/(fixtures|fake-db)\.ts$/, // bảng mô phỏng file của sàn và DB giả, chỉ dùng trong test
   /components\/profit\/format\.ts$/, // định dạng số tiền (số/ngày luôn theo kiểu vi-VN)
   /lib\/fees\/match\.ts$/, // đường dẫn ngành trong biểu phí Shopee (dữ liệu của Shopee, giao diện hiện nguyên văn với data-i18n-skip)

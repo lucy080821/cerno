@@ -95,7 +95,7 @@ export function viShort(n: number): string {
   return VI.format(n);
 }
 
-function num(value: number, kind: MetricKind = "number"): FactNumber {
+export function num(value: number, kind: MetricKind = "number"): FactNumber {
   const r = Math.round(value * 100) / 100;
   return {
     value: r,
