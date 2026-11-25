@@ -16,7 +16,7 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
 /** Tối đa sản phẩm mỗi lần chạy: đủ vài trăm sản phẩm bán chạy, chi phí AI vẫn nhỏ (cả lượt chỉ giữ chỗ MỘT lượt AI trả phí). */
-export const MAX_PRODUCTS = 400;
+const MAX_PRODUCTS = 400;
 const limited = createRateLimiter(3, 10 * 60_000);
 const Body = z.object({
   platform: z.enum(FEE_PLATFORMS),
