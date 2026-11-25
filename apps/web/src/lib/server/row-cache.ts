@@ -11,8 +11,11 @@ import { createAdminClient } from "@/lib/supabase/admin";
  * thì mỗi tiến trình có bản riêng.
  */
 
-const LOAD_CHUNK = 10_000;
+// Mỗi lượt đọc giữ nhỏ: Supabase gói miễn phí cắt truy vấn quá 8 giây (statement_timeout), mà 10.000 dòng/lượt x 3 lượt song song
+// từng vượt ngưỡng đó khi máy chủ DB bận. 2.000 dòng/lượt ~ 0,25 giây, lỗi tạm thời được thử lại.
+const LOAD_CHUNK = 2_000;
 const LOAD_CONCURRENCY = 3;
+const LOAD_RETRIES = 3;
 const META_TTL_MS = 5_000;
 
 const maxRows = () => {
@@ -80,13 +83,22 @@ async function loadAll(sourceId: string, rowCount: number): Promise<Row[]> {
     Array.from({ length: Math.min(LOAD_CONCURRENCY, starts.length) }, async () => {
       while (!failure && next < starts.length) {
         const idx = next++;
-        const { data, error } = await db.rpc("source_rows_chunk", {
-          p_source: sourceId,
-          p_from: starts[idx],
-          p_to: starts[idx] + LOAD_CHUNK,
-        });
-        if (error) failure = error.message;
-        else parts[idx] = Array.isArray(data) ? (data as Row[]) : [];
+        let lastError = "";
+        let ok = false;
+        for (let attempt = 0; attempt < LOAD_RETRIES && !ok && !failure; attempt++) {
+          if (attempt > 0) await new Promise((r) => setTimeout(r, 400 * attempt));
+          const { data, error } = await db.rpc("source_rows_chunk", {
+            p_source: sourceId,
+            p_from: starts[idx],
+            p_to: starts[idx] + LOAD_CHUNK,
+          });
+          if (error) lastError = error.message;
+          else {
+            parts[idx] = Array.isArray(data) ? (data as Row[]) : [];
+            ok = true;
+          }
+        }
+        if (!ok && !failure) failure = lastError || "lỗi không rõ";
       }
     }),
   );

@@ -8,6 +8,8 @@ const db = {
   rpcCalls: 0,
   /** Chạy trước khi trả dữ liệu của mỗi lần RPC (để mô phỏng nguồn đổi giữa lúc đang nạp). */
   onRpc: null as null | (() => void),
+  /** Số lần RPC đầu tiên trả lỗi tạm thời (mô phỏng statement timeout). */
+  failFirst: 0,
 };
 
 vi.mock("@/lib/supabase/admin", () => ({
@@ -27,6 +29,10 @@ vi.mock("@/lib/supabase/admin", () => ({
     rpc: async (_name: string, a: { p_source: string; p_from: number; p_to: number }) => {
       db.rpcCalls++;
       db.onRpc?.();
+      if (db.failFirst > 0) {
+        db.failFirst--;
+        return { data: null, error: { message: "canceling statement due to statement timeout" } };
+      }
       const total = db.sources[a.p_source].rowCount;
       const out = [];
       for (let i = a.p_from; i < Math.min(a.p_to, total); i++) out.push({ i });
@@ -43,6 +49,7 @@ const load = async () => {
 beforeEach(() => {
   db.sources = { a: { rowCount: 25_000, version: "v1" }, b: { rowCount: 25_000, version: "v1" } };
   db.rpcCalls = 0;
+  db.failFirst = 0;
   db.onRpc = null;
   delete process.env.ROW_CACHE_MAX_ROWS;
 });
@@ -54,7 +61,23 @@ describe("row-cache", () => {
     const rows = await c.getSourceRows("a", meta);
     expect(rows).toHaveLength(25_000);
     expect(rows.every((r, i) => r.i === i)).toBe(true);
-    expect(db.rpcCalls).toBe(3); // 10.000 + 10.000 + 5.000
+    expect(db.rpcCalls).toBe(13); // 12 đoạn 2.000 + 1 đoạn 1.000
+  });
+
+  it("lỗi tạm thời (statement timeout) được thử lại thay vì làm hỏng cả lần nạp", async () => {
+    const c = await load();
+    const meta = (await c.getSourceMeta("a"))!;
+    db.failFirst = 2;
+    const rows = await c.getSourceRows("a", meta);
+    expect(rows).toHaveLength(25_000);
+    expect(rows.every((r, i) => r.i === i)).toBe(true);
+  });
+
+  it("lỗi kéo dài thì báo lỗi rõ ràng", async () => {
+    const c = await load();
+    const meta = (await c.getSourceMeta("a"))!;
+    db.failFirst = 1000;
+    await expect(c.getSourceRows("a", meta)).rejects.toThrow(/Không nạp được dữ liệu nguồn/);
   });
 
   it("lần sau cùng phiên bản không gọi DB nữa", async () => {
@@ -71,7 +94,7 @@ describe("row-cache", () => {
     const meta = (await c.getSourceMeta("a"))!;
     const all = await Promise.all([1, 2, 3, 4, 5].map(() => c.getSourceRows("a", meta)));
     expect(new Set(all).size).toBe(1);
-    expect(db.rpcCalls).toBe(3);
+    expect(db.rpcCalls).toBe(13);
   });
 
   it("phiên bản đổi (đồng bộ ra dữ liệu mới) thì nạp lại", async () => {

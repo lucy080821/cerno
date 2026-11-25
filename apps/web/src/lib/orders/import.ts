@@ -36,15 +36,23 @@ export interface ImportResult {
   warnings: string[];
 }
 
-const CHUNK = 10_000;
+// Đoạn nhỏ để mỗi truy vấn xong xa dưới giới hạn 8 giây của Supabase gói miễn phí.
+const CHUNK = 2_000;
 
-/** Đọc lại toàn bộ dòng đang có của nguồn (service role), theo từng đoạn 10.000 dòng. */
+/** Đọc lại toàn bộ dòng đang có của nguồn (service role), theo từng đoạn 2.000 dòng, thử lại khi lỗi tạm thời. */
 async function loadExistingRows(admin: SupabaseClient, sourceId: string, expected: number): Promise<Row[]> {
   const rows: Row[] = [];
   for (let from = 0; from < expected; from += CHUNK) {
-    const { data, error } = await admin.rpc("source_rows_chunk", { p_source: sourceId, p_from: from, p_to: from + CHUNK });
-    if (error) throw new ImportError("Không đọc được dữ liệu đã lưu để gộp.", 502);
-    rows.push(...((data ?? []) as Row[]));
+    let data: unknown = null;
+    let failed = true;
+    for (let attempt = 0; attempt < 3 && failed; attempt++) {
+      if (attempt > 0) await new Promise((r) => setTimeout(r, 400 * attempt));
+      const res = await admin.rpc("source_rows_chunk", { p_source: sourceId, p_from: from, p_to: from + CHUNK });
+      failed = !!res.error;
+      data = res.data;
+    }
+    if (failed) throw new ImportError("Không đọc được dữ liệu đã lưu để gộp.", 502);
+    for (const r of (data ?? []) as Row[]) rows.push(r);
   }
   return rows;
 }
