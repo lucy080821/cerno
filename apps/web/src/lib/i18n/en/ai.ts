@@ -90,4 +90,5 @@ export const EN_AI: Dict = {
   "Tải lại trang": "Reload page",
   "Cerno gặp lỗi khi tải trang": "Cerno ran into an error while loading",
   "Có thể do hệ thống vừa cập nhật phiên bản mới. Hãy tải lại trang; nếu vẫn lỗi, bạn thử lại sau ít phút.": "The system may have just been updated to a new version. Reload the page; if it still fails, try again in a few minutes.",
+  "Lãi theo từng ngành hàng, ngành nào đang kéo lãi xuống?": "Profit by product category: which category is dragging profit down?",
 };

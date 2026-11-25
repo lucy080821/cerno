@@ -3,7 +3,7 @@ import { callAnthropic } from "../ai/anthropic";
 import { callGroq } from "../ai/groq";
 import { QUOTA_MESSAGES, recordPaid, releasePaid, reservePaid } from "../ai/quota";
 import { parseOrder, type RouterDeps } from "../ai/router";
-import { loadFeeConfig } from "../fees";
+import { categoryOfProduct, loadFeeConfig } from "../fees";
 import { computeProfitRange } from "../profit";
 import { executeQuery } from "../query-service";
 import { getSourceMeta } from "../row-cache";
@@ -36,7 +36,14 @@ export function liveToolDeps(db: SupabaseClient): ToolDeps {
     profit: async (source, range) => {
       const fees = await loadFeeConfig(db, source.workspaceId);
       const r = await computeProfitRange(source.id, fees, range);
-      return { orders: r.orders, summary: r.summary, dataMin: r.fullSummary.dateMin, dataMax: r.fullSummary.dateMax };
+      return {
+        orders: r.orders,
+        summary: r.summary,
+        dataMin: r.fullSummary.dateMin,
+        dataMax: r.fullSummary.dateMax,
+        // Cùng bộ tra ngành với ước tính phí sàn và trang Sản phẩm và giá vốn.
+        category: (p) => categoryOfProduct(fees, p),
+      };
     },
   };
 }

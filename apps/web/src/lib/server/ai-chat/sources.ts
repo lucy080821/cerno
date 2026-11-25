@@ -53,9 +53,11 @@ const vn = (iso: string) => {
 
 /** Cách các cột của nguồn "Đơn hàng đa kênh" nên được hiểu: nếu AI không biết thì sẽ cộng sai (Số đơn ghi ở dòng đầu mỗi đơn...). */
 export const ORDERS_SEMANTICS =
+  "Đây là dữ liệu ĐÃ KẾT HỢP: đơn của mọi sàn (Shopee, TikTok Shop...) gộp vào một bảng, cột Kênh cho biết sàn, giá vốn/phí sàn/quảng cáo đã được ghép vào đơn. " +
   "Mỗi dòng là một DÒNG SẢN PHẨM của một đơn (một đơn có thể có nhiều dòng). Các cột cấp ĐƠN (Số đơn, Số đơn hủy, Phí sàn, Phí vận chuyển khách trả, Chi phí quảng cáo) chỉ ghi ở dòng đầu của mỗi đơn nên cộng thẳng là đúng. " +
   "Doanh thu gồm cả đơn hủy/hoàn; Doanh thu thực = 0 với đơn hủy/hoàn trả. Giá vốn có thể trống nếu chưa nhập. " +
-  "Muốn biết LÃI, phí sàn ước tính, đơn lỗ, sản phẩm lỗ thì dùng công cụ profit_report (đã tính đúng quy tắc của các trang Lãi lỗ), đừng tự trừ các cột.";
+  "Muốn biết LÃI, phí sàn ước tính, đơn lỗ, sản phẩm lỗ thì dùng công cụ profit_report (đã tính đúng quy tắc của các trang Lãi lỗ), đừng tự trừ các cột. " +
+  "NGÀNH HÀNG không phải một cột nhưng LUÔN có cho từng sản phẩm (người bán chọn ở trang Sản phẩm và giá vốn, hoặc Cerno tự nhận diện theo tên): muốn lãi/doanh thu/chi phí theo ngành hàng thì dùng profit_report với group_by=category (category_level 1-3 chọn độ chi tiết, tham số category để xem một ngành).";
 
 /** Mô tả các nguồn đã chọn cho lời nhắc hệ thống: tên cột, kiểu, đơn vị, số dòng, giờ cập nhật. */
 export function describeSources(sources: SourceInfo[]): string {

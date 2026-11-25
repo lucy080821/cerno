@@ -375,6 +375,17 @@
   letter-spacing: 0;
 }
 
+/* Chỉ số chính do AI đánh dấu: nét bút dạ quang vàng + chữ đậm. */
+.hl {
+  background: linear-gradient(180deg, transparent 48%, rgba(255, 212, 0, 0.6) 48%);
+  color: inherit;
+  font-weight: 700;
+  padding: 0 2px;
+  border-radius: 2px;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
 .working {
   display: flex;
   align-items: center;

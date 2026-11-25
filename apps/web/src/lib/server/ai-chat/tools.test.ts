@@ -258,3 +258,61 @@ describe("show_chart / show_kpi", () => {
     expect((r.visual as { cards: Array<{ value: number | null; text: string }> }).cards[0]).toMatchObject({ value: null, text: "—" });
   });
 });
+
+describe("profit_report theo ngành hàng", () => {
+  const PATHS: Record<string, { path: string; source: "chosen" | "suggested" }> = {
+    SKU1: { path: "Thời Trang Nam › Áo › Áo thun", source: "chosen" },
+    SKU2: { path: "Thời Trang Nam › Quần › Quần dài", source: "suggested" },
+    SKU3: { path: "Phụ Kiện › Mũ › Mũ lưỡi trai", source: "suggested" },
+  };
+  const withCategory: ToolDeps = {
+    ...deps,
+    profit: async (s, range) => {
+      const base = await deps.profit!(s, range);
+      return { ...base, category: (p) => (PATHS[p.key] ? { ...PATHS[p.key], platform: "Shopee" } : null) };
+    },
+  };
+  const run = (args: unknown) => runTool("profit_report", JSON.stringify({ source: "s2", ...(args as object) }), [sheet, orderSource], withCategory);
+
+  it("chia lãi theo ngành lớn: gộp các sản phẩm cùng ngành, lãi chỉ tính sản phẩm đủ giá vốn", async () => {
+    const r = await run({ group_by: "category" });
+    expect(r.ok).toBe(true);
+    const j = parse(r);
+    expect(j.breakdown.by).toBe("category");
+    const rows = j.breakdown.rows as Array<{ category: string; products: number; profit: number | null; products_missing_cost: number; products_auto_detected: number }>;
+    const nam = rows.find((x) => x.category === "Thời Trang Nam")!;
+    expect(nam.products).toBe(2);
+    expect(nam.profit).toBe(85_000); // Áo (50.000 + 40.000) + Quần (−5.000)
+    expect(nam.products_auto_detected).toBe(1);
+    const phuKien = rows.find((x) => x.category === "Phụ Kiện")!;
+    expect(phuKien.profit).toBe(0); // Mũ thiếu giá vốn: không có lãi để cộng
+    expect(phuKien.products_missing_cost).toBe(1);
+    expect(j.notes.join(" ")).toContain("tự nhận diện");
+  });
+
+  it("category_level 2 tách chi tiết hơn; cấp 1 mặc định", async () => {
+    const lv2 = parse(await run({ group_by: "category", category_level: 2 })).breakdown.rows.map((x: { category: string }) => x.category);
+    expect(lv2).toEqual(expect.arrayContaining(["Thời Trang Nam › Áo", "Thời Trang Nam › Quần", "Phụ Kiện › Mũ"]));
+  });
+
+  it("lọc theo ngành (không phân biệt hoa/dấu) và sản phẩm kèm ngành", async () => {
+    const f = parse(await run({ group_by: "category", category: "thoi trang nam" }));
+    expect(f.breakdown.rows.map((x: { category: string }) => x.category)).toEqual(["Thời Trang Nam"]);
+    const prod = parse(await run({ group_by: "product", category: "phu kien" }));
+    expect(prod.breakdown.rows).toHaveLength(1);
+    expect(prod.breakdown.rows[0]).toMatchObject({ name: "Mũ", category: "Phụ Kiện" });
+  });
+
+  it("sản phẩm không xác định được ngành vào nhóm riêng, không bịa", async () => {
+    const none: ToolDeps = { ...deps, profit: async (s, r) => ({ ...(await deps.profit!(s, r)), category: () => null }) };
+    const r = await runTool("profit_report", JSON.stringify({ source: "s2", group_by: "category" }), [sheet, orderSource], none);
+    expect(parse(r).breakdown.rows.map((x: { category: string }) => x.category)).toEqual(["Chưa xác định ngành"]);
+  });
+
+  it("nguồn không có bộ tra ngành thì báo LỖI rõ ràng", async () => {
+    const r = await runTool("profit_report", JSON.stringify({ source: "s2", group_by: "category" }), [sheet, orderSource], deps);
+    expect(r.ok).toBe(false);
+    expect(r.content).toMatch(/^LỖI/);
+  });
+});
+

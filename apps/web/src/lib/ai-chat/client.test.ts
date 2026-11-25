@@ -75,3 +75,11 @@ describe("hình (biểu đồ / thẻ KPI) trong luồng", () => {
     expect(visualsOf({ visuals: "x" })).toEqual([]);
   });
 });
+
+describe("tiêu đề mục có ghi chú", () => {
+  it("nhận tiêu đề in hoa kèm phần giải thích trong ngoặc, không nhầm câu thường", () => {
+    const blocks = reportBlocks("2. SỐ LIỆU CHI TIẾT (lãi gom theo tên sản phẩm)\n1. Shopee lãi nhiều nhất\n- Shopee: 5 đơn");
+    expect(blocks.map((b) => b.kind)).toEqual(["heading", "para", "item"]);
+  });
+});
+

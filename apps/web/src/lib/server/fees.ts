@@ -158,6 +158,33 @@ export async function loadFeeConfig(db: SupabaseClient, workspaceId: string): Pr
 
 export const sellerTypeOf = (s: FeeSettings, p: FeePlatform): SellerType => (p === "Shopee" ? s.sellerType : s.tiktokSellerType);
 
+/** Ngành hàng của một sản phẩm: người bán đã chọn (kể cả thừa hưởng từ mã gốc) hoặc Cerno tự nhận diện từ tên. */
+export interface CategoryChoice {
+  path: string;
+  source: "chosen" | "suggested";
+}
+
+/**
+ * Ngành hàng của một sản phẩm trên MỘT sàn có biểu phí. Dùng chung cho ước tính phí sàn và cho báo cáo (AI, trang lãi) nên cùng một
+ * sản phẩm luôn ra cùng một ngành. Không phụ thuộc công tắc "ước tính phí": nhận diện theo tên chạy được kể cả khi chưa bật.
+ */
+export function categoryFor(cfg: FeeConfig, platform: FeePlatform, key: string | null, name: string | null): CategoryChoice | null {
+  const chosen = key ? findByKey(cfg.categories[platform], key) : undefined;
+  if (chosen !== undefined) return { path: chosen, source: "chosen" };
+  const guess = suggestCategory(platform, sellerTypeOf(cfg.settings, platform), name ?? key);
+  return guess ? { path: guess.path, source: "suggested" } : null;
+}
+
+/** Ngành hàng của một sản phẩm tổng hợp từ các đơn (có thể bán ở nhiều kênh): lấy theo sàn đầu tiên (Shopee rồi TikTok Shop) xác định được ngành; kênh khác không có biểu ngành. */
+export function categoryOfProduct(cfg: FeeConfig, p: { key: string; name: string; channels: string[] }): (CategoryChoice & { platform: FeePlatform }) | null {
+  for (const platform of FEE_PLATFORMS) {
+    if (!p.channels.includes(platform)) continue;
+    const c = categoryFor(cfg, platform, p.key, p.name);
+    if (c) return { ...c, platform };
+  }
+  return null;
+}
+
 /**
  * Bộ ước tính phí cho `buildOrders`; undefined khi không có gì để ước tính. Có ba nguồn:
  * - Shopee, TikTok Shop (khi bật ước tính): biểu phí theo ngành. Sản phẩm người bán chưa chọn ngành thì dùng ngành Cerno tự nhận diện
@@ -170,24 +197,18 @@ export function makeFeeEstimator(cfg: FeeConfig): FeeEstimator | undefined {
   const manual = cfg.manual.rates;
   if (!platformsOn && Object.keys(manual).length === 0) return undefined;
   const s = cfg.settings;
+  /** Mức phí theo ngành của từng dòng đơn trên một sàn. */
+  const lineRates = (platform: FeePlatform, o: Parameters<FeeEstimator>[0]) =>
+    o.lines.map((l) => ({
+      gross: l.gross,
+      ratePct: categoryRate(platform, sellerTypeOf(s, platform), categoryFor(cfg, platform, productKey(l.sku, l.product), l.product ?? l.sku)?.path),
+    }));
   return (o) => {
     if (o.channel === "Shopee" && platformsOn) {
-      const lines = o.lines.map((l) => {
-        const key = productKey(l.sku, l.product);
-        const chosen = key ? findByKey(cfg.categories.Shopee, key) : undefined;
-        const path = chosen ?? suggestCategory("Shopee", s.sellerType, l.product ?? l.sku)?.path;
-        return { gross: l.gross, ratePct: categoryRate("Shopee", s.sellerType, path) };
-      });
-      return estimateOrderFee({ date: o.date, lines, buyerShipping: o.shippingIn, settings: { sellerType: s.sellerType, newSeller: s.newSeller } })?.total ?? null;
+      return estimateOrderFee({ date: o.date, lines: lineRates("Shopee", o), buyerShipping: o.shippingIn, settings: { sellerType: s.sellerType, newSeller: s.newSeller } })?.total ?? null;
     }
     if (o.channel === "TikTok Shop" && platformsOn) {
-      const lines = o.lines.map((l) => {
-        const key = productKey(l.sku, l.product);
-        const chosen = key ? findByKey(cfg.categories["TikTok Shop"], key) : undefined;
-        const path = chosen ?? suggestCategory("TikTok Shop", s.tiktokSellerType, l.product ?? l.sku)?.path;
-        return { gross: l.gross, ratePct: categoryRate("TikTok Shop", s.tiktokSellerType, path) };
-      });
-      return estimateTiktokFee({ date: o.date, returned: o.status === "Hoàn trả", lines, buyerShipping: o.shippingIn, settings: s })?.total ?? null;
+      return estimateTiktokFee({ date: o.date, returned: o.status === "Hoàn trả", lines: lineRates("TikTok Shop", o), buyerShipping: o.shippingIn, settings: s })?.total ?? null;
     }
     const rate = manual[o.channel];
     if (rate && !isFeePlatform(o.channel)) return estimateManualFee(rate, o.lines, o.status === "Hoàn trả");

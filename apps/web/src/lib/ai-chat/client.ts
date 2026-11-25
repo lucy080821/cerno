@@ -62,7 +62,12 @@ export function parseEvent(line: string): StreamEvent | null {
 
 export type Block = { kind: "title" | "scope" | "heading" | "item" | "para" | "gap"; text: string };
 
-const isHeading = (l: string) => /^\d+\.\s+\S/.test(l) && l === l.toUpperCase() && /\p{L}{2,}/u.test(l);
+/** Tiêu đề mục: "1. TÓM TẮT" (phần chữ in hoa), cho phép ghi chú sau cùng dòng: "2. SỐ LIỆU CHI TIẾT (lãi gom theo sản phẩm)". */
+const isHeading = (l: string) => {
+  if (!/^\d+\.\s+\S/.test(l)) return false;
+  const head = l.replace(/^\d+\.\s+/, "").split(/[(:]/)[0].trim();
+  return head === head.toUpperCase() && /\p{L}{2,}/u.test(head);
+};
 
 /** Chia báo cáo chữ thuần thành các khối: tiêu đề, phạm vi, tiêu đề mục (1. TÓM TẮT), gạch đầu dòng, đoạn văn. */
 export function reportBlocks(text: string): Block[] {

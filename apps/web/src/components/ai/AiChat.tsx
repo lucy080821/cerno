@@ -1,72 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Spinner } from "@/components/Spinner";
 import { useDialog } from "@/components/ui/DialogProvider";
+import { getJson, sendJson } from "@/lib/ai-chat/api";
+import type { ChatSummary, Msg } from "@/lib/ai-chat/client";
+import { stripHighlights } from "@/lib/ai-chat/highlight";
+import { streamAnswer } from "@/lib/ai-chat/stream";
+import type { Visual } from "@/lib/ai-chat/visual";
 import { useShell } from "@/lib/shell/store";
-import {
-  defaultSelection, isOrdersSource, MAX_SOURCES, parseEvent, reportBlocks, sourceLabel, splitLines, toggleSource,
-  type ChatSummary, type Msg, type SourceOption,
-} from "@/lib/ai-chat/client";
-import { visualsOf, type Visual } from "@/lib/ai-chat/visual";
-import { Visuals } from "./ChatVisual";
+import { Composer } from "./Composer";
+import { HistoryPanel } from "./HistoryPanel";
+import { MessageList } from "./MessageList";
+import { useChatLists } from "./use-chat-lists";
+import { Welcome } from "./Welcome";
 import styles from "./ai.module.css";
-
-const SAVED_KEY = "cerno.ai.sources";
-
-const SUGGESTIONS = [
-  "Tháng này lãi lỗ ra sao? Phân tích chi tiết theo từng kênh.",
-  "Sản phẩm nào đang lỗ và nguyên nhân chính là gì?",
-  "So sánh doanh thu và lãi tháng này với tháng trước.",
-  "Chi phí quảng cáo có đang ăn hết lãi không?",
-  "Tỷ lệ hủy và hoàn trả theo từng kênh, kênh nào đáng lo nhất?",
-  "Top 10 sản phẩm bán chạy nhất và biên lãi của từng sản phẩm.",
-  "Vẽ biểu đồ doanh thu và lãi theo ngày trong 30 ngày gần nhất.",
-  "Hiện thẻ KPI: tổng doanh thu thực, lãi, số đơn và tỷ lệ hủy tháng này.",
-];
-
-const readSaved = (): string[] => {
-  try {
-    const v = JSON.parse(localStorage.getItem(SAVED_KEY) ?? "[]");
-    return Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : [];
-  } catch {
-    return [];
-  }
-};
-const writeSaved = (ids: string[]) => {
-  try {
-    localStorage.setItem(SAVED_KEY, JSON.stringify(ids));
-  } catch {
-    /* localStorage bị chặn */
-  }
-};
-
-async function getJson<T>(url: string): Promise<T | null> {
-  try {
-    // Có hạn chờ: máy chủ treo thì báo lỗi cho người dùng thử lại thay vì quay mãi.
-    const r = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(20_000) });
-    return r.ok ? ((await r.json()) as T) : null;
-  } catch {
-    return null;
-  }
-}
-
-function Report({ text }: { text: string }) {
-  const blocks = useMemo(() => reportBlocks(text), [text]);
-  return (
-    <div className={styles.report} data-i18n-skip>
-      {blocks.map((b, i) =>
-        b.kind === "gap" ? <div key={i} className={styles.gap} /> :
-        b.kind === "title" ? <div key={i} className={styles.rTitle}>{b.text}</div> :
-        b.kind === "scope" ? <div key={i} className={styles.rScope}>{b.text}</div> :
-        b.kind === "heading" ? <div key={i} className={styles.rHead}>{b.text}</div> :
-        b.kind === "item" ? <div key={i} className={styles.rItem}><span aria-hidden>–</span><span>{b.text}</span></div> :
-        <div key={i} className={styles.rPara}>{b.text}</div>,
-      )}
-    </div>
-  );
-}
 
 /** Trang chat với AI về số liệu: lịch sử bên trái, chọn nguồn ngay ở khung nhập, câu trả lời dạng báo cáo chữ thuần. */
 export interface AiChatProps {
@@ -84,20 +33,18 @@ export function AiChat({ variant = "page", context, listenAsk = true, onClose }:
   const ask = useShell((st) => st.ask);
   const clearAsk = useShell((st) => st.clearAsk);
   const dialog = useDialog();
-  const [chats, setChats] = useState<ChatSummary[] | null>(null);
-  const [sources, setSources] = useState<SourceOption[] | null>(null);
-  const [loadFailed, setLoadFailed] = useState(false);
+  const { chats, setChats, sources, selected, setSelected, loadFailed, loadAll, refreshChats, pick, resetSelection, byId } = useChatLists();
+
   const [activeId, setActiveId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Msg[]>([]);
-  const [selected, setSelected] = useState<string[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
+  // Phần đang viết dở của câu trả lời: chữ, hình và dòng trạng thái.
   const [draft, setDraft] = useState("");
   const [visuals, setVisuals] = useState<Visual[]>([]);
   const [status, setStatus] = useState("");
   const [error, setError] = useState<{ message: string; question: string } | null>(null);
   const [loadingChat, setLoadingChat] = useState(false);
-  const [pickerOpen, setPickerOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -105,47 +52,28 @@ export function AiChat({ variant = "page", context, listenAsk = true, onClose }:
   const taRef = useRef<HTMLTextAreaElement>(null);
   const lang = typeof document !== "undefined" && document.documentElement.lang === "en" ? "en" : "vi";
 
-  const refreshChats = useCallback(async (): Promise<boolean> => {
-    const r = await getJson<{ chats: ChatSummary[] }>("/api/ai/chats");
-    if (r) setChats(r.chats);
-    else setChats((cur) => cur ?? []);
-    return r !== null;
-  }, []);
-
-  /** Tải lịch sử và danh sách nguồn; một trong hai lỗi thì báo và cho thử lại (không để vòng quay chạy mãi). */
-  const loadAll = useCallback(async () => {
-    setLoadFailed(false);
-    const [chatsOk, src] = await Promise.all([refreshChats(), getJson<{ sources: SourceOption[] }>("/api/sources")]);
-    if (src) {
-      setSources(src.sources);
-      setSelected(defaultSelection(readSaved(), src.sources));
-    }
-    if (!chatsOk || !src) setLoadFailed(true);
-  }, [refreshChats]);
-
-  useEffect(() => {
-    void loadAll();
-  }, [loadAll]);
-
   useEffect(() => {
     endRef.current?.scrollIntoView({ block: "end" });
   }, [messages, draft, status, error, visuals]);
 
   useEffect(() => () => abortRef.current?.abort(), []);
 
-  const byId = useMemo(() => new Map((sources ?? []).map((s) => [s.id, s])), [sources]);
+  /** Bỏ phần đang viết dở và hạ cờ bận (khi đổi cuộc trò chuyện hoặc kết thúc một lượt). */
+  const clearLive = useCallback(() => {
+    setDraft("");
+    setVisuals([]);
+    setStatus("");
+  }, []);
 
   const newChat = () => {
     abortRef.current?.abort();
     setActiveId(null);
     setMessages([]);
-    setDraft("");
-    setVisuals([]);
-    setStatus("");
+    clearLive();
     setError(null);
     setBusy(false);
     setHistoryOpen(false);
-    setSelected(defaultSelection(readSaved(), sources ?? []));
+    resetSelection();
     taRef.current?.focus();
   };
 
@@ -153,9 +81,7 @@ export function AiChat({ variant = "page", context, listenAsk = true, onClose }:
     if (id === activeId) return setHistoryOpen(false);
     abortRef.current?.abort();
     setBusy(false);
-    setDraft("");
-    setVisuals([]);
-    setStatus("");
+    clearLive();
     setError(null);
     setHistoryOpen(false);
     setLoadingChat(true);
@@ -171,29 +97,17 @@ export function AiChat({ variant = "page", context, listenAsk = true, onClose }:
   const rename = async (c: ChatSummary) => {
     const title = await dialog.prompt({ title: "Đổi tên cuộc trò chuyện", label: "Tên", defaultValue: c.title, maxLength: 120, validate: (v) => (v.trim() ? null : "Hãy nhập tên") });
     if (!title?.trim() || title.trim() === c.title) return;
-    const r = await fetch(`/api/ai/chats/${c.id}`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ title: title.trim() }) });
-    if (r.ok) setChats((cur) => cur?.map((x) => (x.id === c.id ? { ...x, title: title.trim() } : x)) ?? cur);
+    if (await sendJson("PATCH", `/api/ai/chats/${c.id}`, { title: title.trim() })) setChats((cur) => cur?.map((x) => (x.id === c.id ? { ...x, title: title.trim() } : x)) ?? cur);
     else void dialog.alert({ title: "Không đổi được tên", message: "Hãy thử lại sau.", tone: "danger" });
   };
 
   const remove = async (c: ChatSummary) => {
     const ok = await dialog.confirm({ title: "Xóa cuộc trò chuyện?", message: `Cuộc trò chuyện "${c.title}" và toàn bộ câu trả lời sẽ bị xóa, không khôi phục được.`, confirmText: "Xóa", tone: "danger" });
     if (!ok) return;
-    const r = await fetch(`/api/ai/chats/${c.id}`, { method: "DELETE" });
-    if (!r.ok) return void dialog.alert({ title: "Không xóa được", message: "Hãy thử lại sau.", tone: "danger" });
+    if (!(await sendJson("DELETE", `/api/ai/chats/${c.id}`))) return void dialog.alert({ title: "Không xóa được", message: "Hãy thử lại sau.", tone: "danger" });
     setChats((cur) => cur?.filter((x) => x.id !== c.id) ?? cur);
     if (c.id === activeId) newChat();
   };
-
-  const pick = (id: string) => {
-    setSelected((cur) => {
-      const next = toggleSource(cur, id);
-      writeSaved(next);
-      return next;
-    });
-  };
-
-  const stop = () => abortRef.current?.abort();
 
   const send = async (text: string) => {
     const question = text.trim();
@@ -201,75 +115,35 @@ export function AiChat({ variant = "page", context, listenAsk = true, onClose }:
     if (!selected.length) return void dialog.alert({ title: "Chưa chọn nguồn dữ liệu", message: "Hãy chọn ít nhất một nguồn dữ liệu ở nút \"Nguồn dữ liệu\" bên dưới khung nhập để AI có số liệu trả lời." });
     setInput("");
     setError(null);
-    setDraft("");
-    setVisuals([]);
-    setStatus("");
+    clearLive();
     setBusy(true);
     setMessages((cur) => [...cur, { id: `tmp-${Date.now()}`, role: "user", content: question, meta: {}, createdAt: new Date().toISOString() }]);
     const ctl = new AbortController();
     abortRef.current = ctl;
-    let finished = false;
-    try {
-      const res = await fetch("/api/ai/chat", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ chatId: activeId, question, sourceIds: selected, lang, ...(context ? { context } : {}) }),
-        signal: ctl.signal,
-      });
-      if (!res.ok || !res.body) {
-        const j = (await res.json().catch(() => null)) as { error?: string } | null;
-        setError({ message: j?.error ?? "Không gọi được AI, hãy thử lại.", question });
-        return;
-      }
-      const reader = res.body.getReader();
-      const dec = new TextDecoder();
-      let rest = "";
-      for (;;) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        const parts = splitLines(rest, dec.decode(value, { stream: true }));
-        rest = parts.rest;
-        for (const line of parts.lines) {
-          const ev = parseEvent(line);
-          if (!ev) continue;
-          if (ev.t === "chat") {
-            setActiveId(ev.id);
-            setChats((cur) => (cur && !cur.some((c) => c.id === ev.id) ? [{ id: ev.id, title: ev.title, sourceIds: selected, updatedAt: new Date().toISOString() }, ...cur] : cur));
-          } else if (ev.t === "status") setStatus(ev.v);
-          else if (ev.t === "text") setDraft((d) => d + ev.v);
-          else if (ev.t === "reset") setDraft("");
-          else if (ev.t === "visual") setVisuals((cur) => [...cur, ev.visual]);
-          else if (ev.t === "done") {
-            finished = true;
-            setDraft("");
-            setVisuals([]);
-            setStatus("");
-            setMessages((cur) => [...cur, ev.message]);
-          } else if (ev.t === "error") {
-            finished = true;
-            setDraft("");
-            setVisuals([]);
-            setStatus("");
-            setError({ message: ev.message, question });
-          }
-        }
-      }
-      if (!finished) setError({ message: "Kết nối bị gián đoạn trước khi AI trả lời xong, hãy thử lại.", question });
-    } catch (e) {
-      if ((e as { name?: string }).name === "AbortError") setError({ message: "Đã dừng.", question });
-      else setError({ message: "Mất kết nối tới máy chủ, hãy thử lại.", question });
-    } finally {
-      setBusy(false);
-      setDraft("");
-      setVisuals([]);
-      setStatus("");
-      void refreshChats();
-    }
+    await streamAnswer(
+      { chatId: activeId, question, sourceIds: selected, lang, context },
+      {
+        onChat: (id, title) => {
+          setActiveId(id);
+          setChats((cur) => (cur && !cur.some((c) => c.id === id) ? [{ id, title, sourceIds: selected, updatedAt: new Date().toISOString() }, ...cur] : cur));
+        },
+        onStatus: setStatus,
+        onText: (chunk) => setDraft((d) => d + chunk),
+        onReset: () => setDraft(""),
+        onVisual: (v) => setVisuals((cur) => [...cur, v]),
+        onDone: (message) => setMessages((cur) => [...cur, message]),
+        onError: (message) => setError({ message, question }),
+      },
+      ctl.signal,
+    );
+    setBusy(false);
+    clearLive();
+    void refreshChats();
   };
 
   const copy = async (m: Msg) => {
     try {
-      await navigator.clipboard.writeText(m.content);
+      await navigator.clipboard.writeText(stripHighlights(m.content));
       setCopied(m.id);
       setTimeout(() => setCopied((c) => (c === m.id ? null : c)), 1500);
     } catch {
@@ -285,33 +159,21 @@ export function AiChat({ variant = "page", context, listenAsk = true, onClose }:
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ask, sources, busy, listenAsk]);
 
-  const noSources = sources !== null && sources.length === 0;
   const empty = messages.length === 0 && !busy && !loadingChat;
 
   return (
     <div className={`${styles.wrap} ${dock ? styles.dockWrap : ""}`}>
-      <aside className={`${styles.history} ${historyOpen ? styles.historyOpen : ""}`}>
-        <button type="button" className={styles.newBtn} onClick={newChat}>+ Cuộc trò chuyện mới</button>
-        <div className={styles.histList}>
-          {loadFailed && (
-            <div className={styles.histNote} role="alert">
-              Không tải được dữ liệu. Kiểm tra kết nối rồi thử lại.{" "}
-              <button type="button" className={styles.retryBtn} onClick={() => void loadAll()}>Thử lại</button>
-            </div>
-          )}
-          {chats === null ? <div className={styles.histNote}><Spinner size={18} label="Đang tải…" /></div> : chats.length === 0 && !loadFailed ? (
-            <div className={styles.histNote}>Chưa có cuộc trò chuyện nào. Câu hỏi của bạn sẽ được lưu ở đây để xem lại.</div>
-          ) : chats.map((c) => (
-            <div key={c.id} className={`${styles.histItem} ${c.id === activeId ? styles.histActive : ""}`}>
-              <button type="button" className={styles.histMain} onClick={() => void openChat(c.id)} title={c.title} data-i18n-skip>{c.title}</button>
-              <span className={styles.histActions}>
-                <button type="button" aria-label="Đổi tên" title="Đổi tên" onClick={() => void rename(c)}>✎</button>
-                <button type="button" aria-label="Xóa" title="Xóa" onClick={() => void remove(c)}>🗑</button>
-              </span>
-            </div>
-          ))}
-        </div>
-      </aside>
+      <HistoryPanel
+        chats={chats}
+        activeId={activeId}
+        loadFailed={loadFailed}
+        open={historyOpen}
+        onNew={newChat}
+        onOpen={(id) => void openChat(id)}
+        onRename={(c) => void rename(c)}
+        onRemove={(c) => void remove(c)}
+        onRetry={() => void loadAll()}
+      />
 
       <section className={styles.chat}>
         <div className={styles.chatBar}>
@@ -327,116 +189,38 @@ export function AiChat({ variant = "page", context, listenAsk = true, onClose }:
         </div>
 
         <div className={styles.scroll}>
-          {loadingChat ? <div className={styles.center}><Spinner size={28} label="Đang tải…" /></div> : empty ? (
-            <div className={styles.emptyBox}>
-              <h2>Bạn muốn biết điều gì về số liệu của mình?</h2>
-              <p>Chọn nguồn dữ liệu ở khung nhập rồi hỏi bằng tiếng Việt. AI tự tra số liệu thật và trả lời dạng báo cáo: tóm tắt, số liệu chi tiết, phân tích và đề xuất hành động.</p>
-              {noSources ? (
-                <p>Bạn chưa có nguồn dữ liệu nào. <Link href="/sources">Thêm nguồn dữ liệu</Link> để bắt đầu.</p>
-              ) : (
-                <div className={styles.sugs}>
-                  {SUGGESTIONS.map((s) => (
-                    <button key={s} type="button" className={styles.sug} onClick={() => void send(s)}>{s}</button>
-                  ))}
-                </div>
-              )}
-            </div>
+          {loadingChat ? (
+            <div className={styles.center}><Spinner size={28} label="Đang tải…" /></div>
+          ) : empty ? (
+            <Welcome noSources={sources !== null && sources.length === 0} onAsk={(q) => void send(q)} />
           ) : (
-            <div className={styles.msgs}>
-              {messages.map((m) =>
-                m.role === "user" ? (
-                  <div key={m.id} className={styles.userMsg}><div data-i18n-skip>{m.content}</div></div>
-                ) : (
-                  <article key={m.id} className={styles.aiMsg}>
-                    <Visuals items={visualsOf(m.meta)} />
-                    <Report text={m.content} />
-                    <footer className={styles.aiFoot}>
-                      <button type="button" onClick={() => void copy(m)}>{copied === m.id ? "Đã sao chép" : "Sao chép"}</button>
-                      {m.meta.provider === "anthropic" && <span>Trả lời bởi Claude (AI nâng cao)</span>}
-                      {Array.isArray(m.meta.sources) && m.meta.sources.length > 0 && <span data-i18n-skip>{(m.meta.sources as string[]).join(", ")}</span>}
-                    </footer>
-                  </article>
-                ),
-              )}
-              {busy && (
-                <article className={styles.aiMsg}>
-                  <Visuals items={visuals} />
-                  {draft ? <Report text={draft} /> : null}
-                  <div className={styles.working}><Spinner size={16} label="" /><span>{status || "AI đang tra cứu số liệu…"}</span></div>
-                </article>
-              )}
-              {error && (
-                <div className={styles.errBox} role="alert">
-                  <span>{error.message}</span>
-                  <button type="button" onClick={() => { setInput(error.question); setError(null); taRef.current?.focus(); }}>Hỏi lại</button>
-                </div>
-              )}
-              <div ref={endRef} />
-            </div>
+            <MessageList
+              messages={messages}
+              live={busy ? { draft, visuals, status } : null}
+              error={error}
+              copiedId={copied}
+              onCopy={(m) => void copy(m)}
+              onRetry={(q) => {
+                setInput(q);
+                setError(null);
+                taRef.current?.focus();
+              }}
+              endRef={endRef}
+            />
           )}
         </div>
 
-        <div className={styles.composer}>
-          <div className={styles.composerCard}>
-            <textarea
-              ref={taRef}
-              className={styles.input}
-              rows={2}
-              value={input}
-              maxLength={2000}
-              placeholder="Hỏi về doanh thu, lãi lỗ, sản phẩm, kênh bán, chi phí…"
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
-                  e.preventDefault();
-                  void send(input);
-                }
-              }}
-            />
-            <div className={styles.toolbar}>
-            <div className={styles.srcRow}>
-              <div className={styles.pickerWrap}>
-                <button type="button" className={styles.srcBtn} onClick={() => setPickerOpen((o) => !o)} aria-expanded={pickerOpen}>
-                  Nguồn dữ liệu ({selected.length}/{MAX_SOURCES}) ▾
-                </button>
-                {pickerOpen && (
-                  <>
-                    <div className={styles.backdrop} onClick={() => setPickerOpen(false)} />
-                    <div className={styles.picker} role="listbox">
-                      {sources === null ? <div className={styles.histNote}><Spinner size={18} label="Đang tải…" /></div> : sources.length === 0 ? (
-                        <div className={styles.histNote}>Chưa có nguồn dữ liệu. <Link href="/sources">Thêm nguồn</Link></div>
-                      ) : sources.map((s) => {
-                        const on = selected.includes(s.id);
-                        const full = !on && selected.length >= MAX_SOURCES;
-                        return (
-                          <label key={s.id} className={`${styles.pickItem} ${full ? styles.pickOff : ""}`}>
-                            <input type="checkbox" checked={on} disabled={full} onChange={() => pick(s.id)} />
-                            <span className={styles.pickName} data-i18n-skip>{sourceLabel(s)}</span>
-                            <span className={styles.pickKind}>{isOrdersSource(s) ? "Đơn hàng" : "Google Sheet"}</span>
-                          </label>
-                        );
-                      })}
-                      <div className={styles.pickHint}>{`Chọn tối đa ${MAX_SOURCES} nguồn. AI chỉ đọc số liệu, không sửa dữ liệu.`}</div>
-                    </div>
-                  </>
-                )}
-              </div>
-              {selected.map((id) => byId.get(id)).filter((s): s is SourceOption => !!s).map((s) => (
-                <span key={s.id} className={styles.chip}>
-                  <span data-i18n-skip>{sourceLabel(s)}</span>
-                  <button type="button" aria-label="Bỏ nguồn này" onClick={() => pick(s.id)}>×</button>
-                </span>
-              ))}
-            </div>
-              {busy ? (
-                <button type="button" className={`${styles.sendBtn} ${styles.stopBtn}`} onClick={stop}>Dừng</button>
-              ) : (
-                <button type="button" className={styles.sendBtn} onClick={() => void send(input)} disabled={!input.trim()}>Gửi</button>
-              )}
-            </div>
-          </div>
-          <div className={styles.fine}>Enter để gửi, Shift+Enter để xuống dòng. Số liệu do AI tra từ dữ liệu của bạn, hãy đối chiếu trước khi ra quyết định lớn.</div>
-        </div>
+        <Composer
+          value={input}
+          onChange={setInput}
+          onSend={() => void send(input)}
+          onStop={() => abortRef.current?.abort()}
+          busy={busy}
+          textareaRef={taRef}
+          sources={sources}
+          selected={selected}
+          onPickSource={pick}
+        />
       </section>
     </div>
   );
