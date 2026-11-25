@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { parseNumber } from "@/lib/google/parse-number";
 import { costKey, parentKeys, parseCostPaste, type CostEntry } from "@/lib/profit/catalog";
 import type { ProductProfit } from "@/lib/profit/order-profit";
@@ -42,6 +43,11 @@ export function ProductsView({ initialFilter }: { initialFilter: Filter }) {
   const [catPlatform, setCatPlatform] = useState<"all" | FeePlatform>("all");
   const [catTarget, setCatTarget] = useState<{ row: RowView; platform: FeePlatform } | null>(null);
   const [feeSaving, setFeeSaving] = useState(false);
+  // AI phân ngành hàng loạt: tiến độ (sàn đang chạy, đã xử lý/tổng) và nút dừng.
+  const [aiRun, setAiRun] = useState<{ platform: FeePlatform; done: number; total: number } | null>(null);
+  const aiAbort = useRef<AbortController | null>(null);
+  /** Lần chạy AI vừa rồi dừng vì hết lượt/ngân sách: hiện nút liên hệ nâng cấp cạnh thông báo lỗi. */
+  const [aiQuota, setAiQuota] = useState(false);
   const fees = data?.fees;
   useEffect(() => {
     if (fees?.settings) {
@@ -82,14 +88,16 @@ export function ProductsView({ initialFilter }: { initialFilter: Filter }) {
   // Với mỗi sàn: sản phẩm đã chọn ngành, và sản phẩm Cerno đã tự nhận diện từ tên (đã dùng để ước tính phí, người bán chỉ cần lướt qua).
   const stats = (p: FeePlatform) => {
     const list = rows.filter((r) => soldOn(r, p));
-    const chosen = list.filter((r) => catOf(r, p)).length;
+    const ai = list.filter((r) => catOf(r, p)?.ai);
+    const chosen = list.filter((r) => catOf(r, p) && !catOf(r, p)?.ai).length;
     const auto = list.filter((r) => guessOf(r, p));
-    return { total: list.length, chosen, auto, unknown: list.length - chosen - auto.length };
+    return { total: list.length, chosen, ai, auto, unknown: list.length - chosen - ai.length - auto.length };
   };
   const catRows = rows.flatMap((r) => FEE_PLATFORMS.filter((pl) => (catPlatform === "all" || catPlatform === pl) && soldOn(r, pl) && !!r.product).map((pl) => ({ row: r, platform: pl })));
   const shopeeStats = stats("Shopee");
   const tiktokStats = stats("TikTok Shop");
   const autoCount = shopeeStats.auto.length + tiktokStats.auto.length;
+  const aiCount = shopeeStats.ai.length + tiktokStats.ai.length;
   const affiliateValue = affiliateText.trim() === "" ? 0 : parseNumber(affiliateText);
   const affiliateOk = affiliateValue !== null && affiliateValue >= 0 && affiliateValue <= MAX_AFFILIATE_PCT;
   const formToSave: FeeSettings = { ...feeForm, tiktokAffiliatePct: affiliateOk ? (affiliateValue as number) : feeForm.tiktokAffiliatePct };
@@ -172,6 +180,99 @@ export function ProductsView({ initialFilter }: { initialFilter: Filter }) {
     });
     if (!upserts.length) return;
     void saveFees({ platform, upserts }, `Đã xác nhận ngành hàng cho ${count(upserts.length)} sản phẩm.`);
+  }
+
+  /** Người bán xác nhận các ngành AI đã phân: lưu lại thành ngành đã chọn. */
+  function confirmAi(platform: FeePlatform, only?: RowView) {
+    const upserts = (only ? [only] : rows).flatMap((r) => {
+      const c = soldOn(r, platform) ? catOf(r, platform) : undefined;
+      return c?.ai ? [{ sku: r.key, category: c.path }] : [];
+    });
+    if (!upserts.length) return;
+    void saveFees({ platform, upserts }, `Đã xác nhận ngành hàng cho ${count(upserts.length)} sản phẩm.`);
+  }
+
+  /**
+   * AI phân ngành hàng loạt cho các sản phẩm CHƯA được người bán chọn ngành (kể cả sản phẩm Cerno tự nhận diện theo tên, vì cách đó có thể sai),
+   * ưu tiên sản phẩm doanh thu lớn. Mỗi sàn một lượt; kết quả lưu với nhãn "AI đoán" và vẫn dùng để ước tính phí ngay.
+   */
+  async function runAi() {
+    if (!fees) return;
+    const ctl = new AbortController();
+    aiAbort.current = ctl;
+    setSaveError("");
+    setMessage("");
+    setAiQuota(false);
+    let assigned = 0;
+    let unsure = 0;
+    try {
+      for (const platform of FEE_PLATFORMS) {
+        if (platform !== "Shopee" && !fees.multiPlatform) continue;
+        const todo = rows
+          .filter((r) => !!r.product && soldOn(r, platform) && !catOf(r, platform))
+          .sort((a, b) => (b.product?.revenue ?? 0) - (a.product?.revenue ?? 0))
+          .slice(0, 400);
+        if (!todo.length) continue;
+        setAiRun({ platform, done: 0, total: todo.length });
+        const res = await fetch("/api/fees/categorize", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ platform, products: todo.map((r) => ({ key: r.key, name: r.name })) }),
+          signal: ctl.signal,
+        });
+        if (!res.ok || !res.body) {
+          const j = await res.json().catch(() => ({}));
+          throw new Error(j.error ?? "Không chạy được AI phân ngành.");
+        }
+        let results: { key: string; path: string }[] = [];
+        let failed = "";
+        const reader = res.body.getReader();
+        const dec = new TextDecoder();
+        let buf = "";
+        const handle = (line: string) => {
+          if (!line.trim()) return;
+          const ev = JSON.parse(line) as { t: string; done?: number; total?: number; results?: { key: string; path: string }[]; unassigned?: string[]; message?: string; quota?: boolean };
+          if (ev.t === "progress") setAiRun({ platform, done: ev.done ?? 0, total: ev.total ?? todo.length });
+          else if (ev.t === "done") {
+            results = ev.results ?? [];
+            unsure += (ev.unassigned ?? []).length;
+          } else if (ev.t === "error") {
+            failed = ev.message ?? "AI phân ngành gặp lỗi.";
+            if (ev.quota) setAiQuota(true);
+          }
+        };
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buf += dec.decode(value, { stream: true });
+          let nl: number;
+          while ((nl = buf.indexOf("\n")) >= 0) {
+            handle(buf.slice(0, nl));
+            buf = buf.slice(nl + 1);
+          }
+        }
+        handle(buf);
+        if (results.length) {
+          const save = await fetch("/api/fees", {
+            method: "PUT",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ platform, upserts: results.map((r) => ({ sku: r.key, category: r.path, source: "ai" })) }),
+          });
+          const sj = await save.json().catch(() => ({}));
+          if (!save.ok) throw new Error(sj.error ?? "Không lưu được kết quả AI.");
+          assigned += results.length;
+        }
+        if (failed) throw new Error(failed);
+      }
+      setMessage(assigned || unsure ? `AI đã phân ngành cho ${count(assigned)} sản phẩm${unsure ? `; ${count(unsure)} sản phẩm AI không chắc nên vẫn dùng mức phí mặc định` : ""}. Xem lại bảng Ngành hàng và xác nhận khi đã đúng.` : "Không còn sản phẩm nào cần AI phân ngành.");
+    } catch (e) {
+      if (!ctl.signal.aborted) setSaveError(e instanceof Error ? e.message : "Không chạy được AI phân ngành.");
+      else setMessage("Đã dừng AI phân ngành. Kết quả đã lưu của các sàn trước đó được giữ lại.");
+    } finally {
+      aiAbort.current = null;
+      setAiRun(null);
+      if (assigned) await reload();
+    }
   }
 
   function applyPaste() {
@@ -290,10 +391,19 @@ export function ProductsView({ initialFilter }: { initialFilter: Filter }) {
                 </div>
               )}
               <p className={styles.small} style={{ marginTop: 10 }}>
-                {`Shopee: ${count(shopeeStats.chosen)} đã chọn ngành · ${count(shopeeStats.auto.length)} tự nhận diện · ${count(shopeeStats.unknown)} chưa rõ (chưa ước tính phí).`}
+                {`Shopee: ${count(shopeeStats.chosen)} đã chọn ngành · ${count(shopeeStats.ai.length)} AI đoán · ${count(shopeeStats.auto.length)} tự nhận diện · ${count(shopeeStats.unknown)} chưa rõ (tính ${fees?.platforms.Shopee.defaultRatePct ?? 15.5}%).`}
                 <br />
-                {`TikTok Shop: ${count(tiktokStats.chosen)} đã chọn ngành · ${count(tiktokStats.auto.length)} tự nhận diện · ${count(tiktokStats.unknown)} chưa rõ (tính ${TIKTOK_DEFAULT_RATE_PCT[feeForm.tiktokSellerType]}%).`}
+                {`TikTok Shop: ${count(tiktokStats.chosen)} đã chọn ngành · ${count(tiktokStats.ai.length)} AI đoán · ${count(tiktokStats.auto.length)} tự nhận diện · ${count(tiktokStats.unknown)} chưa rõ (tính ${TIKTOK_DEFAULT_RATE_PCT[feeForm.tiktokSellerType]}%).`}
               </p>
+              {fees.settings.enabled && aiCount > 0 && (
+                <div className={styles.note} style={{ marginTop: 10, display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+                  <span style={{ flex: 1, minWidth: 240 }}>
+                    AI đã phân ngành cho <b>{count(aiCount)}</b> sản phẩm theo tên. Xem lại bảng Ngành hàng bên dưới, ngành nào sai thì bấm Đổi; đúng rồi thì xác nhận.
+                  </span>
+                  {canEditFees && shopeeStats.ai.length > 0 && <button className={styles.btn} disabled={feeSaving} onClick={() => confirmAi("Shopee")}>Xác nhận tất cả (Shopee)</button>}
+                  {canEditFees && tiktokStats.ai.length > 0 && <button className={styles.btn} disabled={feeSaving} onClick={() => confirmAi("TikTok Shop")}>Xác nhận tất cả (TikTok Shop)</button>}
+                </div>
+              )}
               {fees.settings.enabled && autoCount > 0 && (
                 <div className={styles.note} style={{ marginTop: 10, display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
                   <span style={{ flex: 1, minWidth: 240 }}>
@@ -310,6 +420,7 @@ export function ProductsView({ initialFilter }: { initialFilter: Filter }) {
       <FeeEstimateNote count={data.summary?.feeEstimated ?? 0} auto={autoCategoryCount(fees)} />
       {message && <div className={styles.note}>{message}</div>}
       {saveError && <ErrorBox message={saveError} />}
+      {saveError && aiQuota && <p className={styles.small}><Link href="/upgrade" target="_blank">Liên hệ để nâng hạn mức hoặc nâng cấp gói</Link></p>}
 
       <Card title="Sản phẩm" aside={`${count(shown.length)} sản phẩm · giá vốn là giá mỗi cái`}>
         <div className={styles.tableWrap}>
@@ -369,7 +480,18 @@ export function ProductsView({ initialFilter }: { initialFilter: Filter }) {
             {([["all", "Tất cả"], ...FEE_PLATFORMS.map((pl) => [pl, pl])] as ["all" | FeePlatform, string][]).map(([k, label]) => (
               <button key={k} className={`${styles.chip} ${catPlatform === k ? styles.chipOn : ""}`} onClick={() => setCatPlatform(k)}>{label}</button>
             ))}
+            {canEditFees && (
+              <span style={{ marginLeft: "auto", display: "inline-flex", gap: 8, alignItems: "center" }}>
+                {aiRun && <span className={styles.small}>{`Đang phân ngành ${aiRun.platform}… ${count(aiRun.done)}/${count(aiRun.total)}`}</span>}
+                {aiRun ? (
+                  <button className={styles.btn} onClick={() => aiAbort.current?.abort()}>Dừng</button>
+                ) : (
+                  <button className={`${styles.btn} ${styles.primary}`} disabled={feeSaving || !fees.settings.enabled} title={fees.settings.enabled ? undefined : "Bật ước tính phí sàn ở trên trước"} onClick={() => void runAi()}>Phân ngành bằng AI</button>
+                )}
+              </span>
+            )}
           </div>
+          <p className={styles.small} style={{ margin: "0 0 10px" }}>Sản phẩm chưa có ngành vẫn được tính phí theo mức mặc định. AI chỉ nhận tên sản phẩm (không có dữ liệu người mua, giá hay doanh thu) và đoán ngành cho các sản phẩm chưa được bạn chọn, ưu tiên sản phẩm bán nhiều.</p>
           <div className={styles.tableWrap}>
             <table className={styles.table}>
               <thead>
@@ -381,19 +503,20 @@ export function ProductsView({ initialFilter }: { initialFilter: Filter }) {
                   const guess = guessOf(r, pl);
                   const cat = chosen ?? guess;
                   const usable = pl === "Shopee" || fees.multiPlatform;
-                  const dflt = pl === "TikTok Shop" ? TIKTOK_DEFAULT_RATE_PCT[fees.settings.tiktokSellerType] : null;
+                  const dflt = fees.platforms[pl].defaultRatePct;
                   return (
                     <tr key={`${r.key}|${pl}`}>
                       <td><b data-i18n-skip>{r.name}</b>{r.sku && r.sku !== r.name && <span className={styles.sub} data-i18n-skip>{r.sku}</span>}</td>
                       <td><span className={styles.platformTag} data-platform={pl}>{pl}</span></td>
                       <td>{cat ? <span title={cat.path} data-i18n-skip>{cat.path}</span> : <span className={styles.muted}>Chưa xác định được ngành</span>}</td>
                       <td className={styles.r}>
-                        {cat ? (cat.ratePct !== null ? ratePctText(cat.ratePct) : <span className={styles.muted}>Không có trong biểu phí</span>) : dflt !== null ? <span className={styles.muted}>{`${dflt}% (mặc định)`}</span> : "—"}
+                        {cat ? (cat.ratePct !== null ? ratePctText(cat.ratePct) : <span className={styles.muted}>Không có trong biểu phí</span>) : <span className={styles.muted}>{`${dflt}% (mặc định)`}</span>}
                       </td>
-                      <td>{cat ? <span className={`${styles.badge} ${guess ? styles.bWarn : styles.bPos}`}>{guess ? "Tự nhận diện" : "Đã chọn"}</span> : <span className={styles.muted}>—</span>}</td>
+                      <td>{cat ? <span className={`${styles.badge} ${guess || chosen?.ai ? styles.bWarn : styles.bPos}`}>{chosen?.ai ? "AI đoán" : guess ? "Tự nhận diện" : "Đã chọn"}</span> : <span className={styles.muted}>—</span>}</td>
                       <td className={styles.actions}>
                         {canEditFees && usable && (
                           <>
+                            {chosen?.ai && <button className={styles.btn} disabled={feeSaving} aria-label={`Xác nhận ngành của ${r.name}`} onClick={() => confirmAi(pl, r)}>Xác nhận</button>}
                             <button className={styles.btn} disabled={feeSaving} onClick={() => setCatTarget({ row: r, platform: pl })}>{cat ? "Đổi" : "Chọn ngành"}</button>
                             {chosen && fees.platforms[pl].categories[costKey(r.key)] && <button className={styles.btn} disabled={feeSaving} aria-label={`Bỏ ngành của ${r.name}`} onClick={() => void saveFees({ platform: pl, removes: [r.key] }, "Đã bỏ ngành hàng.")}>Bỏ</button>}
                           </>

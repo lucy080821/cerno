@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { categoryRate, searchCategories, tableInfo } from "./shopee";
+import { categoryList, categoryRate, searchCategories, tableInfo } from "./shopee";
+import { SHOPEE_DEFAULT_RATE_PCT } from "./constants";
 
 describe("biểu Phí Cố Định theo ngành", () => {
   it("đủ số ngành của hai biểu (đã bỏ dòng lặp trong PDF)", () => {
@@ -30,6 +31,13 @@ describe("biểu Phí Cố Định theo ngành", () => {
     expect(searchCategories("non_mall", "")).toEqual([]);
     expect(searchCategories("non_mall", "zzzzxx")).toEqual([]);
     expect(searchCategories("non_mall", "a", 5).length).toBeLessThanOrEqual(5);
+  });
+
+  it("mức mặc định của sản phẩm chưa rõ ngành là trung vị của biểu phí", () => {
+    for (const type of ["non_mall", "mall"] as const) {
+      const rates = categoryList(type).map((c) => c.ratePct).sort((a, b) => a - b);
+      expect(SHOPEE_DEFAULT_RATE_PCT[type]).toBe(rates[Math.floor(rates.length / 2)]);
+    }
   });
 
   it("mọi mức phí nằm trong khoảng hợp lý", () => {

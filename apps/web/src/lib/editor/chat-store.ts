@@ -18,6 +18,8 @@ export interface ChatMsg {
   role: "user" | "assistant";
   content: string;
   error?: boolean;
+  /** Lỗi do hết lượt/ngân sách AI: hiện nút liên hệ nâng cấp. */
+  quota?: boolean;
   /** Các thay đổi AI đã áp lên dashboard trong lượt trả lời này. */
   actions?: ChatAction[];
   /** Biểu đồ AI vẽ trong khung chat (công cụ show_chart), có nút "Thêm vào dashboard". */
@@ -181,7 +183,7 @@ export const useChat = create<ChatState>((set, get) => ({
     try {
       for (let round = 0; round < MAX_ROUNDS; round++) {
         let res: Response;
-        let err: { error?: string; retryAfter?: number; retry?: boolean; tooLarge?: boolean } | null = null;
+        let err: { error?: string; retryAfter?: number; retry?: boolean; tooLarge?: boolean; quota?: string } | null = null;
         let rateWaits = 0;
         let toolRetried = false;
         // Vòng gửi yêu cầu: tự xử lý hạn mức token/phút (chờ ít giây), lệnh sai định dạng (thử lại 1 lần) và yêu cầu quá lớn.
@@ -231,7 +233,7 @@ export const useChat = create<ChatState>((set, get) => ({
         set({ notice: null });
         if (!res.ok || !res.body) {
           const msg = err?.error ?? "Không gọi được AI, thử lại sau.";
-          patchReply((m) => ({ content: m.content ? `${m.content}\n\n${msg}` : msg, error: true }));
+          patchReply((m) => ({ content: m.content ? `${m.content}\n\n${msg}` : msg, error: true, ...(typeof err?.quota === "string" ? { quota: true } : {}) }));
           return;
         }
 

@@ -37,6 +37,8 @@ const IGNORE_FILES = [
   /lib\/alerts\/describe\.ts$/, // câu mô tả điều kiện ghép động (hiện trong email và danh sách luật), không dịch bằng từ điển
   /server\/alerts\//, // nhãn khoảng thời gian trong email cảnh báo (luôn tiếng Việt)
   /server\/reports\//, // báo cáo email luôn bằng tiếng Việt (người nhận không đổi ngôn ngữ giao diện)
+  /lib\/ai-quota\.ts$/, // thông báo hết lượt AI: bản dịch sinh từ chính file này trong en/ai.ts
+  /server\/fee-categorize\//, // lời nhắc và mô tả công cụ gửi cho AI
   /server\/workspace-notify\//, // báo cáo/cảnh báo theo cửa hàng: nội dung email (chữ cố định có bản dịch trong en/notify.ts cho phần tiếng Anh của thư) và lỗi server
   /lib\/orders\/(fixtures|fake-db)\.ts$/, // bảng mô phỏng file của sàn và DB giả, chỉ dùng trong test
   /components\/profit\/format\.ts$/, // định dạng số tiền (số/ngày luôn theo kiểu vi-VN)

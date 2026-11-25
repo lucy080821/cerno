@@ -408,6 +408,24 @@
   font-size: 13.5px;
 }
 
+.errActions {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.errLink {
+  border: 1px solid currentColor;
+  background: #b91c1c;
+  color: #fff !important;
+  border-color: #b91c1c;
+  border-radius: 8px;
+  padding: 4px 10px;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
 .errBox button {
   border: 1px solid currentColor;
   background: none;

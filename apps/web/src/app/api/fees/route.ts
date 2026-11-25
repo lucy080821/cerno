@@ -28,7 +28,7 @@ const Body = z.object({
     .optional(),
   /** Sàn mà `upserts` / `removes` áp dụng (mặc định Shopee). */
   platform: z.enum(FEE_PLATFORMS).default("Shopee"),
-  upserts: z.array(z.object({ sku: Sku, category: z.string().trim().min(1).max(MAX_CATEGORY_LENGTH) })).max(MAX_COST_ENTRIES).default([]),
+  upserts: z.array(z.object({ sku: Sku, category: z.string().trim().min(1).max(MAX_CATEGORY_LENGTH), source: z.enum(["user", "ai"]).default("user") })).max(MAX_COST_ENTRIES).default([]),
   removes: z.array(Sku).max(MAX_COST_ENTRIES).default([]),
 });
 
@@ -63,11 +63,14 @@ export async function PUT(req: Request) {
   }
 
   try {
-    await saveFeeConfig({ user: supabase, userId: auth.user.id, workspaceId, multiPlatform: current.multiPlatform, settings, platform, upserts, removes });
+    await saveFeeConfig({ user: supabase, userId: auth.user.id, workspaceId, multiPlatform: current.multiPlatform, sourceColumn: current.sourceColumn, settings, platform, upserts, removes });
     return NextResponse.json({ ok: true, saved: upserts.length, removed: removes.length });
   } catch (e) {
     if ((e as { needsMulti?: boolean }).needsMulti) {
       return NextResponse.json({ error: "Cần chạy migration 0021_multi_platform_fees.sql trên Supabase trước khi lưu cài đặt TikTok Shop hoặc ngành hàng của TikTok Shop." }, { status: 409 });
+    }
+    if ((e as { needsSource?: boolean }).needsSource) {
+      return NextResponse.json({ error: "Cần chạy migration 0026_fee_category_source.sql trên Supabase trước khi lưu ngành do AI phân." }, { status: 409 });
     }
     if ((e as { missingTable?: boolean }).missingTable) {
       return NextResponse.json({ error: "Cần chạy migration 0018_shopee_fee_estimate.sql trên Supabase trước khi lưu cài đặt phí." }, { status: 409 });

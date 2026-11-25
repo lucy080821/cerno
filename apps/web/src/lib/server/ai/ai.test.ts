@@ -175,7 +175,21 @@ describe("routeChat: Groq miễn phí trước, Anthropic làm đường lui", (
     expect(r.status).toBe(429);
     expect(r.body.retryAfter).toBe(10);
     expect(r.body.quota).toBe("daily");
-    expect(String(r.body.error)).toContain("hết lượt AI nâng cao của hôm nay");
+    // Nêu rõ Claude (kèm tên model) VÀ Groq, kèm lời mời liên hệ nâng hạn mức.
+    expect(r.body.error).toBe("Đã hết lượt dùng Claude (Haiku 5.5) hôm nay và Groq (miễn phí) đang quá tải hoặc hết hạn mức. Liên hệ để nâng hạn mức hoặc nâng cấp gói.");
+  });
+
+  it("hết lượt tháng/ngân sách và các tình trạng Groq khác cũng nêu đúng từng bên", async () => {
+    groq.mockResolvedValue(bad("groq", 413, { error: "to" }));
+    reserve.mockResolvedValue("monthly");
+    const big = await routeChat("u1", req, deps());
+    if (big.ok) throw new Error("phải lỗi");
+    expect(big.body.error).toBe("Đã hết lượt dùng Claude (Haiku 5.5) tháng này và Groq (miễn phí) không xử lý được câu hỏi này vì dữ liệu gửi kèm quá lớn. Liên hệ để nâng hạn mức hoặc nâng cấp gói.");
+    groq.mockResolvedValue(bad("groq", 502, { error: "x" }));
+    reserve.mockResolvedValue("budget");
+    const err = await routeChat("u1", req, deps());
+    if (err.ok) throw new Error("phải lỗi");
+    expect(err.body.error).toBe("Claude (Haiku 5.5) đã hết ngân sách của tháng này và Groq (miễn phí) đang gặp lỗi. Liên hệ để nâng hạn mức hoặc nâng cấp gói.");
   });
 
   it("chỉ có Anthropic mà hết ngân sách → 429 với thông báo rõ", async () => {
@@ -185,6 +199,8 @@ describe("routeChat: Groq miễn phí trước, Anthropic làm đường lui", (
     if (r.ok) return;
     expect(r.status).toBe(429);
     expect(r.body.quota).toBe("budget");
+    // Không dùng Groq: chỉ nói về Claude.
+    expect(r.body.error).toBe("Claude (Haiku 5.5) đã hết ngân sách của tháng này. Liên hệ để nâng hạn mức hoặc nâng cấp gói.");
   });
 
   it("Anthropic lỗi sau khi giữ chỗ thì trả lại lượt cho người dùng", async () => {

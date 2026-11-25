@@ -116,7 +116,8 @@ describe("runChat", () => {
   it("hết hạn mức AI trả phí thì báo lỗi rõ ràng, không gọi nhà cung cấp", async () => {
     const { caller, seen } = setup([{ text: "x" }], { reserve: "daily" });
     const ev = await collect(runChat(input, { caller, tools }));
-    expect(ev).toEqual([{ t: "error", message: "hết lượt ngày", status: 429 }]);
+    // Thông báo nêu rõ Claude + tên model, kèm cờ `quota` để giao diện hiện nút liên hệ nâng cấp.
+    expect(ev).toEqual([{ t: "error", message: expect.stringContaining("Đã hết lượt dùng Claude (Haiku 5.5) hôm nay"), status: 429, quota: "daily" }]);
     expect(seen).toHaveLength(0);
   });
 

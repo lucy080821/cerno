@@ -24,7 +24,7 @@ export type StreamEvent =
   | { t: "reset" }
   | { t: "visual"; visual: Visual }
   | { t: "done"; message: Msg }
-  | { t: "error"; message: string; status?: number; retryAfter?: number };
+  | { t: "error"; message: string; status?: number; retryAfter?: number; quota?: boolean };
 
 /** Gộp phần dư của lần đọc trước với đoạn mới, trả các dòng đã đủ và phần chưa hết dòng. */
 export function splitLines(rest: string, chunk: string): { lines: string[]; rest: string } {
@@ -52,7 +52,7 @@ export function parseEvent(line: string): StreamEvent | null {
         return m && typeof m.content === "string" ? { t: "done", message: m } : null;
       }
       case "error":
-        return { t: "error", message: String(e.message ?? "AI gặp lỗi, hãy thử lại."), status: typeof e.status === "number" ? e.status : undefined, retryAfter: typeof e.retryAfter === "number" ? e.retryAfter : undefined };
+        return { t: "error", message: String(e.message ?? "AI gặp lỗi, hãy thử lại."), status: typeof e.status === "number" ? e.status : undefined, retryAfter: typeof e.retryAfter === "number" ? e.retryAfter : undefined, ...(typeof e.quota === "string" ? { quota: true } : {}) };
     }
   } catch {
     /* dòng hỏng */

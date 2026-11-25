@@ -1,4 +1,5 @@
-import { costMicro, type AnthropicUsage } from "./anthropic";
+import { groqStateOf, modelLabel, quotaText, type GroqState } from "@/lib/ai-quota";
+import { anthropicModel, costMicro, type AnthropicUsage } from "./anthropic";
 import type { ProviderName, ProviderOutcome, ProviderRequest } from "./types";
 
 /**
@@ -62,13 +63,15 @@ export async function routeChat(userId: string, req: ProviderRequest, deps: Rout
     }
   }
 
-  if (failure) {
-    // Báo thêm lý do AI nâng cao không được dùng làm đường lui (hết lượt/ngân sách), để người dùng hiểu vì sao phải chờ.
-    if (denied && denied !== "error" && typeof failure.body.error === "string") {
-      return { ...failure, body: { ...failure.body, error: `${failure.body.error} (${deps.quotaMessages[denied]})`, quota: denied } };
-    }
-    return failure;
+  // Claude bị từ chối vì hết lượt/ngân sách: nói rõ Claude (kèm tên model) và Groq (nếu đã thử) mỗi bên bị gì, kèm lời mời liên hệ nâng hạn mức.
+  // `quota` giữ nguyên cho client (hiện nút liên hệ) và `retryAfter` của Groq giữ lại để client vẫn tự chờ Groq được.
+  if (denied && denied !== "error") {
+    const groq: GroqState = failure && failure.provider === "groq" ? groqStateOf(failure.status) : null;
+    const error = quotaText(denied, modelLabel(anthropicModel()), groq);
+    if (failure) return { ...failure, body: { ...failure.body, error, quota: denied } };
+    return { ok: false, provider: "anthropic", status: 429, body: { error, quota: denied }, fallbackable: false };
   }
+  if (failure) return failure;
   if (denied) {
     return { ok: false, provider: "anthropic", status: 429, body: { error: deps.quotaMessages[denied], quota: denied }, fallbackable: false };
   }

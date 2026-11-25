@@ -23,6 +23,14 @@ describe("ước tính phí sàn Shopee", () => {
     expect(estimateOrderFee({ date: "2026-10-01", lines: [{ gross: 0, ratePct: 10 }], buyerShipping: 0, settings: normal })).toBeNull();
   });
 
+  it("dòng chưa rõ ngành dùng mức mặc định nếu được truyền, và được đếm", () => {
+    const lines = [{ gross: 100_000, ratePct: 10 }, { gross: 100_000, ratePct: null }];
+    const e = estimateOrderFee({ date: "2026-10-01", lines, buyerShipping: 0, settings: normal, defaultRatePct: 15.5 })!;
+    expect(e.fixed).toBe(10_000 + 15_500);
+    expect(e.defaulted).toBe(1);
+    expect(estimateOrderFee({ date: "2026-10-01", lines, buyerShipping: 0, settings: normal })).toBeNull();
+  });
+
   it("phí hạ tầng chỉ có với đơn từ 01/07/2025", () => {
     const base = { lines: [{ gross: 100_000, ratePct: 10 }], buyerShipping: 0, settings: normal };
     expect(estimateOrderFee({ ...base, date: "2025-06-30" })!.infra).toBe(0);

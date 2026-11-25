@@ -20,6 +20,8 @@ export interface FeeEstimateInput {
   /** Phí vận chuyển khách trả (0 với đơn hoàn). */
   buyerShipping: number;
   settings: Pick<FeeSettings, "sellerType" | "newSeller">;
+  /** Mức (%) dùng cho dòng chưa rõ ngành. Bỏ trống = đơn có dòng chưa rõ ngành thì KHÔNG ước tính (trả null). */
+  defaultRatePct?: number;
 }
 
 export interface FeeEstimate {
@@ -27,6 +29,8 @@ export interface FeeEstimate {
   processing: number;
   infra: number;
   total: number;
+  /** Số dòng phải dùng mức mặc định vì ngành chưa rõ. */
+  defaulted: number;
 }
 
 const day = (d: string | null): string | null => (d ? d.slice(0, 10) : null);
@@ -42,18 +46,23 @@ export function effectiveFixedRate(ratePct: number, date: string | null, s: Pick
  * - Phí Cố Định = Σ giá trị dòng × mức phí của ngành (sau ưu đãi nếu có).
  * - Phí Xử Lý Giao Dịch = 6% × (giá trị sản phẩm + phí ship khách trả). Cơ sở tính chưa được Shopee ghi rõ trong các bài đã đọc: đây là giả định.
  * - Phí Hạ Tầng = 3.000đ mỗi đơn (đơn từ 01/07/2025).
- * Trả null khi có dòng chưa chọn ngành (không đoán).
+ * Dòng chưa rõ ngành dùng `defaultRatePct`; không truyền thì trả null (không đoán).
  */
 export function estimateOrderFee(input: FeeEstimateInput): FeeEstimate | null {
-  if (input.lines.length === 0 || input.lines.some((l) => l.ratePct === null)) return null;
+  const dflt = input.defaultRatePct;
+  if (input.lines.length === 0 || (dflt === undefined && input.lines.some((l) => l.ratePct === null))) return null;
   const gross = input.lines.reduce((n, l) => n + Math.max(0, l.gross), 0);
   if (gross <= 0) return null;
-  const fixed = input.lines.reduce((n, l) => n + (Math.max(0, l.gross) * effectiveFixedRate(l.ratePct as number, input.date, input.settings)) / 100, 0);
+  let defaulted = 0;
+  const fixed = input.lines.reduce((n, l) => {
+    if (l.ratePct === null) defaulted++;
+    return n + (Math.max(0, l.gross) * effectiveFixedRate(l.ratePct ?? (dflt as number), input.date, input.settings)) / 100;
+  }, 0);
   const processing = ((gross + Math.max(0, input.buyerShipping)) * PROCESSING_FEE_PCT) / 100;
   const d = day(input.date);
   const infra = !d || d >= INFRA_FEE_FROM ? INFRA_FEE_VND : 0;
   const r = Math.round;
-  return { fixed: r(fixed), processing: r(processing), infra, total: r(fixed) + r(processing) + infra };
+  return { fixed: r(fixed), processing: r(processing), infra, total: r(fixed) + r(processing) + infra, defaulted };
 }
 
 /* ---------- TikTok Shop ---------- */

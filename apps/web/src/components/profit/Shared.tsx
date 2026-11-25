@@ -67,8 +67,8 @@ export function MissingCostNote({ missing, total }: { missing: number; total: nu
 }
 
 /** Số sản phẩm Shopee mà Cerno tự nhận diện ngành hàng (người bán chưa chọn/xác nhận). */
-export const autoCategoryCount = (fees: { platforms?: Record<string, { suggestions?: Record<string, unknown> }> } | undefined): number =>
-  Object.values(fees?.platforms ?? {}).reduce((n, p) => n + Object.keys(p.suggestions ?? {}).length, 0);
+export const autoCategoryCount = (fees: { platforms?: Record<string, { suggestions?: Record<string, unknown>; categories?: Record<string, { ai?: boolean }> }> } | undefined): number =>
+  Object.values(fees?.platforms ?? {}).reduce((n, p) => n + Object.keys(p.suggestions ?? {}).length + Object.values(p.categories ?? {}).filter((c) => c.ai).length, 0);
 
 /** Nhắc khi có đơn dùng phí sàn ước tính (file không có phí). `auto` = số sản phẩm có ngành hàng do Cerno tự nhận diện. */
 export function FeeEstimateNote({ count, auto = 0 }: { count: number; auto?: number }) {
@@ -79,7 +79,7 @@ export function FeeEstimateNote({ count, auto = 0 }: { count: number; auto?: num
       <Link href="/products">Sản phẩm và giá vốn</Link>.
       {auto > 0 && (
         <>
-          {" "}Ngành hàng của <b>{auto.toLocaleString("vi-VN")}</b> sản phẩm do Cerno tự nhận diện từ tên sản phẩm; nếu thấy chưa đúng, bạn đổi ở trang Sản phẩm và giá vốn.
+          {" "}Ngành hàng của <b>{auto.toLocaleString("vi-VN")}</b> sản phẩm do Cerno tự nhận diện hoặc AI phân từ tên sản phẩm; nếu thấy chưa đúng, bạn đổi ở trang Sản phẩm và giá vốn.
         </>
       )}
     </div>

@@ -20,7 +20,7 @@ export type RunEvent =
   | { t: "status"; v: string }
   | { t: "visual"; visual: Visual }
   | { t: "final"; text: string; meta: { provider: ProviderName | null; tools: string[]; rounds: number; visuals?: Visual[] } }
-  | { t: "error"; message: string; status?: number; retryAfter?: number };
+  | { t: "error"; message: string; status?: number; retryAfter?: number; quota?: string };
 
 /** Số vòng tối đa (vòng cuối luôn KHÔNG có công cụ để buộc AI viết kết luận), số lệnh công cụ tối đa mỗi vòng và cả câu hỏi. */
 export const MAX_ROUNDS = 7;
@@ -71,6 +71,7 @@ const failureOf = (out: Extract<ProviderOutcome, { ok: false }>): RunEvent => ({
   message: typeof out.body.error === "string" ? out.body.error : "Dịch vụ AI gặp lỗi, thử lại sau.",
   status: out.status,
   ...(typeof out.body.retryAfter === "number" ? { retryAfter: out.body.retryAfter } : {}),
+  ...(typeof out.body.quota === "string" ? { quota: out.body.quota } : {}),
 });
 
 export async function* runChat(

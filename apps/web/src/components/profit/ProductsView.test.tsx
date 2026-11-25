@@ -46,6 +46,26 @@ describe("trang Sản phẩm và giá vốn", () => {
     expect(html.match(/platformTag/g)?.length).toBe(6);
   });
 
+  it("ngành do AI phân hiện nhãn 'AI đoán' + nút Xác nhận; sản phẩm chưa rõ ngành hiện mức mặc định; có nút phân ngành bằng AI", () => {
+    const rows = [line({}), line({ [COL.orderId]: "C", [COL.sku]: "XYZ-9", [COL.product]: "xyz abc qwerty" })];
+    const summary = summarize(buildOrders(rows));
+    const aiPath = "Nhà cửa & Đời sống › Dụng cụ nhà bếp › Chảo";
+    const withAi: FeeConfig = { ...cfg, categories: { Shopee: new Map([["chao-1", aiPath]]), "TikTok Shop": new Map() }, aiSourced: { Shopee: new Set(["chao-1"]), "TikTok Shop": new Set() }, sourceColumn: true };
+    response = {
+      source: { id: "s", rowCount: rows.length, lastSyncedAt: null },
+      editable: true,
+      summary,
+      todos: [],
+      catalog: { available: true, entries: [] },
+      fees: feePayload(withAi, summary.products.map((p) => ({ key: p.key, name: p.name, channels: p.channels }))),
+    };
+    const html = renderToStaticMarkup(<ProductsView initialFilter="all" />);
+    expect(html).toContain("AI đoán");
+    expect(html).toContain("Xác nhận ngành của Chảo chống dính 24cm");
+    expect(html).toContain("15.5% (mặc định)");
+    expect(html).toContain("Phân ngành bằng AI");
+  });
+
   it("vẽ được khi chưa chạy migration 0021 hoặc chưa có đơn nào", () => {
     response = { source: null, editable: true, catalog: { available: true, entries: [] }, fees: feePayload({ ...cfg, multiPlatform: false }, []) };
     expect(() => renderToStaticMarkup(<ProductsView initialFilter="all" />)).not.toThrow();

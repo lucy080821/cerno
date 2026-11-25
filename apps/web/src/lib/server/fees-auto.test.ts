@@ -28,10 +28,14 @@ const order = (product: string, sku: string | null = null, channel = "Shopee", s
 });
 
 describe("ước tính phí với ngành tự nhận diện (Shopee)", () => {
-  it("sản phẩm chưa chọn ngành dùng ngành tự nhận diện; tên lạ thì chưa ước tính", () => {
+  it("sản phẩm chưa chọn ngành dùng ngành tự nhận diện; tên lạ dùng mức mặc định (không để trống phí)", () => {
     const est = makeFeeEstimator(cfg())!;
-    expect(est(order("Chảo chống dính 24cm"))).toBeGreaterThan(0);
-    expect(est(order("xyz abc qwerty"))).toBeNull();
+    const known = est(order("Chảo chống dính 24cm"))!;
+    const unknown = est(order("xyz abc qwerty"))!;
+    expect(known).toBeGreaterThan(0);
+    expect(unknown).toBeGreaterThan(0);
+    // Cùng giá trị dòng: khác nhau chỉ ở mức Phí Cố Định (chảo 16% so với mặc định 15,5%).
+    expect(known).toBeGreaterThan(unknown);
   });
 
   it("ngành người bán đã chọn thắng ngành tự nhận diện", () => {

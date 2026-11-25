@@ -1,3 +1,4 @@
+import { GROQ_STATES, QUOTA_KINDS, quotaText } from "@/lib/ai-quota";
 import type { Dict } from "../translate";
 
 /** Trang Hỏi AI (chat có lịch sử) và các thông báo lỗi/trạng thái của server hiển thị trên trang đó. */
@@ -91,4 +92,8 @@ export const EN_AI: Dict = {
   "Cerno gặp lỗi khi tải trang": "Cerno ran into an error while loading",
   "Có thể do hệ thống vừa cập nhật phiên bản mới. Hãy tải lại trang; nếu vẫn lỗi, bạn thử lại sau ít phút.": "The system may have just been updated to a new version. Reload the page; if it still fails, try again in a few minutes.",
   "Lãi theo từng ngành hàng, ngành nào đang kéo lãi xuống?": "Profit by product category: which category is dragging profit down?",
+  "Liên hệ nâng cấp": "Contact us to upgrade",
+  "Liên hệ để nâng hạn mức hoặc nâng cấp gói": "Contact us to raise your limit or upgrade your plan",
+  // Thông báo hết lượt AI (lib/ai-quota.ts): mọi tổ hợp (hết lượt hôm nay/tháng này/ngân sách) × (tình trạng Groq), sinh từ chính hàm tạo thông báo.
+  ...Object.fromEntries(QUOTA_KINDS.flatMap((k) => GROQ_STATES.map((g) => [quotaText(k, "{0}", g), quotaText(k, "{0}", g, "en")]))),
 };

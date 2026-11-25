@@ -15,7 +15,7 @@ import { categoryList, categoryRate, type FeeCategory } from "./tables";
  */
 
 /** Đổi khi thay thuật toán hoặc bảng cụm từ: là một phần khoá bộ nhớ đệm tính lãi (lib/server/fees.ts). */
-export const MATCH_VERSION = 2;
+export const MATCH_VERSION = 3;
 export const MIN_SCORE = 0.5;
 
 export type MatchSource = "alias" | "name";

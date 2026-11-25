@@ -43,7 +43,7 @@ export function AiChat({ variant = "page", context, listenAsk = true, onClose }:
   const [draft, setDraft] = useState("");
   const [visuals, setVisuals] = useState<Visual[]>([]);
   const [status, setStatus] = useState("");
-  const [error, setError] = useState<{ message: string; question: string } | null>(null);
+  const [error, setError] = useState<{ message: string; question: string; quota?: boolean } | null>(null);
   const [loadingChat, setLoadingChat] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
@@ -132,7 +132,7 @@ export function AiChat({ variant = "page", context, listenAsk = true, onClose }:
         onReset: () => setDraft(""),
         onVisual: (v) => setVisuals((cur) => [...cur, v]),
         onDone: (message) => setMessages((cur) => [...cur, message]),
-        onError: (message) => setError({ message, question }),
+        onError: (message, quota) => setError({ message, question, ...(quota ? { quota } : {}) }),
       },
       ctl.signal,
     );

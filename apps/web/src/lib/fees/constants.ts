@@ -56,6 +56,13 @@ export const TIKTOK_PROCESSING_VND = 3000;
 export const TIKTOK_PROCESSING_FROM = "2025-10-27";
 /** Mức mặc định (%) khi ngành không có trong bảng; trùng với `defaults` của content/tiktok-fees.json (có test). */
 export const TIKTOK_DEFAULT_RATE_PCT: Record<SellerType, number> = { non_mall: 14, mall: 16 };
+/**
+ * Mức Phí Cố Định (%) dùng cho sản phẩm Shopee CHƯA RÕ NGÀNH, để đơn vẫn có phí ước tính thay vì để trống (lãi ảo). Là trung vị của toàn bộ
+ * biểu phí theo loại shop (có test đối chiếu với biểu); sản phẩm thật sự cần chính xác thì chọn ngành hoặc để AI phân ngành.
+ */
+export const SHOPEE_DEFAULT_RATE_PCT: Record<SellerType, number> = { non_mall: 15.5, mall: 18.1 };
+/** Mức mặc định (%) của một sàn theo loại shop. */
+export const defaultRatePct = (platform: FeePlatform, type: SellerType): number => (platform === "Shopee" ? SHOPEE_DEFAULT_RATE_PCT[type] : TIKTOK_DEFAULT_RATE_PCT[type]);
 
 export const isSellerType = (v: unknown): v is SellerType => v === "non_mall" || v === "mall";
 /** Kênh Shopee (tương thích mã cũ). */
@@ -68,7 +75,9 @@ export interface PlatformFeePayload {
   /** Ngày hiệu lực của biểu phí đang dùng (theo loại shop). */
   tableFrom: string;
   /** costKey(sku) → ngành đã chọn và mức phí hiện hành (null nếu ngành không có trong biểu phí của loại shop này). */
-  categories: Record<string, { path: string; ratePct: number | null }>;
+  categories: Record<string, { path: string; ratePct: number | null; /** true = AI phân ngành (chưa được người bán xác nhận). */ ai?: boolean }>;
+  /** Mức phí (%) áp cho sản phẩm chưa rõ ngành (không có trong `categories` lẫn `suggestions`). */
+  defaultRatePct: number;
   /** costKey(sku) → ngành Cerno TỰ NHẬN DIỆN từ tên sản phẩm, chỉ cho sản phẩm chưa được người bán chọn ngành. Cần người bán kiểm tra lại. */
   suggestions: Record<string, { path: string; ratePct: number; source: "alias" | "name" }>;
 }

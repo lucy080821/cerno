@@ -22,7 +22,8 @@ export interface StreamHandlers {
   onReset(): void;
   onVisual(v: Visual): void;
   onDone(message: Msg): void;
-  onError(message: string): void;
+  /** `quota` = hết lượt/ngân sách AI: giao diện hiện nút liên hệ nâng cấp. */
+  onError(message: string, quota?: boolean): void;
 }
 
 export async function streamAnswer(req: StreamRequest, on: StreamHandlers, signal: AbortSignal): Promise<void> {
@@ -35,8 +36,8 @@ export async function streamAnswer(req: StreamRequest, on: StreamHandlers, signa
       signal,
     });
     if (!res.ok || !res.body) {
-      const j = (await res.json().catch(() => null)) as { error?: string } | null;
-      return on.onError(j?.error ?? "Không gọi được AI, hãy thử lại.");
+      const j = (await res.json().catch(() => null)) as { error?: string; quota?: string } | null;
+      return on.onError(j?.error ?? "Không gọi được AI, hãy thử lại.", typeof j?.quota === "string");
     }
     const reader = res.body.getReader();
     const dec = new TextDecoder();
@@ -56,7 +57,7 @@ export async function streamAnswer(req: StreamRequest, on: StreamHandlers, signa
           case "reset": on.onReset(); break;
           case "visual": on.onVisual(ev.visual); break;
           case "done": finished = true; on.onDone(ev.message); break;
-          case "error": finished = true; on.onError(ev.message); break;
+          case "error": finished = true; on.onError(ev.message, ev.quota === true); break;
         }
       }
     }

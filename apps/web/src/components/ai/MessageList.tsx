@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import type { RefObject } from "react";
 import { Spinner } from "@/components/Spinner";
 import type { Msg } from "@/lib/ai-chat/client";
@@ -21,7 +22,7 @@ interface Props {
   messages: Msg[];
   /** Có khi AI đang trả lời. */
   live: LiveAnswer | null;
-  error: { message: string; question: string } | null;
+  error: { message: string; question: string; quota?: boolean } | null;
   copiedId: string | null;
   onCopy(m: Msg): void;
   onRetry(question: string): void;
@@ -57,7 +58,10 @@ export function MessageList({ messages, live, error, copiedId, onCopy, onRetry, 
       {error && (
         <div className={styles.errBox} role="alert">
           <span>{error.message}</span>
-          <button type="button" onClick={() => onRetry(error.question)}>Hỏi lại</button>
+          <span className={styles.errActions}>
+            {error.quota && <Link href="/upgrade" target="_blank" className={styles.errLink}>Liên hệ nâng cấp</Link>}
+            <button type="button" onClick={() => onRetry(error.question)}>Hỏi lại</button>
+          </span>
         </div>
       )}
       <div ref={endRef} />

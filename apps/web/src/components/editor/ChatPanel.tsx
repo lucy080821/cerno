@@ -153,6 +153,11 @@ export function ChatPanel() {
             {m.role === "assistant" && !m.content && !m.actions?.length && !m.charts?.length && busy
               ? <span className={s.typing}><Spinner size={12} inline />Đang phân tích…</span>
               : m.content ? <RichText text={m.content} /> : null}
+            {m.quota && (
+              <p className={s.hint}>
+                <a href="/upgrade" target="_blank" rel="noreferrer">Liên hệ nâng cấp</a>
+              </p>
+            )}
             {m.role === "assistant" && m.provider === "anthropic" && !m.error && (
               <p className={s.hint} title="Câu trả lời này dùng AI trả phí và tính vào hạn mức lượt AI nâng cao của bạn.">
                 Trả lời bởi Claude (AI nâng cao)

@@ -4,7 +4,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { costKey, findByKey } from "@/lib/profit/catalog";
 import { productKey, type FeeEstimator } from "@/lib/profit/order-profit";
 import {
-  DEFAULT_FEE_SETTINGS, FEE_PLATFORMS, MAX_AFFILIATE_PCT, isFeePlatform, isSellerType,
+  DEFAULT_FEE_SETTINGS, FEE_PLATFORMS, defaultRatePct, MAX_AFFILIATE_PCT, isFeePlatform, isSellerType,
   type FeePayload, type FeePlatform, type FeeSettings, type ManualFeeRate, type PlatformFeePayload, type SellerType,
 } from "@/lib/fees/constants";
 import { estimateManualFee, estimateOrderFee, estimateTiktokFee } from "@/lib/fees/estimate";
@@ -28,6 +28,10 @@ export interface FeeConfig {
   manual: { available: boolean; rates: Record<string, ManualFeeRate> };
   /** Phí ship shop chịu ước tính theo kênh (migration 0020); độc lập với bảng phí sàn. */
   ship: { available: boolean; rates: ShipRates };
+  /** costKey(sku) của các ngành do AI phân (chưa được người bán xác nhận), theo sàn; có từ migration 0026. */
+  aiSourced?: Record<FeePlatform, Set<string>>;
+  /** Đã chạy migration 0026 (cột `source` của product_fee_categories). */
+  sourceColumn?: boolean;
   /** Chữ ký nội dung, dùng làm khoá bộ nhớ đệm tính lãi. */
   signature: string;
 }
@@ -115,19 +119,27 @@ export async function loadFeeConfig(db: SupabaseClient, workspaceId: string): Pr
   try {
     const [s, c, manual, ship] = await Promise.all([
       db.from("fee_settings").select("*").eq("workspace_id", workspaceId).maybeSingle(),
-      db.from("product_fee_categories").select("sku, category, channel").eq("workspace_id", workspaceId),
+      db.from("product_fee_categories").select("sku, category, channel, source").eq("workspace_id", workspaceId),
       loadManualRates(db, workspaceId),
       loadShipRates(db, workspaceId),
     ]);
-    // Chưa chạy 0021 thì cột channel chưa có: đọc lại không có cột đó, mọi dòng là của Shopee.
+    // Chưa chạy 0026 thì cột source chưa có; chưa chạy 0021 thì cột channel chưa có (mọi dòng là của Shopee). Đọc lại bớt cột tương ứng.
     let multiPlatform = !c.error;
-    let catRows = (c.data ?? []) as { sku: string; category: string; channel?: string }[];
+    let sourceColumn = !c.error;
+    let catRows = (c.data ?? []) as { sku: string; category: string; channel?: string; source?: string }[];
     let catError = c.error;
     if (c.error && isMissingColumn(c.error)) {
-      const legacy = await db.from("product_fee_categories").select("sku, category").eq("workspace_id", workspaceId);
-      catError = legacy.error;
-      catRows = (legacy.data ?? []) as { sku: string; category: string }[];
-      multiPlatform = false;
+      sourceColumn = false;
+      const noSource = await db.from("product_fee_categories").select("sku, category, channel").eq("workspace_id", workspaceId);
+      if (!noSource.error) {
+        catError = null;
+        catRows = (noSource.data ?? []) as { sku: string; category: string; channel?: string }[];
+      } else if (isMissingColumn(noSource.error)) {
+        const legacy = await db.from("product_fee_categories").select("sku, category").eq("workspace_id", workspaceId);
+        catError = legacy.error;
+        catRows = (legacy.data ?? []) as { sku: string; category: string }[];
+        multiPlatform = false;
+      } else catError = noSource.error;
     }
     // Bảng phí sàn chưa có (chưa chạy 0018) vẫn dùng được phí ship / phí tự nhập nếu có.
     if (s.error || catError) {
@@ -145,11 +157,13 @@ export async function loadFeeConfig(db: SupabaseClient, workspaceId: string): Pr
         }
       : DEFAULT_FEE_SETTINGS;
     const categories = emptyCategories();
+    const aiSourced: Record<FeePlatform, Set<string>> = { Shopee: new Set(), "TikTok Shop": new Set() };
     for (const r of catRows) {
       const p: FeePlatform = isFeePlatform(r.channel) ? r.channel : "Shopee";
       categories[p].set(costKey(r.sku), r.category);
+      if (r.source === "ai") aiSourced[p].add(costKey(r.sku));
     }
-    const cfg = { available: true, multiPlatform, settings, categories, manual, ship };
+    const cfg = { available: true, multiPlatform, settings, categories, manual, ship, aiSourced, sourceColumn };
     return { ...cfg, signature: sign(cfg) };
   } catch {
     return EMPTY;
@@ -205,7 +219,8 @@ export function makeFeeEstimator(cfg: FeeConfig): FeeEstimator | undefined {
     }));
   return (o) => {
     if (o.channel === "Shopee" && platformsOn) {
-      return estimateOrderFee({ date: o.date, lines: lineRates("Shopee", o), buyerShipping: o.shippingIn, settings: { sellerType: s.sellerType, newSeller: s.newSeller } })?.total ?? null;
+      // Sản phẩm chưa rõ ngành dùng mức mặc định (trung vị của biểu phí) thay vì bỏ trống phí.
+      return estimateOrderFee({ date: o.date, lines: lineRates("Shopee", o), buyerShipping: o.shippingIn, settings: { sellerType: s.sellerType, newSeller: s.newSeller }, defaultRatePct: defaultRatePct("Shopee", s.sellerType) })?.total ?? null;
     }
     if (o.channel === "TikTok Shop" && platformsOn) {
       return estimateTiktokFee({ date: o.date, returned: o.status === "Hoàn trả", lines: lineRates("TikTok Shop", o), buyerShipping: o.shippingIn, settings: s })?.total ?? null;
@@ -227,12 +242,14 @@ export interface SaveFeeConfigArgs {
   multiPlatform: boolean;
   settings?: FeeSettings;
   platform: FeePlatform;
-  upserts: { sku: string; category: string }[];
+  upserts: { sku: string; category: string; /** "ai" = AI phân ngành, chưa xác nhận (cần migration 0026). Mặc định "user". */ source?: "user" | "ai" }[];
   removes: string[];
+  /** Đã chạy migration 0026 (xem FeeConfig.sourceColumn). */
+  sourceColumn?: boolean;
 }
 
 /** Ném lỗi có `missingTable` (chưa chạy 0018) hoặc `needsMulti` (cần 0021). */
-const fail = (error: { code?: string; message: string }, extra: { needsMulti?: boolean } = {}): never => {
+const fail = (error: { code?: string; message: string }, extra: { needsMulti?: boolean; needsSource?: boolean } = {}): never => {
   throw Object.assign(new Error(error.message), { missingTable: isMissing(error, /fee_settings|product_fee_categories/), ...extra });
 };
 
@@ -250,8 +267,10 @@ export async function saveFeeConfig(a: SaveFeeConfigArgs): Promise<void> {
   }
   if (a.upserts.length) {
     if (!a.multiPlatform && a.platform !== "Shopee") needMulti();
+    if (!a.sourceColumn && a.upserts.some((u) => u.source === "ai")) fail({ message: "needs migration 0026" }, { needsSource: true });
     const rows = a.upserts.map((u) => {
-      const r = { workspace_id: a.workspaceId, sku: u.sku.trim(), category: u.category, updated_at: now, updated_by: a.userId };
+      // Có cột source thì luôn ghi rõ: người bán chọn/xác nhận lại một ngành AI phân thì nó trở thành "user".
+      const r = { workspace_id: a.workspaceId, sku: u.sku.trim(), category: u.category, updated_at: now, updated_by: a.userId, ...(a.sourceColumn ? { source: u.source ?? "user" } : {}) };
       return a.multiPlatform ? { ...r, channel: a.platform } : r;
     });
     const { error } = await a.user.from("product_fee_categories").upsert(rows, { onConflict: a.multiPlatform ? "workspace_id,sku,channel" : "workspace_id,sku" });
@@ -310,7 +329,8 @@ export function feePayload(cfg: FeeConfig, products: PayloadProduct[] = []): Fee
     const type = sellerTypeOf(cfg.settings, p);
     const cats = cfg.categories[p];
     const categories: PlatformFeePayload["categories"] = {};
-    for (const [k, path] of cats) categories[k] = { path, ratePct: categoryRate(p, type, path) };
+    const ai = cfg.aiSourced?.[p];
+    for (const [k, path] of cats) categories[k] = { path, ratePct: categoryRate(p, type, path), ...(ai?.has(k) ? { ai: true } : {}) };
     const suggestions: PlatformFeePayload["suggestions"] = {};
     for (const pr of products) {
       if (!pr.channels.includes(p)) continue;
@@ -324,7 +344,7 @@ export function feePayload(cfg: FeeConfig, products: PayloadProduct[] = []): Fee
       const g = suggestCategory(p, type, pr.name);
       if (g) suggestions[k] = { path: g.path, ratePct: g.ratePct, source: g.source };
     }
-    platforms[p] = { sellerType: type, tableFrom: tableInfo(p, type).effectiveFrom, categories, suggestions };
+    platforms[p] = { sellerType: type, tableFrom: tableInfo(p, type).effectiveFrom, defaultRatePct: defaultRatePct(p, type), categories, suggestions };
   }
   return { ship: cfg.ship, available: cfg.available, multiPlatform: cfg.multiPlatform, settings: cfg.settings, platforms, manual: cfg.manual };
 }
