@@ -44,7 +44,8 @@ const writeSaved = (ids: string[]) => {
 
 async function getJson<T>(url: string): Promise<T | null> {
   try {
-    const r = await fetch(url, { cache: "no-store" });
+    // Có hạn chờ: máy chủ treo thì báo lỗi cho người dùng thử lại thay vì quay mãi.
+    const r = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(20_000) });
     return r.ok ? ((await r.json()) as T) : null;
   } catch {
     return null;
@@ -85,6 +86,7 @@ export function AiChat({ variant = "page", context, listenAsk = true, onClose }:
   const dialog = useDialog();
   const [chats, setChats] = useState<ChatSummary[] | null>(null);
   const [sources, setSources] = useState<SourceOption[] | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [selected, setSelected] = useState<string[]>([]);
@@ -103,19 +105,27 @@ export function AiChat({ variant = "page", context, listenAsk = true, onClose }:
   const taRef = useRef<HTMLTextAreaElement>(null);
   const lang = typeof document !== "undefined" && document.documentElement.lang === "en" ? "en" : "vi";
 
-  const refreshChats = useCallback(async () => {
+  const refreshChats = useCallback(async (): Promise<boolean> => {
     const r = await getJson<{ chats: ChatSummary[] }>("/api/ai/chats");
-    setChats(r?.chats ?? []);
+    if (r) setChats(r.chats);
+    else setChats((cur) => cur ?? []);
+    return r !== null;
   }, []);
 
-  useEffect(() => {
-    void refreshChats();
-    void getJson<{ sources: SourceOption[] }>("/api/sources").then((r) => {
-      const list = r?.sources ?? [];
-      setSources(list);
-      setSelected(defaultSelection(readSaved(), list));
-    });
+  /** Tải lịch sử và danh sách nguồn; một trong hai lỗi thì báo và cho thử lại (không để vòng quay chạy mãi). */
+  const loadAll = useCallback(async () => {
+    setLoadFailed(false);
+    const [chatsOk, src] = await Promise.all([refreshChats(), getJson<{ sources: SourceOption[] }>("/api/sources")]);
+    if (src) {
+      setSources(src.sources);
+      setSelected(defaultSelection(readSaved(), src.sources));
+    }
+    if (!chatsOk || !src) setLoadFailed(true);
   }, [refreshChats]);
+
+  useEffect(() => {
+    void loadAll();
+  }, [loadAll]);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ block: "end" });
@@ -283,7 +293,13 @@ export function AiChat({ variant = "page", context, listenAsk = true, onClose }:
       <aside className={`${styles.history} ${historyOpen ? styles.historyOpen : ""}`}>
         <button type="button" className={styles.newBtn} onClick={newChat}>+ Cuộc trò chuyện mới</button>
         <div className={styles.histList}>
-          {chats === null ? <div className={styles.histNote}><Spinner size={18} label="Đang tải…" /></div> : chats.length === 0 ? (
+          {loadFailed && (
+            <div className={styles.histNote} role="alert">
+              Không tải được dữ liệu. Kiểm tra kết nối rồi thử lại.{" "}
+              <button type="button" className={styles.retryBtn} onClick={() => void loadAll()}>Thử lại</button>
+            </div>
+          )}
+          {chats === null ? <div className={styles.histNote}><Spinner size={18} label="Đang tải…" /></div> : chats.length === 0 && !loadFailed ? (
             <div className={styles.histNote}>Chưa có cuộc trò chuyện nào. Câu hỏi của bạn sẽ được lưu ở đây để xem lại.</div>
           ) : chats.map((c) => (
             <div key={c.id} className={`${styles.histItem} ${c.id === activeId ? styles.histActive : ""}`}>

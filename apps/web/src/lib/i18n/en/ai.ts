@@ -83,4 +83,11 @@ export const EN_AI: Dict = {
   "Chỉ hiện {0}/{1} nhóm.": "Showing {0} of {1} groups.",
   "Vẽ biểu đồ doanh thu và lãi theo ngày trong 30 ngày gần nhất.": "Draw a chart of revenue and profit by day for the last 30 days.",
   "Hiện thẻ KPI: tổng doanh thu thực, lãi, số đơn và tỷ lệ hủy tháng này.": "Show KPI cards: net revenue, profit, order count and cancellation rate this month.",
+  // Lỗi tải lịch sử / nguồn và màn hình lỗi trang
+  "Không tải được dữ liệu. Kiểm tra kết nối rồi thử lại.": "Could not load the data. Check your connection and try again.",
+  "Trang này gặp lỗi": "This page ran into an error",
+  "Có thể do hệ thống vừa được cập nhật phiên bản mới. Hãy tải lại trang; nếu vẫn lỗi, bạn thử lại sau ít phút.": "The system may have just been updated to a new version. Reload the page; if it still fails, try again in a few minutes.",
+  "Tải lại trang": "Reload page",
+  "Cerno gặp lỗi khi tải trang": "Cerno ran into an error while loading",
+  "Có thể do hệ thống vừa cập nhật phiên bản mới. Hãy tải lại trang; nếu vẫn lỗi, bạn thử lại sau ít phút.": "The system may have just been updated to a new version. Reload the page; if it still fails, try again in a few minutes.",
 };

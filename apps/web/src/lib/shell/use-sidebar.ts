@@ -16,7 +16,7 @@ let inflight: Promise<void> | null = null;
 function load(force: boolean): Promise<void> {
   if (!force && cache && Date.now() - cache.at < FRESH_MS) return Promise.resolve();
   if (inflight) return inflight;
-  inflight = fetch("/api/shell/sidebar", { cache: "no-store" })
+  inflight = fetch("/api/shell/sidebar", { cache: "no-store", signal: AbortSignal.timeout(20_000) })
     .then((r) => (r.ok ? (r.json() as Promise<SidebarData>) : null))
     .then((d) => {
       if (!d) return;
