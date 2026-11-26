@@ -2,7 +2,7 @@ import styles from "./profit.module.css";
 
 /** Logo (nền trong suốt) của các sàn có ảnh; sàn khác hiện nhãn chữ. Ảnh ở public/img/channels. */
 const LOGOS: Record<string, { src: string; width: number; height: number }> = {
-  Shopee: { src: "/img/channels/shopee.webp", width: 171, height: 252 },
+  Shopee: { src: "/img/channels/shopee.webp", width: 376, height: 128 },
   "TikTok Shop": { src: "/img/channels/tiktok-shop.webp", width: 616, height: 110 },
 };
 
