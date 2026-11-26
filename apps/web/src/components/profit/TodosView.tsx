@@ -8,6 +8,7 @@ import { compact, count, pct, vnd } from "./format";
 import { ProductDetailModal } from "./ProductDetail";
 import { ErrorBox, Loading, NoOrders } from "./Shared";
 import { useProfitSummary } from "./useProfit";
+import { PlatformLogo } from "./PlatformLogo";
 import styles from "./profit.module.css";
 
 export function todoText(t: Todo): { title: string; detail: string; impact: string; action: string } {
@@ -69,7 +70,7 @@ export function TodosView() {
           {t.key && (
             <div className={styles.toolbar} style={{ marginTop: 4, gap: 6 }}>
               {t.sku && t.sku !== t.product && <span className={styles.small} data-i18n-skip>{`SKU ${t.sku}`}</span>}
-              {(t.channels ?? []).map((c) => <span key={c} className={styles.platformTag} data-platform={c} data-i18n-skip>{c}</span>)}
+              {(t.channels ?? []).map((c) => <PlatformLogo key={c} channel={c} />)}
             </div>
           )}
           <div className={styles.small} style={{ marginTop: 3, lineHeight: 1.5 }}>{x.detail}</div>

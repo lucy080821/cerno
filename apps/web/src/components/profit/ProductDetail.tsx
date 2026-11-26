@@ -6,6 +6,7 @@ import type { ProductProfit } from "@/lib/profit/order-profit";
 import { productInsight } from "@/lib/profit/product-insight";
 import { Waterfall } from "./charts";
 import { count, pct, signed, vnd } from "./format";
+import { PlatformLogo } from "./PlatformLogo";
 import styles from "./profit.module.css";
 
 /** Câu "khoản chi lớn nhất" viết sẵn từng loại để dịch được (phần thay đổi chỉ là con số). */
@@ -52,7 +53,7 @@ export function ProductDetailModal({ p, onClose }: { p: ProductProfit; onClose: 
         </div>
 
         <div className={styles.toolbar}>
-          {p.channels.map((c) => <span key={c} className={styles.platformTag} data-platform={c} data-i18n-skip>{c}</span>)}
+          {p.channels.map((c) => <PlatformLogo key={c} channel={c} />)}
           <span className={`${styles.badge} ${p.profit === null ? styles.bWarn : loss ? styles.bNeg : styles.bPos}`}>
             {p.profit === null ? "Chưa có giá vốn" : loss ? "Lỗ mỗi đơn" : "Có lãi"}
           </span>

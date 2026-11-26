@@ -550,7 +550,13 @@
 .catPlatform { flex: 0 0 82px; font-size: 12px; font-weight: 700; color: var(--muted); }
 
 .platformTag { display: inline-block; padding: 2px 9px; border-radius: 999px; background: rgba(109, 94, 252, 0.1); color: var(--brand-a, #6d5efc); font-size: 12px; font-weight: 700; white-space: nowrap; }
-.tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.tags { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+
+/* Logo sàn: nền trong suốt, không viền pill. Logo Shopee dạng đứng nên cao hơn logo TikTok Shop dạng ngang. */
+.platformTag.platformLogo[data-platform] { display: inline-flex; align-items: center; padding: 0; background: none; box-shadow: none; border-radius: 0; line-height: 0; }
+.platformLogo img { display: block; width: auto; max-width: none; user-select: none; }
+.platformLogo[data-platform="Shopee"] img { height: 32px; }
+.platformLogo[data-platform="TikTok Shop"] img { height: 16px; }
 
 /* Màu chủ đạo của từng sàn */
 .platformTag[data-platform="Shopee"] { background: rgba(238, 77, 45, 0.12); color: #d0391b; }
